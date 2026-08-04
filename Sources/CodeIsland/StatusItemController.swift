@@ -39,7 +39,7 @@ final class StatusItemController: NSObject {
                 icon.size = NSSize(width: 18, height: 18)
                 button.image = icon
                 button.imageScaling = .scaleProportionallyDown
-                button.toolTip = "CodeIsland"
+                button.toolTip = "NotchDeck"
             }
             item.menu = menu
             statusItem = item

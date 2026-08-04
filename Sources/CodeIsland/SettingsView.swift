@@ -60,7 +60,7 @@ private struct SidebarGroup: Hashable {
 
 private let sidebarGroups: [SidebarGroup] = [
     SidebarGroup(title: nil, pages: [.general, .behavior, .appearance, .mascots, .sound, .shortcuts, .usage]),
-    SidebarGroup(title: "CodeIsland", pages: [.remote, .hooks, .buddy, .about]),
+    SidebarGroup(title: "NotchDeck", pages: [.remote, .hooks, .buddy, .about]),
 ]
 
 // MARK: - Main View
@@ -1742,7 +1742,7 @@ private struct AboutPage: View {
                 AppLogoView(size: 100)
 
                 VStack(spacing: 6) {
-                    Text("CodeIsland")
+                    Text("NotchDeck")
                         .font(.system(size: 26, weight: .bold))
                     Text("Version \(AppVersion.current)")
                         .font(.system(size: 13))
@@ -1759,8 +1759,8 @@ private struct AboutPage: View {
                 }
 
                 HStack(spacing: 12) {
-                    aboutLink("GitHub", icon: "chevron.left.forwardslash.chevron.right", url: "https://github.com/wxtsky/CodeIsland")
-                    aboutLink("Issues", icon: "ladybug", url: "https://github.com/wxtsky/CodeIsland/issues")
+                    aboutLink("GitHub", icon: "chevron.left.forwardslash.chevron.right", url: "https://github.com/zt444888-hub/NotchDeck")
+                    aboutLink("Issues", icon: "ladybug", url: "https://github.com/zt444888-hub/NotchDeck/issues")
                 }
 
                 // In-app update section

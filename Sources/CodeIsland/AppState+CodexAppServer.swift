@@ -82,7 +82,7 @@ extension AppState {
         do {
             try client.start()
             let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
-            try client.initializeHandshake(clientName: "CodeIsland", clientVersion: version)
+            try client.initializeHandshake(clientName: "NotchDeck", clientVersion: version)
         } catch {
             client.stop()
             return
@@ -168,7 +168,7 @@ extension AppState {
     // MARK: - request_user_input (plan-mode / free-form questions)
 
     /// Handle a server->client `item/tool/requestUserInput` request by surfacing
-    /// each question in CodeIsland's popup and wiring the answer back as a
+    /// each question in NotchDeck's popup and wiring the answer back as a
     /// JSON-RPC response to `requestId`. See issue #209.
     private func applyCodexRequestUserInput(params: [String: AnyCodableLike], requestId: CodexRequestID) {
         guard let threadId = params["threadId"]?.asString else { return }

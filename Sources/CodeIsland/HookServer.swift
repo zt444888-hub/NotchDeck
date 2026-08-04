@@ -239,7 +239,7 @@ class HookServer {
         var request = URLRequest(url: endpoint, timeoutInterval: 5)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("CodeIsland-Webhook/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("NotchDeck-Webhook/1.0", forHTTPHeaderField: "User-Agent")
         request.httpBody = body
 
         URLSession.shared.dataTask(with: request) { _, _, _ in
@@ -598,7 +598,7 @@ class HookServer {
     ///
     /// Previously this used `connection.receive(min:1, max:1)` which triggered on EOF.
     /// But the bridge always does `shutdown(SHUT_WR)` after sending the request (see
-    /// CodeIslandBridge/main.swift), which produces an immediate EOF on the read side.
+    /// NotchDeckBridge/main.swift), which produces an immediate EOF on the read side.
     /// That caused every PermissionRequest to be auto-drained as `deny` before the UI
     /// card was even visible. We now rely on `stateUpdateHandler` transitioning to
     /// `cancelled`/`failed` — which only happens on real socket teardown, not half-close.

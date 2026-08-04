@@ -54,7 +54,7 @@ extension AppState {
         }
 
         // Cursor stuck-question recovery (#265): if the transcript already ends
-        // with an unanswered AskQuestion (e.g. CodeIsland launched or the session
+        // with an unanswered AskQuestion (e.g. NotchDeck launched or the session
         // was discovered while Cursor sat on a question), surface the wait now
         // instead of showing an endless "thinking". Recency-gated so an idle card
         // over a long-abandoned transcript doesn't resurrect as waiting.

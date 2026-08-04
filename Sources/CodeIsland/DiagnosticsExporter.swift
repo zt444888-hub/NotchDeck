@@ -8,7 +8,7 @@ struct DiagnosticsExporter {
 
     static func export() {
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "CodeIsland-Diagnostics-\(timestamp()).zip"
+        panel.nameFieldStringValue = "NotchDeck-Diagnostics-\(timestamp()).zip"
         panel.allowedContentTypes = [.zip]
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
@@ -33,8 +33,8 @@ struct DiagnosticsExporter {
 
     private static func buildArchive(saveTo destination: URL) throws -> URL {
         let fm = FileManager.default
-        let tmp = fm.temporaryDirectory.appendingPathComponent("CodeIsland-Diag-\(UUID().uuidString)", isDirectory: true)
-        let root = tmp.appendingPathComponent("CodeIsland-Diagnostics-\(timestamp())", isDirectory: true)
+        let tmp = fm.temporaryDirectory.appendingPathComponent("NotchDeck-Diag-\(UUID().uuidString)", isDirectory: true)
+        let root = tmp.appendingPathComponent("NotchDeck-Diagnostics-\(timestamp())", isDirectory: true)
         try fm.createDirectory(at: root, withIntermediateDirectories: true)
 
         // 1. Metadata

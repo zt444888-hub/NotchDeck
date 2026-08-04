@@ -15,7 +15,7 @@ import SwiftUI
 ///
 /// The effective interval is clamped to `minInterval` (20 fps): a menu-bar-
 /// sized pixel sprite gains nothing perceivable above that, and the wasted
-/// wakeups were a real contributor to "CodeIsland makes my Mac warm" (#14).
+/// wakeups were a real contributor to "NotchDeck makes my Mac warm" (#14).
 struct MascotTimeline<Content: View>: View {
     /// Floor for all mascot frame intervals — 20 fps.
     static var minInterval: TimeInterval { 0.05 }

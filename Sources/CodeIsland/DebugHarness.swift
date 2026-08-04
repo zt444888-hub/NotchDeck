@@ -4,7 +4,7 @@ import CodeIslandCore
 // MARK: - Preview Scenario System
 //
 // Usage: launch with --preview <scenario> to inject mock sessions for UI development.
-//   e.g.  .build/debug/CodeIsland --preview approval
+//   e.g.  .build/debug/NotchDeck --preview approval
 //
 // Scenarios:
 //   working     — single session actively running tools

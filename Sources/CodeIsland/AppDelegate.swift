@@ -16,7 +16,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        ProcessInfo.processInfo.disableAutomaticTermination("CodeIsland must stay running")
+        ProcessInfo.processInfo.disableAutomaticTermination("NotchDeck must stay running")
         ProcessInfo.processInfo.disableSuddenTermination()
         // Pre-set app icon so Dock/menu bar use the packaged bundle icon.
         NSApp.applicationIconImage = SettingsWindowController.bundleAppIcon()
@@ -197,7 +197,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Local monitor: same-app fallback so the shortcut still works (and is
-        // swallowed) while CodeIsland's own panel/settings window is focused.
+        // swallowed) while NotchDeck's own panel/settings window is focused.
         let localHandler: (NSEvent) -> Bool = { [weak self] event in
             let eventMods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             for b in bindings where event.keyCode == b.keyCode && eventMods == b.mods {

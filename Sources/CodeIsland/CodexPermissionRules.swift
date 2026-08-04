@@ -126,7 +126,7 @@ struct CodexPermissionRules {
             let updated = Self.configWithMCPToolApproval(
                 existing,
                 tablePath: targetPath,
-                comment: #"Added by CodeIsland when "Always Allow" is clicked for a Codex MCP tool."#
+                comment: #"Added by NotchDeck when "Always Allow" is clicked for a Codex MCP tool."#
             )
             try updated.write(toFile: configPath, atomically: true, encoding: .utf8)
             return true
@@ -182,11 +182,11 @@ struct CodexPermissionRules {
 
     private static func ruleBlock(for pattern: [String]) -> String {
         """
-        # Added by CodeIsland when "Always Allow" is clicked for Codex.
+        # Added by NotchDeck when "Always Allow" is clicked for Codex.
         prefix_rule(
             \(patternLine(for: pattern)),
             decision = "allow",
-            justification = "Allowed from CodeIsland Always Allow",
+            justification = "Allowed from NotchDeck Always Allow",
         )
 
         """

@@ -82,7 +82,7 @@ final class L10n: ObservableObject {
         "auto_collapse_after_session_jump": "Auto-collapse after session jump",
         "auto_collapse_after_session_jump_desc": "Collapse panel after clicking a session and successfully switching to its terminal/client",
         "auto_expand_on_completion": "Auto-Expand Panel on Agent Completion",
-        "auto_expand_on_completion_desc": "Briefly expand the panel when an agent or subagent finishes; turn off to keep CodeIsland in its compact state",
+        "auto_expand_on_completion_desc": "Briefly expand the panel when an agent or subagent finishes; turn off to keep NotchDeck in its compact state",
         "completion_notification": "On completion",
         "completion_style_expand": "Expand panel",
         "completion_style_glance": "Glance dot (stay collapsed)",
@@ -97,7 +97,7 @@ final class L10n: ObservableObject {
         "shortcut_recording": "Recording…",
         "shortcut_none": "Not Set",
         "shortcut_togglePanel": "Toggle Panel",
-        "shortcut_togglePanel_desc": "Open or close the CodeIsland panel",
+        "shortcut_togglePanel_desc": "Open or close the NotchDeck panel",
         "shortcut_approve": "Approve",
         "shortcut_approve_desc": "Approve current permission request",
         "shortcut_approveAlways": "Approve Always",
@@ -150,7 +150,7 @@ final class L10n: ObservableObject {
         "excluded_hook_cwd_desc": "Comma-separated substrings. Any hook event whose working directory contains one of them is silently dropped — useful for filtering out background plugins like claude-mem. Example: .claude-mem,.cache/agents",
         "excluded_hook_cwd_placeholder": "e.g. .claude-mem,.cache/agents",
         "claude_config_dir_title": "Claude Code Config Directory",
-        "claude_config_dir_desc": "Where Claude Code keeps projects/ and settings.json. Leave empty to auto-detect ($CLAUDE_CONFIG_DIR, then whichever of ~/.claude or ~/.config/claude-code actually holds your projects, preferring ~/.claude). Set this if you use a custom CLAUDE_CONFIG_DIR — a Finder-launched app does not inherit your shell environment. Restart CodeIsland after changing.",
+        "claude_config_dir_desc": "Where Claude Code keeps projects/ and settings.json. Leave empty to auto-detect ($CLAUDE_CONFIG_DIR, then whichever of ~/.claude or ~/.config/claude-code actually holds your projects, preferring ~/.claude). Set this if you use a custom CLAUDE_CONFIG_DIR — a Finder-launched app does not inherit your shell environment. Restart NotchDeck after changing.",
         "claude_config_dir_placeholder": "auto-detect",
         "claude_config_dir_resolved": "Currently using: %@",
 
@@ -236,7 +236,7 @@ final class L10n: ObservableObject {
         "tool_or_api_error": "Tool failure or API error",
         "system_section": "System",
         "boot_sound": "Boot Sound",
-        "boot_sound_desc": "Play a jingle when CodeIsland starts",
+        "boot_sound_desc": "Play a jingle when NotchDeck starts",
         "interaction": "Interaction",
         "approval_needed": "Approval Needed",
         "waiting_approval_desc": "Waiting for permission approval or answer",
@@ -278,7 +278,7 @@ final class L10n: ObservableObject {
         "remote_cwd_filter_hint": "Comma-separated path fragments. When set, only remote sessions whose working directory contains one of them are shown — useful on shared accounts. Leave empty to show all sessions.",
         "remote_auto_connect": "Auto-connect on Launch",
         "remote_add_button": "Add Host",
-        "remote_hint": "The host field can be a normal hostname or an alias from your ~/.ssh/config. CodeIsland installs a small remote hook script and forwards events over SSH.",
+        "remote_hint": "The host field can be a normal hostname or an alias from your ~/.ssh/config. NotchDeck installs a small remote hook script and forwards events over SSH.",
         "remote_connect": "Connect",
         "remote_connecting": "Connecting…",
         "remote_connected": "Connected",
@@ -336,14 +336,14 @@ final class L10n: ObservableObject {
         "apple_companion_no_devices": "No iPhone Buddy connected",
         "apple_companion_sync_interval": "Sync interval",
         "apple_companion_restart": "Restart iPhone Buddy",
-        "apple_companion_desc": "Mirrors CodeIsland status to the iPhone app over the local network while foregrounded, and sends lightweight Bluetooth summaries for Live Activity and Apple Watch refreshes in the background.",
+        "apple_companion_desc": "Mirrors NotchDeck status to the iPhone app over the local network while foregrounded, and sends lightweight Bluetooth summaries for Live Activity and Apple Watch refreshes in the background.",
 
         // About
         "about_desc1": "Real-time AI coding agent status panel for macOS",
         "about_desc2": "Supports 11 CLI/IDE tools via Unix socket IPC",
 
         // Window
-        "settings_title": "CodeIsland Settings",
+        "settings_title": "NotchDeck Settings",
 
         // Menu
         "settings_ellipsis": "Settings...",
@@ -356,11 +356,11 @@ final class L10n: ObservableObject {
 
         // Update
         "update_available_title": "Update Available",
-        "update_available_body": "CodeIsland %@ is available (current: %@). Would you like to download it?",
+        "update_available_body": "NotchDeck %@ is available (current: %@). Would you like to download it?",
         "download_update": "Download",
         "later": "Later",
         "no_update_title": "Up to Date",
-        "no_update_body": "CodeIsland %@ is the latest version.",
+        "no_update_body": "NotchDeck %@ is the latest version.",
         "ok": "OK",
         "update_now": "Update Now",
         "update_downloading": "Downloading update...",
@@ -370,7 +370,7 @@ final class L10n: ObservableObject {
         "update_installing": "Installing update...",
         "update_retry": "Retry",
         "update_homebrew_title": "Update Available",
-        "update_homebrew_body": "CodeIsland %@ is available. Since you installed via Homebrew, please run:",
+        "update_homebrew_body": "NotchDeck %@ is available. Since you installed via Homebrew, please run:",
         "update_homebrew_command": "brew upgrade codeisland",
         "update_copy_command": "Copy Command",
 
@@ -447,7 +447,7 @@ final class L10n: ObservableObject {
         "auto_collapse_after_session_jump": "Nach Sitzungswechsel automatisch einklappen",
         "auto_collapse_after_session_jump_desc": "Panel einklappen, nachdem eine Sitzung angeklickt und erfolgreich zu ihrem Terminal/Client gewechselt wurde",
         "auto_expand_on_completion": "Panel nach Agent-Abschluss automatisch erweitern",
-        "auto_expand_on_completion_desc": "Panel kurz erweitern, wenn ein Agent oder Subagent fertig ist; deaktivieren, um CodeIsland kompakt zu halten",
+        "auto_expand_on_completion_desc": "Panel kurz erweitern, wenn ein Agent oder Subagent fertig ist; deaktivieren, um NotchDeck kompakt zu halten",
         "completion_notification": "Bei Abschluss",
         "completion_style_expand": "Panel ausklappen",
         "completion_style_glance": "Nur Statuspunkt (eingeklappt bleiben)",
@@ -462,7 +462,7 @@ final class L10n: ObservableObject {
         "shortcut_recording": "Aufzeichnung...",
         "shortcut_none": "Nicht festgelegt",
         "shortcut_togglePanel": "Panel ein-/ausblenden",
-        "shortcut_togglePanel_desc": "CodeIsland-Panel öffnen oder schließen",
+        "shortcut_togglePanel_desc": "NotchDeck-Panel öffnen oder schließen",
         "shortcut_approve": "Genehmigen",
         "shortcut_approve_desc": "Aktuelle Berechtigungsanfrage genehmigen",
         "shortcut_approveAlways": "Immer genehmigen",
@@ -579,7 +579,7 @@ final class L10n: ObservableObject {
         "tool_or_api_error": "Tool-Fehler oder API-Fehler",
         "system_section": "System",
         "boot_sound": "Startsound",
-        "boot_sound_desc": "Beim Start von CodeIsland einen Jingle abspielen",
+        "boot_sound_desc": "Beim Start von NotchDeck einen Jingle abspielen",
         "interaction": "Interaktion",
         "approval_needed": "Genehmigung erforderlich",
         "waiting_approval_desc": "Wartet auf Berechtigungsgenehmigung oder Antwort",
@@ -621,7 +621,7 @@ final class L10n: ObservableObject {
         "remote_cwd_filter_hint": "Kommagetrennte Pfadfragmente. Wenn gesetzt, werden nur Remote-Sitzungen angezeigt, deren Arbeitsverzeichnis eines davon enthält — nützlich bei gemeinsam genutzten Konten. Leer lassen, um alle Sitzungen anzuzeigen.",
         "remote_auto_connect": "Beim Start automatisch verbinden",
         "remote_add_button": "Host hinzufügen",
-        "remote_hint": "Das Host-Feld kann ein normaler Hostname oder ein Alias aus ~/.ssh/config sein. CodeIsland installiert ein kleines Remote-Hook-Skript und leitet Ereignisse per SSH weiter.",
+        "remote_hint": "Das Host-Feld kann ein normaler Hostname oder ein Alias aus ~/.ssh/config sein. NotchDeck installiert ein kleines Remote-Hook-Skript und leitet Ereignisse per SSH weiter.",
         "remote_connect": "Verbinden",
         "remote_connecting": "Verbindung wird hergestellt...",
         "remote_connected": "Verbunden",
@@ -679,14 +679,14 @@ final class L10n: ObservableObject {
         "apple_companion_no_devices": "Kein iPhone Buddy verbunden",
         "apple_companion_sync_interval": "Sync-Intervall",
         "apple_companion_restart": "iPhone Buddy neu starten",
-        "apple_companion_desc": "Spiegelt den CodeIsland-Status im Vordergrund über das lokale Netzwerk zur iPhone-App und sendet im Hintergrund leichte Bluetooth-Zusammenfassungen für Live Activity und Apple-Watch-Aktualisierungen.",
+        "apple_companion_desc": "Spiegelt den NotchDeck-Status im Vordergrund über das lokale Netzwerk zur iPhone-App und sendet im Hintergrund leichte Bluetooth-Zusammenfassungen für Live Activity und Apple-Watch-Aktualisierungen.",
 
         // About
         "about_desc1": "Echtzeit-Statuspanel für AI-Coding-Agenten unter macOS",
         "about_desc2": "Unterstützt 11 CLI/IDE-Tools über Unix-Socket-IPC",
 
         // Window
-        "settings_title": "CodeIsland-Einstellungen",
+        "settings_title": "NotchDeck-Einstellungen",
 
         // Menu
         "settings_ellipsis": "Einstellungen...",
@@ -699,11 +699,11 @@ final class L10n: ObservableObject {
 
         // Update
         "update_available_title": "Update verfügbar",
-        "update_available_body": "CodeIsland %@ ist verfügbar (aktuell: %@). Möchtest du es herunterladen?",
+        "update_available_body": "NotchDeck %@ ist verfügbar (aktuell: %@). Möchtest du es herunterladen?",
         "download_update": "Herunterladen",
         "later": "Später",
         "no_update_title": "Aktuell",
-        "no_update_body": "CodeIsland %@ ist die neueste Version.",
+        "no_update_body": "NotchDeck %@ ist die neueste Version.",
         "ok": "OK",
         "update_now": "Jetzt aktualisieren",
         "update_downloading": "Update wird heruntergeladen...",
@@ -713,7 +713,7 @@ final class L10n: ObservableObject {
         "update_installing": "Update wird installiert...",
         "update_retry": "Erneut versuchen",
         "update_homebrew_title": "Update verfügbar",
-        "update_homebrew_body": "CodeIsland %@ ist verfügbar. Da du über Homebrew installiert hast, führe bitte aus:",
+        "update_homebrew_body": "NotchDeck %@ ist verfügbar. Da du über Homebrew installiert hast, führe bitte aus:",
         "update_homebrew_command": "brew upgrade codeisland",
         "update_copy_command": "Befehl kopieren",
 
@@ -790,7 +790,7 @@ final class L10n: ObservableObject {
         "auto_collapse_after_session_jump": "点击跳转会话后自动收起面板",
         "auto_collapse_after_session_jump_desc": "点击会话并成功切换到对应终端/客户端后自动收起面板",
         "auto_expand_on_completion": "Agent 完成时自动展开面板",
-        "auto_expand_on_completion_desc": "Agent 或子 Agent 完成时短暂展开面板；关闭后 CodeIsland 始终保持紧凑状态",
+        "auto_expand_on_completion_desc": "Agent 或子 Agent 完成时短暂展开面板；关闭后 NotchDeck 始终保持紧凑状态",
         "completion_notification": "任务完成时",
         "completion_style_expand": "展开面板",
         "completion_style_glance": "仅亮起指示点（保持收起）",
@@ -805,7 +805,7 @@ final class L10n: ObservableObject {
         "shortcut_recording": "请按下快捷键…",
         "shortcut_none": "未设置",
         "shortcut_togglePanel": "切换面板",
-        "shortcut_togglePanel_desc": "展开或收起 CodeIsland 面板",
+        "shortcut_togglePanel_desc": "展开或收起 NotchDeck 面板",
         "shortcut_approve": "批准",
         "shortcut_approve_desc": "批准当前权限请求",
         "shortcut_approveAlways": "始终批准",
@@ -858,7 +858,7 @@ final class L10n: ObservableObject {
         "excluded_hook_cwd_desc": "用逗号分隔的子串。任何 hook 事件的工作目录如果包含其中之一就会被静默丢弃 —— 适合过滤 claude-mem 等后台插件。示例：.claude-mem,.cache/agents",
         "excluded_hook_cwd_placeholder": "例如 .claude-mem,.cache/agents",
         "claude_config_dir_title": "Claude Code 配置目录",
-        "claude_config_dir_desc": "Claude Code 存放 projects/ 和 settings.json 的位置。留空则自动检测（先 $CLAUDE_CONFIG_DIR，再是确实包含 projects/ 的 ~/.claude，最后 ~/.config/claude-code）。如果你使用自定义的 CLAUDE_CONFIG_DIR，请在此设置——从访达启动的应用不会继承 shell 环境变量。修改后请重启 CodeIsland。",
+        "claude_config_dir_desc": "Claude Code 存放 projects/ 和 settings.json 的位置。留空则自动检测（先 $CLAUDE_CONFIG_DIR，再是确实包含 projects/ 的 ~/.claude，最后 ~/.config/claude-code）。如果你使用自定义的 CLAUDE_CONFIG_DIR，请在此设置——从访达启动的应用不会继承 shell 环境变量。修改后请重启 NotchDeck。",
         "claude_config_dir_placeholder": "自动检测",
         "claude_config_dir_resolved": "当前使用：%@",
 
@@ -944,7 +944,7 @@ final class L10n: ObservableObject {
         "tool_or_api_error": "工具失败或 API 错误",
         "system_section": "系统",
         "boot_sound": "启动音效",
-        "boot_sound_desc": "CodeIsland 启动时播放提示音",
+        "boot_sound_desc": "NotchDeck 启动时播放提示音",
         "interaction": "交互",
         "approval_needed": "需要审批",
         "waiting_approval_desc": "等待权限审批或回答问题",
@@ -986,7 +986,7 @@ final class L10n: ObservableObject {
         "remote_cwd_filter_hint": "逗号分隔的路径片段。填写后，只显示工作目录包含其中之一的远程会话——适合多人共用同一账号的服务器。留空则显示全部会话。",
         "remote_auto_connect": "启动时自动连接",
         "remote_add_button": "添加主机",
-        "remote_hint": "主机字段既可以填普通 hostname，也可以直接填 ~/.ssh/config 里的别名。CodeIsland 会在远端安装一个很小的 hook 脚本，并通过 SSH 转发事件回来。",
+        "remote_hint": "主机字段既可以填普通 hostname，也可以直接填 ~/.ssh/config 里的别名。NotchDeck 会在远端安装一个很小的 hook 脚本，并通过 SSH 转发事件回来。",
         "remote_connect": "连接",
         "remote_connecting": "连接中…",
         "remote_connected": "已连接",
@@ -1044,14 +1044,14 @@ final class L10n: ObservableObject {
         "apple_companion_no_devices": "暂无 iPhone Buddy 连接",
         "apple_companion_sync_interval": "同步间隔",
         "apple_companion_restart": "重启 iPhone Buddy 广播",
-        "apple_companion_desc": "前台通过本地网络把 CodeIsland 状态同步到 iPhone App；后台会通过蓝牙发送轻量状态摘要，用于刷新实时活动和 Apple Watch。",
+        "apple_companion_desc": "前台通过本地网络把 NotchDeck 状态同步到 iPhone App；后台会通过蓝牙发送轻量状态摘要，用于刷新实时活动和 Apple Watch。",
 
         // About
         "about_desc1": "macOS 实时 AI 编码 Agent 状态面板",
         "about_desc2": "通过 Unix socket IPC 支持 11 种 CLI/IDE 工具",
 
         // Window
-        "settings_title": "CodeIsland 设置",
+        "settings_title": "NotchDeck 设置",
 
         // Menu
         "settings_ellipsis": "设置...",
@@ -1064,11 +1064,11 @@ final class L10n: ObservableObject {
 
         // Update
         "update_available_title": "发现新版本",
-        "update_available_body": "CodeIsland %@ 已发布（当前版本：%@），是否前往下载？",
+        "update_available_body": "NotchDeck %@ 已发布（当前版本：%@），是否前往下载？",
         "download_update": "前往下载",
         "later": "稍后",
         "no_update_title": "已是最新版本",
-        "no_update_body": "CodeIsland %@ 已是最新版本。",
+        "no_update_body": "NotchDeck %@ 已是最新版本。",
         "ok": "好",
         "update_now": "立即更新",
         "update_downloading": "正在下载更新...",
@@ -1078,7 +1078,7 @@ final class L10n: ObservableObject {
         "update_installing": "正在安装更新...",
         "update_retry": "重试",
         "update_homebrew_title": "发现新版本",
-        "update_homebrew_body": "CodeIsland %@ 已发布。由于您通过 Homebrew 安装，请运行：",
+        "update_homebrew_body": "NotchDeck %@ 已发布。由于您通过 Homebrew 安装，请运行：",
         "update_homebrew_command": "brew upgrade codeisland",
         "update_copy_command": "复制命令",
 
@@ -1155,7 +1155,7 @@ final class L10n: ObservableObject {
         "auto_collapse_after_session_jump": "點擊跳轉會話後自動收合面板",
         "auto_collapse_after_session_jump_desc": "點擊會話並成功切換到對應終端機/客戶端後自動收合面板",
         "auto_expand_on_completion": "Agent 完成時自動展開面板",
-        "auto_expand_on_completion_desc": "Agent 或子 Agent 完成時短暫展開面板；關閉後 CodeIsland 始終保持精簡狀態",
+        "auto_expand_on_completion_desc": "Agent 或子 Agent 完成時短暫展開面板；關閉後 NotchDeck 始終保持精簡狀態",
         "completion_notification": "任務完成時",
         "completion_style_expand": "展開面板",
         "completion_style_glance": "僅亮起指示點（保持收合）",
@@ -1170,7 +1170,7 @@ final class L10n: ObservableObject {
         "shortcut_recording": "請按下快速鍵…",
         "shortcut_none": "未設定",
         "shortcut_togglePanel": "切換面板",
-        "shortcut_togglePanel_desc": "展開或收合 CodeIsland 面板",
+        "shortcut_togglePanel_desc": "展開或收合 NotchDeck 面板",
         "shortcut_approve": "核准",
         "shortcut_approve_desc": "核准目前的權限請求",
         "shortcut_approveAlways": "一律核准",
@@ -1223,7 +1223,7 @@ final class L10n: ObservableObject {
         "excluded_hook_cwd_desc": "以逗號分隔的子字串。任何 hook 事件的工作目錄如果包含其中之一就會被靜默丟棄 —— 適合過濾 claude-mem 等背景外掛。範例：.claude-mem,.cache/agents",
         "excluded_hook_cwd_placeholder": "例如 .claude-mem,.cache/agents",
         "claude_config_dir_title": "Claude Code 設定目錄",
-        "claude_config_dir_desc": "Claude Code 存放 projects/ 和 settings.json 的位置。留空則自動偵測（先 $CLAUDE_CONFIG_DIR，再是確實包含 projects/ 的 ~/.claude，最後 ~/.config/claude-code）。若你使用自訂的 CLAUDE_CONFIG_DIR，請在此設定——從 Finder 啟動的應用程式不會繼承 shell 環境變數。修改後請重新啟動 CodeIsland。",
+        "claude_config_dir_desc": "Claude Code 存放 projects/ 和 settings.json 的位置。留空則自動偵測（先 $CLAUDE_CONFIG_DIR，再是確實包含 projects/ 的 ~/.claude，最後 ~/.config/claude-code）。若你使用自訂的 CLAUDE_CONFIG_DIR，請在此設定——從 Finder 啟動的應用程式不會繼承 shell 環境變數。修改後請重新啟動 NotchDeck。",
         "claude_config_dir_placeholder": "自動偵測",
         "claude_config_dir_resolved": "目前使用：%@",
 
@@ -1309,7 +1309,7 @@ final class L10n: ObservableObject {
         "tool_or_api_error": "工具失敗或 API 錯誤",
         "system_section": "系統",
         "boot_sound": "啟動音效",
-        "boot_sound_desc": "CodeIsland 啟動時播放提示音",
+        "boot_sound_desc": "NotchDeck 啟動時播放提示音",
         "interaction": "互動",
         "approval_needed": "需要審核",
         "waiting_approval_desc": "等待權限審核或回答問題",
@@ -1351,7 +1351,7 @@ final class L10n: ObservableObject {
         "remote_cwd_filter_hint": "以逗號分隔的路徑片段。填寫後，只顯示工作目錄包含其中之一的遠端會話——適合多人共用同一帳號的伺服器。留空則顯示全部會話。",
         "remote_auto_connect": "啟動時自動連線",
         "remote_add_button": "新增主機",
-        "remote_hint": "主機欄位既可以填一般 hostname，也可以直接填 ~/.ssh/config 裡的別名。CodeIsland 會在遠端安裝一個很小的 hook 指令碼，並透過 SSH 將事件轉發回來。",
+        "remote_hint": "主機欄位既可以填一般 hostname，也可以直接填 ~/.ssh/config 裡的別名。NotchDeck 會在遠端安裝一個很小的 hook 指令碼，並透過 SSH 將事件轉發回來。",
         "remote_connect": "連線",
         "remote_connecting": "連線中…",
         "remote_connected": "已連線",
@@ -1409,14 +1409,14 @@ final class L10n: ObservableObject {
         "apple_companion_no_devices": "尚無 iPhone Buddy 連線",
         "apple_companion_sync_interval": "同步間隔",
         "apple_companion_restart": "重新啟動 iPhone Buddy 廣播",
-        "apple_companion_desc": "前景透過區域網路把 CodeIsland 狀態同步到 iPhone App；背景會透過藍牙傳送輕量狀態摘要，用於更新即時動態與 Apple Watch。",
+        "apple_companion_desc": "前景透過區域網路把 NotchDeck 狀態同步到 iPhone App；背景會透過藍牙傳送輕量狀態摘要，用於更新即時動態與 Apple Watch。",
 
         // About
         "about_desc1": "macOS 即時 AI 編碼 Agent 狀態面板",
         "about_desc2": "透過 Unix socket IPC 支援 11 種 CLI/IDE 工具",
 
         // Window
-        "settings_title": "CodeIsland 設定",
+        "settings_title": "NotchDeck 設定",
 
         // Menu
         "settings_ellipsis": "設定...",
@@ -1429,11 +1429,11 @@ final class L10n: ObservableObject {
 
         // Update
         "update_available_title": "發現新版本",
-        "update_available_body": "CodeIsland %@ 已發布（目前版本：%@），是否前往下載？",
+        "update_available_body": "NotchDeck %@ 已發布（目前版本：%@），是否前往下載？",
         "download_update": "前往下載",
         "later": "稍後",
         "no_update_title": "已是最新版本",
-        "no_update_body": "CodeIsland %@ 已是最新版本。",
+        "no_update_body": "NotchDeck %@ 已是最新版本。",
         "ok": "好",
         "update_now": "立即更新",
         "update_downloading": "正在下載更新...",
@@ -1443,7 +1443,7 @@ final class L10n: ObservableObject {
         "update_installing": "正在安裝更新...",
         "update_retry": "重試",
         "update_homebrew_title": "發現新版本",
-        "update_homebrew_body": "CodeIsland %@ 已發布。由於您透過 Homebrew 安裝，請執行：",
+        "update_homebrew_body": "NotchDeck %@ 已發布。由於您透過 Homebrew 安裝，請執行：",
         "update_homebrew_command": "brew upgrade codeisland",
         "update_copy_command": "複製指令",
 
@@ -1535,7 +1535,7 @@ final class L10n: ObservableObject {
         "shortcut_recording": "記録中…",
         "shortcut_none": "未設定",
         "shortcut_togglePanel": "パネルを切り替え",
-        "shortcut_togglePanel_desc": "CodeIsland パネルを開閉します",
+        "shortcut_togglePanel_desc": "NotchDeck パネルを開閉します",
         "shortcut_approve": "承認",
         "shortcut_approve_desc": "現在の権限リクエストを承認します",
         "shortcut_approveAlways": "常に承認",
@@ -1588,7 +1588,7 @@ final class L10n: ObservableObject {
         "excluded_hook_cwd_desc": "カンマ区切りの部分文字列。作業ディレクトリにいずれかを含む hook イベントは静かに破棄されます。claude-mem 等のバックグラウンドプラグイン除外に便利です。例：.claude-mem,.cache/agents",
         "excluded_hook_cwd_placeholder": "例: .claude-mem,.cache/agents",
         "claude_config_dir_title": "Claude Code 設定ディレクトリ",
-        "claude_config_dir_desc": "Claude Code が projects/ と settings.json を保存する場所。空欄の場合は自動検出します（$CLAUDE_CONFIG_DIR、次に projects/ が実在する ~/.claude、次に ~/.config/claude-code の順）。カスタムの CLAUDE_CONFIG_DIR を使用している場合は設定してください。Finder から起動したアプリはシェルの環境変数を継承しません。変更後は CodeIsland を再起動してください。",
+        "claude_config_dir_desc": "Claude Code が projects/ と settings.json を保存する場所。空欄の場合は自動検出します（$CLAUDE_CONFIG_DIR、次に projects/ が実在する ~/.claude、次に ~/.config/claude-code の順）。カスタムの CLAUDE_CONFIG_DIR を使用している場合は設定してください。Finder から起動したアプリはシェルの環境変数を継承しません。変更後は NotchDeck を再起動してください。",
         "claude_config_dir_placeholder": "自動検出",
         "claude_config_dir_resolved": "現在の使用先: %@",
 
@@ -1656,7 +1656,7 @@ final class L10n: ObservableObject {
         "tool_or_api_error": "ツール失敗または API エラー",
         "system_section": "システム",
         "boot_sound": "起動音",
-        "boot_sound_desc": "CodeIsland の起動時にジングルを再生します",
+        "boot_sound_desc": "NotchDeck の起動時にジングルを再生します",
         "interaction": "操作",
         "approval_needed": "承認が必要",
         "waiting_approval_desc": "権限承認または回答を待っています",
@@ -1698,7 +1698,7 @@ final class L10n: ObservableObject {
         "remote_cwd_filter_hint": "カンマ区切りのパス断片。設定すると、作業ディレクトリにいずれかを含むリモートセッションのみ表示されます。共有アカウントで便利です。空欄の場合はすべて表示します。",
         "remote_auto_connect": "起動時に自動接続",
         "remote_add_button": "ホストを追加",
-        "remote_hint": "ホスト欄には通常のホスト名または ~/.ssh/config のエイリアスを指定できます。CodeIsland は小さなリモート hook スクリプトをインストールし、SSH 経由でイベントを転送します。",
+        "remote_hint": "ホスト欄には通常のホスト名または ~/.ssh/config のエイリアスを指定できます。NotchDeck は小さなリモート hook スクリプトをインストールし、SSH 経由でイベントを転送します。",
         "remote_connect": "接続",
         "remote_connecting": "接続中…",
         "remote_connected": "接続済み",
@@ -1756,14 +1756,14 @@ final class L10n: ObservableObject {
         "apple_companion_no_devices": "接続中の iPhone はありません",
         "apple_companion_sync_interval": "同期間隔",
         "apple_companion_restart": "広告を再開",
-        "apple_companion_desc": "フォアグラウンドではローカルネットワークで CodeIsland の状態を iPhone App に同期し、バックグラウンドでは Live Activity と Apple Watch の更新用に軽量な Bluetooth サマリーを送信します。",
+        "apple_companion_desc": "フォアグラウンドではローカルネットワークで NotchDeck の状態を iPhone App に同期し、バックグラウンドでは Live Activity と Apple Watch の更新用に軽量な Bluetooth サマリーを送信します。",
 
         // About
         "about_desc1": "macOS 向けリアルタイム AI コーディングエージェント状態パネル",
         "about_desc2": "Unix socket IPC を通じて 11 種類の CLI/IDE ツールをサポート",
 
         // Window
-        "settings_title": "CodeIsland 設定",
+        "settings_title": "NotchDeck 設定",
 
         // Menu
         "settings_ellipsis": "設定...",
@@ -1776,11 +1776,11 @@ final class L10n: ObservableObject {
 
         // Update
         "update_available_title": "アップデートがあります",
-        "update_available_body": "CodeIsland %@ が利用可能です (現在: %@)。ダウンロードしますか？",
+        "update_available_body": "NotchDeck %@ が利用可能です (現在: %@)。ダウンロードしますか？",
         "download_update": "ダウンロード",
         "later": "後で",
         "no_update_title": "最新です",
-        "no_update_body": "CodeIsland %@ は最新バージョンです。",
+        "no_update_body": "NotchDeck %@ は最新バージョンです。",
         "ok": "OK",
         "update_now": "今すぐアップデート",
         "update_downloading": "アップデートをダウンロード中...",
@@ -1790,7 +1790,7 @@ final class L10n: ObservableObject {
         "update_installing": "アップデートをインストール中...",
         "update_retry": "再試行",
         "update_homebrew_title": "アップデートがあります",
-        "update_homebrew_body": "CodeIsland %@ が利用可能です。Homebrew でインストールしたため、次を実行してください:",
+        "update_homebrew_body": "NotchDeck %@ が利用可能です。Homebrew でインストールしたため、次を実行してください:",
         "update_homebrew_command": "brew upgrade codeisland",
         "update_copy_command": "コマンドをコピー",
 
@@ -1867,7 +1867,7 @@ final class L10n: ObservableObject {
         "auto_collapse_after_session_jump": "세션 이동 후 자동 접기",
         "auto_collapse_after_session_jump_desc": "세션을 클릭해 해당 터미널이나 클라이언트로 성공적으로 전환한 뒤 패널을 자동으로 접습니다",
         "auto_expand_on_completion": "에이전트 완료 시 패널 자동 확장",
-        "auto_expand_on_completion_desc": "에이전트 또는 하위 에이전트가 완료되면 패널을 잠시 확장합니다. 끄면 CodeIsland가 항상 컴팩트 상태로 유지됩니다",
+        "auto_expand_on_completion_desc": "에이전트 또는 하위 에이전트가 완료되면 패널을 잠시 확장합니다. 끄면 NotchDeck가 항상 컴팩트 상태로 유지됩니다",
         "completion_notification": "완료 시",
         "completion_style_expand": "패널 펼치기",
         "completion_style_glance": "점 표시만 (접힌 상태 유지)",
@@ -1882,7 +1882,7 @@ final class L10n: ObservableObject {
         "shortcut_recording": "기록 중…",
         "shortcut_none": "설정되지 않음",
         "shortcut_togglePanel": "패널 전환",
-        "shortcut_togglePanel_desc": "CodeIsland 패널을 열거나 닫습니다",
+        "shortcut_togglePanel_desc": "NotchDeck 패널을 열거나 닫습니다",
         "shortcut_approve": "승인",
         "shortcut_approve_desc": "현재 권한 요청을 승인합니다",
         "shortcut_approveAlways": "항상 승인",
@@ -1935,7 +1935,7 @@ final class L10n: ObservableObject {
         "excluded_hook_cwd_desc": "쉼표로 구분된 부분 문자열. 작업 디렉터리에 하나라도 포함된 hook 이벤트는 조용히 폐기됩니다. claude-mem 같은 백그라운드 플러그인 필터링에 유용합니다. 예: .claude-mem,.cache/agents",
         "excluded_hook_cwd_placeholder": "예: .claude-mem,.cache/agents",
         "claude_config_dir_title": "Claude Code 설정 디렉터리",
-        "claude_config_dir_desc": "Claude Code가 projects/ 및 settings.json을 저장하는 위치입니다. 비워 두면 자동으로 감지합니다($CLAUDE_CONFIG_DIR, 그다음 projects/가 실제로 있는 ~/.claude, 그다음 ~/.config/claude-code). 사용자 지정 CLAUDE_CONFIG_DIR을 사용하는 경우 설정하세요. Finder에서 실행된 앱은 셸 환경 변수를 상속하지 않습니다. 변경 후 CodeIsland를 다시 시작하세요.",
+        "claude_config_dir_desc": "Claude Code가 projects/ 및 settings.json을 저장하는 위치입니다. 비워 두면 자동으로 감지합니다($CLAUDE_CONFIG_DIR, 그다음 projects/가 실제로 있는 ~/.claude, 그다음 ~/.config/claude-code). 사용자 지정 CLAUDE_CONFIG_DIR을 사용하는 경우 설정하세요. Finder에서 실행된 앱은 셸 환경 변수를 상속하지 않습니다. 변경 후 NotchDeck를 다시 시작하세요.",
         "claude_config_dir_placeholder": "자동 감지",
         "claude_config_dir_resolved": "현재 사용 중: %@",
 
@@ -2003,7 +2003,7 @@ final class L10n: ObservableObject {
         "tool_or_api_error": "도구 실패 또는 API 오류",
         "system_section": "시스템",
         "boot_sound": "시작 사운드",
-        "boot_sound_desc": "CodeIsland가 시작될 때 알림음을 재생합니다",
+        "boot_sound_desc": "NotchDeck가 시작될 때 알림음을 재생합니다",
         "interaction": "상호작용",
         "approval_needed": "승인 필요",
         "waiting_approval_desc": "권한 승인 또는 답변을 기다리는 중입니다",
@@ -2045,7 +2045,7 @@ final class L10n: ObservableObject {
         "remote_cwd_filter_hint": "쉼표로 구분된 경로 조각입니다. 설정하면 작업 디렉터리에 그중 하나가 포함된 원격 세션만 표시됩니다. 공유 계정에서 유용합니다. 비워 두면 모든 세션이 표시됩니다.",
         "remote_auto_connect": "시작 시 자동 연결",
         "remote_add_button": "호스트 추가",
-        "remote_hint": "호스트 필드에는 일반 호스트명이나 ~/.ssh/config의 별칭을 사용할 수 있습니다. CodeIsland는 작은 원격 hook 스크립트를 설치하고 SSH를 통해 이벤트를 전달합니다.",
+        "remote_hint": "호스트 필드에는 일반 호스트명이나 ~/.ssh/config의 별칭을 사용할 수 있습니다. NotchDeck는 작은 원격 hook 스크립트를 설치하고 SSH를 통해 이벤트를 전달합니다.",
         "remote_connect": "연결",
         "remote_connecting": "연결 중…",
         "remote_connected": "연결됨",
@@ -2103,14 +2103,14 @@ final class L10n: ObservableObject {
         "apple_companion_no_devices": "연결된 iPhone 없음",
         "apple_companion_sync_interval": "동기화 간격",
         "apple_companion_restart": "광고 다시 시작",
-        "apple_companion_desc": "포그라운드에서는 로컬 네트워크로 CodeIsland 상태를 iPhone 앱에 동기화하고, 백그라운드에서는 Live Activity와 Apple Watch 갱신을 위해 가벼운 Bluetooth 요약을 보냅니다.",
+        "apple_companion_desc": "포그라운드에서는 로컬 네트워크로 NotchDeck 상태를 iPhone 앱에 동기화하고, 백그라운드에서는 Live Activity와 Apple Watch 갱신을 위해 가벼운 Bluetooth 요약을 보냅니다.",
 
         // About
         "about_desc1": "macOS용 실시간 AI 코딩 에이전트 상태 패널",
         "about_desc2": "Unix socket IPC를 통해 11개의 CLI/IDE 도구를 지원합니다",
 
         // Window
-        "settings_title": "CodeIsland 설정",
+        "settings_title": "NotchDeck 설정",
 
         // Menu
         "settings_ellipsis": "설정...",
@@ -2123,11 +2123,11 @@ final class L10n: ObservableObject {
 
         // Update
         "update_available_title": "업데이트 가능",
-        "update_available_body": "CodeIsland %@ 버전을 사용할 수 있습니다(현재: %@). 다운로드하시겠습니까?",
+        "update_available_body": "NotchDeck %@ 버전을 사용할 수 있습니다(현재: %@). 다운로드하시겠습니까?",
         "download_update": "다운로드",
         "later": "나중에",
         "no_update_title": "최신 상태",
-        "no_update_body": "CodeIsland %@이 최신 버전입니다.",
+        "no_update_body": "NotchDeck %@이 최신 버전입니다.",
         "ok": "확인",
         "update_now": "지금 업데이트",
         "update_downloading": "업데이트 다운로드 중...",
@@ -2137,7 +2137,7 @@ final class L10n: ObservableObject {
         "update_installing": "업데이트 설치 중...",
         "update_retry": "다시 시도",
         "update_homebrew_title": "업데이트 가능",
-        "update_homebrew_body": "CodeIsland %@ 버전을 사용할 수 있습니다. Homebrew로 설치했으므로 다음 명령을 실행하세요:",
+        "update_homebrew_body": "NotchDeck %@ 버전을 사용할 수 있습니다. Homebrew로 설치했으므로 다음 명령을 실행하세요:",
         "update_homebrew_command": "brew upgrade codeisland",
         "update_copy_command": "명령 복사",
 
@@ -2214,7 +2214,7 @@ final class L10n: ObservableObject {
         "auto_collapse_after_session_jump": "Oturuma Geçince Otomatik Daralt",
         "auto_collapse_after_session_jump_desc": "Bir oturuma tıklayıp terminal/istemciye başarıyla geçince paneli otomatik daralt",
         "auto_expand_on_completion": "Ajan Tamamlandığında Paneli Otomatik Genişlet",
-        "auto_expand_on_completion_desc": "Bir ajan veya alt-ajan işini bitirdiğinde paneli kısa süreliğine genişletir; kapatırsanız CodeIsland kompakt durumda kalır",
+        "auto_expand_on_completion_desc": "Bir ajan veya alt-ajan işini bitirdiğinde paneli kısa süreliğine genişletir; kapatırsanız NotchDeck kompakt durumda kalır",
         "completion_notification": "Tamamlanınca",
         "completion_style_expand": "Paneli genişlet",
         "completion_style_glance": "Yalnızca nokta (kapalı kal)",
@@ -2229,7 +2229,7 @@ final class L10n: ObservableObject {
         "shortcut_recording": "Kaydediliyor…",
         "shortcut_none": "Ayarlanmamış",
         "shortcut_togglePanel": "Paneli Aç/Kapa",
-        "shortcut_togglePanel_desc": "CodeIsland panelini aç veya kapat",
+        "shortcut_togglePanel_desc": "NotchDeck panelini aç veya kapat",
         "shortcut_approve": "İzin Ver",
         "shortcut_approve_desc": "Mevcut izin isteğini onayla",
         "shortcut_approveAlways": "Her Zaman İzin Ver",
@@ -2282,7 +2282,7 @@ final class L10n: ObservableObject {
         "excluded_hook_cwd_desc": "Virgülle ayrılmış alt dizeler. Çalışma dizini bunlardan birini içeren hook olayları sessizce yok sayılır — claude-mem gibi arka plan eklentilerini filtrelemek için kullanışlı. Örn: .claude-mem,.cache/agents",
         "excluded_hook_cwd_placeholder": "örn. .claude-mem,.cache/agents",
         "claude_config_dir_title": "Claude Code Yapılandırma Dizini",
-        "claude_config_dir_desc": "Claude Code'un projects/ ve settings.json dosyalarını sakladığı yer. Otomatik algılama için boş bırakın ($CLAUDE_CONFIG_DIR, ardından projects/ klasörünü gerçekten içeren ~/.claude, ardından ~/.config/claude-code). Özel bir CLAUDE_CONFIG_DIR kullanıyorsanız bunu ayarlayın; Finder'dan başlatılan bir uygulama kabuk ortam değişkenlerini devralmaz. Değişiklikten sonra CodeIsland'ı yeniden başlatın.",
+        "claude_config_dir_desc": "Claude Code'un projects/ ve settings.json dosyalarını sakladığı yer. Otomatik algılama için boş bırakın ($CLAUDE_CONFIG_DIR, ardından projects/ klasörünü gerçekten içeren ~/.claude, ardından ~/.config/claude-code). Özel bir CLAUDE_CONFIG_DIR kullanıyorsanız bunu ayarlayın; Finder'dan başlatılan bir uygulama kabuk ortam değişkenlerini devralmaz. Değişiklikten sonra NotchDeck'ı yeniden başlatın.",
         "claude_config_dir_placeholder": "otomatik algıla",
         "claude_config_dir_resolved": "Şu anda kullanılan: %@",
 
@@ -2350,7 +2350,7 @@ final class L10n: ObservableObject {
         "tool_or_api_error": "Araç veya API hatası",
         "system_section": "Sistem",
         "boot_sound": "Başlangıç Sesi",
-        "boot_sound_desc": "CodeIsland başladığında bir jingle çal",
+        "boot_sound_desc": "NotchDeck başladığında bir jingle çal",
         "interaction": "Etkileşim",
         "approval_needed": "Onay Gerekli",
         "waiting_approval_desc": "İzin onayı veya cevap bekleniyor",
@@ -2392,7 +2392,7 @@ final class L10n: ObservableObject {
         "remote_cwd_filter_hint": "Virgülle ayrılmış yol parçaları. Ayarlandığında yalnızca çalışma dizini bunlardan birini içeren uzak oturumlar gösterilir — paylaşılan hesaplarda kullanışlıdır. Tümünü göstermek için boş bırakın.",
         "remote_auto_connect": "Başlangıçta Otomatik Bağlan",
         "remote_add_button": "Host Ekle",
-        "remote_hint": "Host alanı normal bir hostname veya ~/.ssh/config dosyanızdaki takma ad olabilir. CodeIsland küçük bir uzak hook betiği yükler ve olayları SSH üzerinden iletir.",
+        "remote_hint": "Host alanı normal bir hostname veya ~/.ssh/config dosyanızdaki takma ad olabilir. NotchDeck küçük bir uzak hook betiği yükler ve olayları SSH üzerinden iletir.",
         "remote_connect": "Bağlan",
         "remote_connecting": "Bağlanıyor…",
         "remote_connected": "Bağlı",
@@ -2450,14 +2450,14 @@ final class L10n: ObservableObject {
         "apple_companion_no_devices": "Bağlı iPhone yok",
         "apple_companion_sync_interval": "Senkronizasyon aralığı",
         "apple_companion_restart": "Yayını yeniden başlat",
-        "apple_companion_desc": "Öndeyken CodeIsland durumunu yerel ağ üzerinden iPhone uygulamasına eşler; arka planda Live Activity ve Apple Watch yenilemeleri için hafif Bluetooth özetleri gönderir.",
+        "apple_companion_desc": "Öndeyken NotchDeck durumunu yerel ağ üzerinden iPhone uygulamasına eşler; arka planda Live Activity ve Apple Watch yenilemeleri için hafif Bluetooth özetleri gönderir.",
 
         // About
         "about_desc1": "macOS için gerçek zamanlı AI kodlama ajanı durum paneli",
         "about_desc2": "Unix socket IPC üzerinden 11 CLI/IDE aracını destekler",
 
         // Window
-        "settings_title": "CodeIsland Ayarları",
+        "settings_title": "NotchDeck Ayarları",
 
         // Menu
         "settings_ellipsis": "Ayarlar...",
@@ -2470,11 +2470,11 @@ final class L10n: ObservableObject {
 
         // Update
         "update_available_title": "Güncelleme Mevcut",
-        "update_available_body": "CodeIsland %@ mevcut (şimdiki: %@). İndirmek ister misiniz?",
+        "update_available_body": "NotchDeck %@ mevcut (şimdiki: %@). İndirmek ister misiniz?",
         "download_update": "İndir",
         "later": "Sonra",
         "no_update_title": "Güncel",
-        "no_update_body": "CodeIsland %@ en son sürüm.",
+        "no_update_body": "NotchDeck %@ en son sürüm.",
         "ok": "Tamam",
         "update_now": "Şimdi Güncelle",
         "update_downloading": "Güncelleme indiriliyor...",
@@ -2484,7 +2484,7 @@ final class L10n: ObservableObject {
         "update_installing": "Güncelleme yükleniyor...",
         "update_retry": "Tekrar Dene",
         "update_homebrew_title": "Güncelleme Mevcut",
-        "update_homebrew_body": "CodeIsland %@ mevcut. Homebrew ile yüklediğiniz için, lütfen şunu çalıştırın:",
+        "update_homebrew_body": "NotchDeck %@ mevcut. Homebrew ile yüklediğiniz için, lütfen şunu çalıştırın:",
         "update_homebrew_command": "brew upgrade codeisland",
         "update_copy_command": "Komutu Kopyala",
 
