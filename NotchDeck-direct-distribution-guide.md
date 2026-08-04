@@ -1,7 +1,9 @@
 # NotchDeck 直分发布清单（Developer ID + notarize）
 
-> 状态：2026-08-04 审计。产物 `.build/release/NotchDeck.app` 已通过本机构建 + 签名验证
+> 状态：2026-08-04。产物 `.build/release/NotchDeck.app` 已通过本机构建 + 签名验证
 > （`codesign --verify --deep --strict` 通过，Identifier=`com.notchdeck.mac`，TeamIdentifier=`2VBHV3VJ8N`）。
+> Developer ID 证书已签发导入，notarytool 凭证已存（profile `NotchDeck`），
+> build.sh 公证段已加 20min 超时保护。首次公证因 Apple 服务停滞待重提（见 §6）。
 
 ## 0. 现状（已就绪）
 
@@ -9,6 +11,9 @@
 - [x] `swift build` 已加 `--disable-sandbox`（受限环境兼容）
 - [x] appcast.xml / SUFeedURL 指向 `zt444888-hub/NotchDeck`
 - [x] entitlements：无沙盒，含 bluetooth / automation / disable-library-validation（直分形态）
+- [x] Developer ID Application 证书已导入钥匙串（G2 Sub-CA，2031-08 到期）
+- [x] notarytool 凭证已存（`--keychain-profile NotchDeck`）
+- [x] build.sh 公证段有 `--timeout 20m` + submission id 恢复逻辑
 
 ## 1. 你必须手动完成的两步（一次性）
 
@@ -100,3 +105,34 @@ xcrun notarytool store-credentials "NotchDeck" \
   （新版本发布后用户可能数小时才看到更新提示）。正式运营后可换自有域名/对象存储。
 - **appcast 签名密钥**：确认是否有原版 Sparkle EdDSA 私钥；没有则按 §3.4 重新生成并配置
   `SUPublicEDKey`（影响所有存量测试用户的更新校验，首次发布前定稿）。
+
+## 6. 公证排队/停滞应对（2026-08-04 实战）
+
+Apple notary 服务偶发**吞吐停滞**：系统状态页显示 `available`，但提交长时间（4h+）停在
+`In Progress`，log 一直返回 `Submission log is not yet available`。这不是本地问题，重提即可。
+
+**识别**：
+- `xcrun notarytool history --keychain-profile NotchDeck` → status 卡 `In Progress` > 1h
+- `xcrun notarytool log <id> --keychain-profile NotchDeck` → `not yet available`
+- Apple 状态页 https://developer.apple.com/system-status/ 只看"在线与否"，不反映处理吞吐
+
+**应对流程**：
+1. 杀掉 `--wait` 阻塞进程（build.sh 现在有 20min 超时保护，会自动退出并保留 submission id）
+2. 用**现有 zip 重提**（不重新构建）：
+   ```bash
+   xcrun notarytool submit .build/release/NotchDeck.zip --keychain-profile NotchDeck \
+     --wait --timeout 20m
+   ```
+3. 若仍排队：转**异步轮询**（提交不带 `--wait`，拿 submission id）：
+   ```bash
+   xcrun notarytool submit .build/release/NotchDeck.zip --keychain-profile NotchDeck
+   # → 记下输出里的 id
+   xcrun notarytool log <id> --keychain-profile NotchDeck --output-format json   # 轮询 status 字段
+   ```
+   `status: Accepted` → `xcrun stapler staple .build/release/NotchDeck.app`
+4. 僵尸提交无需处理，Apple 最终会过期丢弃
+5. 建议重提时段：美东工作时间（亚太的晚上/凌晨）通常最快；亚太下午高峰最差
+
+**首次公证通过后**，剩余步骤（DMG 生成 + 公证 + staple）见 §2 的 `./build.sh --notarize`，
+或按 `/tmp/notchdeck-notarize-continue.sh` 的续接逻辑手动执行。
+
