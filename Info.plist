@@ -42,7 +42,7 @@
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/zt444888-hub/NotchDeck/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>REPLACE_WITH_YOUR_SPARKLE_ED25519_PUBLIC_KEY</string>
+	<string>fXonIxJvmDAY3DmfcPZxoDjzMAcrrjDk1eSfFPjuCgc=</string>
 	<key>SUScheduledCheckInterval</key>
 	<integer>14400</integer>
 </dict>

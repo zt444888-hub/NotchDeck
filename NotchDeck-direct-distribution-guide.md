@@ -71,17 +71,17 @@ xcrun notarytool store-credentials "NotchDeck" \
    - README 徽章（如引用版本）
 3. 上传 `NotchDeck.dmg` 到 GitHub Release `v<新版本>`。
 4. **重新生成 appcast 条目**：Sparkle 的 `edSignature` 是 DMG 的 EdDSA 签名，**不能沿用原版值**
-   （当前 appcast.xml 里的签名是原版 CodeIsland DMG 的）。用 Sparkle 工具生成：
+   （当前 appcast.xml 里的签名是原版 CodeIsland DMG 的）。**NotchDeck 密钥对已生成并配置（2026-08-04）**：
+   - 私钥：`~/dev-id-csr/NotchDeck-sparkle-ed25519.pem`（Ed25519，600 权限，**妥善备份**）
+   - 公钥：`fXonIxJvmDAY3DmfcPZxoDjzMAcrrjDk1eSfFPjuCgc=`（已写入 Info.plist `SUPublicEDKey`）
+   - 发布时生成 DMG 签名（openssl 3+，`-rawin` 对文件直接签名）：
    ```bash
-   # 方式一：用 Sparkle 官方工具（openssl 方式）
-   # 生成的 edSignature + length 填入 appcast.xml 新 item
-   ./generate_appcast --download-url-prefix https://github.com/zt444888-hub/NotchDeck/releases/download/v1.1.0/ /path/to/dmgs/
-   # 方式二：手动（需要 Sparkle 私钥）
-   #   edSignature = 对 DMG 的 Ed25519 签名；私钥与公钥见 https://sparkle-project.org/documentation/ 的生成说明
+   edSig=$(openssl pkeyutl -sign -inkey ~/dev-id-csr/NotchDeck-sparkle-ed25519.pem \
+     -rawin -in .build/release/NotchDeck.dmg | base64)
+   length=$(stat -f%z .build/release/NotchDeck.dmg)
+   # 将 edSig / length 填入 appcast.xml 新 item（sparkle:edSignature / length 属性）
    ```
-   若没有原版 Sparkle EdDSA 私钥（大概率没有），必须重新生成密钥对并：
-   - 在 App 启动逻辑中设置 `SPUUpdater` 公钥（`SUPublicEDKey` Info.plist 键）
-   - 把公钥写进 `Info.plist` 的 `SUPublicEDKey`
+   - 或 Sparkle 官方 `generate_appcast`（`SPARKLE_ED25519_PRIVATE_KEY` 环境变量指向私钥）。
 5. 更新 `appcast.xml`：新增 item（url 指向新 DMG、edSignature、length、版本号），
    移除或保留旧条目均可（Sparkle 按 `sparkle:version` 比较）。
 
@@ -92,7 +92,7 @@ xcrun notarytool store-credentials "NotchDeck" \
 - [ ] 干净机器安装验证通过（无 Gatekeeper 拦截、Sparkle 更新提示正常）
 - [ ] 首次运行验证 hooks 安装链路（`~/.notchdeck/` 创建、各 CLI 配置写入 notchdeck 块）——
       开发机已确认零残留，首次运行即从干净状态安装
-- [ ] `SUPublicEDKey` 已配置（appcast 签名校验必需）
+- [x] `SUPublicEDKey` 已配置（`fXonIxJvmDAY3DmfcPZxoDjzMAcrrjDk1eSfFPjuCgc=`，2026-08-04 生成密钥对）
 - [ ] 隐私营养标签填写（developer.apple.com → App Store Connect → 你的 App → 隐私）
 - [ ] README Buddy 占位链接（`idYOUR_BUDDY_APPSTORE_ID`）等 companion 上架后替换
 - [ ] appcast.xml `sparkle:minimumSystemVersion` 与 Info.plist 的 LSMinimumSystemVersion 一致（14.0）
