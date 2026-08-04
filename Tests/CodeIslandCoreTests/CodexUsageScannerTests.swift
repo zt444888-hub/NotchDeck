@@ -100,14 +100,14 @@ final class CodexUsageScannerTests: XCTestCase {
         XCTAssertEqual(snap.last5h.inputTokens, 0)
     }
 
-    /// A session whose final activity is 10 days ago must land in 7d/30d but
+    /// A session whose final activity is 3 days ago must land in 7d/30d but
     /// NOT in 5h.
     func testWindowBucketingByTimestamp() throws {
         let now = Date()
-        let tenDaysAgo = now.addingTimeInterval(-10 * 86400)
+        let threeDaysAgo = now.addingTimeInterval(-3 * 86400)
         try writeSessionFile(
             name: "rollout-window.jsonl",
-            lines: [tokenCountLine(at: tenDaysAgo, total: 800, last: 800)]
+            lines: [tokenCountLine(at: threeDaysAgo, total: 800, last: 800)]
         )
         let snap = CodexUsageScanner.scan(codexHome: root, now: now)
         XCTAssertEqual(snap.last7d.inputTokens, 800)

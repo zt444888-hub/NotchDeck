@@ -29,7 +29,10 @@ final class ClaudeUsageWindowsTests: XCTestCase {
 
     private func writeProject(_ lines: [String]) throws {
         let path = home + "/projects/p1/session.jsonl"
-        try lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
+        // Trailing newline so the scanner's partial-line guard consumes every
+        // line (a real complete file ends with a newline; the scanner only
+        // defers a *partial* trailing line that's mid-append).
+        try (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
     }
 
     func testWindowsPartitionByAge() throws {

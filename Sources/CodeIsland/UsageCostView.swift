@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import Combine
+import CodeIslandCore
 
 // MARK: - Store
 
@@ -140,8 +141,9 @@ struct UsageCostPage: View {
     }
 
     private func providerQuotaCard(_ provider: Provider) -> some View {
-        let windows = store.snapshot.byProviderWindows[provider] ?? [:]
-        let totals = store.snapshot.byProvider[provider] ?? ClaudeUsageTotals()
+        let snap = store.snapshot
+        let windows = snap.byProviderWindows[provider] ?? [:]
+        let totals = snap.byProvider[provider] ?? ClaudeUsageTotals()
         let model = provider == .claude ? "claude-sonnet-4" : "gpt-5"
         let cost = PriceTable.estimate(totals, model: model, table: PriceTable.load())
         return VStack(alignment: .leading, spacing: 8) {
@@ -179,9 +181,10 @@ struct UsageCostPage: View {
     // MARK: Cost summary
 
     private var costSection: some View {
-        SectionView(title: l10n["usage_estimated_cost"]) {
+        let snap = store.snapshot
+        return SectionView(title: l10n["usage_estimated_cost"]) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(currencyFormatter.string(from: NSNumber(value: store.snapshot.estimatedCostUSD)) ?? "$\(store.snapshot.estimatedCostUSD)")
+                Text(currencyFormatter.string(from: NSNumber(value: snap.estimatedCostUSD)) ?? "$\(snap.estimatedCostUSD)")
                     .font(.system(size: 30, weight: .bold, design: .monospaced))
                 Text("· \(l10n["usage_year"])")
                     .font(.system(size: 13))
@@ -197,10 +200,11 @@ struct UsageCostPage: View {
     // MARK: Per-model breakdown
 
     private var breakdownSection: some View {
-        SectionView(title: l10n["usage_per_model"]) {
+        let snap = store.snapshot
+        return SectionView(title: l10n["usage_per_model"]) {
             VStack(alignment: .leading, spacing: 6) {
-                ForEach(store.snapshot.byModel.keys.sorted(), id: \.self) { model in
-                    if let totals = store.snapshot.byModel[model] {
+                ForEach(snap.byModel.keys.sorted(), id: \.self) { model in
+                    if let totals = snap.byModel[model] {
                         HStack {
                             Text(model).font(.system(size: 12, design: .monospaced))
                             Spacer()
@@ -245,7 +249,7 @@ struct UsageCostPage: View {
             ForEach(Array(days.enumerated()), id: \.offset) { _, v in
                 Rectangle()
                     .fill(Color.accentColor.opacity(0.85))
-                    .frame(height: CGFloat(v) / CGFloat(maxV) * 100)
+                    .frame(height: CGFloat(v.1) / CGFloat(maxV) * 100)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -253,7 +257,7 @@ struct UsageCostPage: View {
 
     private var heatmap: some View {
         let grid = heatmapGrid()
-        let maxV = max(1, grid.flatMap { $0.compactMap { $1 } }.max() ?? 1)
+        let maxV = max(1, grid.flatMap { $0.compactMap { $0.1 } }.max() ?? 1)
         return VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .top, spacing: 3) {
                 ForEach(Array(grid.enumerated()), id: \.offset) { _, week in
@@ -308,15 +312,17 @@ struct UsageCostPage: View {
     // MARK: - Helpers
 
     private func last30Days() -> [(Date, Int)] {
+        let snap = store.snapshot
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         return (0..<30).reversed().compactMap { offset in
             guard let d = cal.date(byAdding: .day, value: -offset, to: today) else { return nil }
-            return (d, store.snapshot.yearHeatmap[d] ?? 0)
+            return (d, snap.yearHeatmap[d] ?? 0)
         }
     }
 
     private func heatmapGrid() -> [[(Date, Int?)]] {
+        let snap = store.snapshot
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         guard let start = cal.date(byAdding: .day, value: -364, to: today) else { return [] }
@@ -324,7 +330,7 @@ struct UsageCostPage: View {
         var week: [(Date, Int?)] = []
         var cursor = start
         while cursor <= today {
-            week.append((cursor, store.snapshot.yearHeatmap[cursor]))
+            week.append((cursor, snap.yearHeatmap[cursor]))
             if week.count == 7 { grid.append(week); week = [] }
             guard let next = cal.date(byAdding: .day, value: 1, to: cursor) else { break }
             cursor = next
@@ -344,8 +350,9 @@ struct UsageCostPage: View {
     }
 
     private func exportCSV() {
+        let snap = store.snapshot
         var csv = "date,output_tokens\n"
-        for (d, v) in store.snapshot.yearHeatmap.sorted(by: { $0.key < $1.key }) {
+        for (d, v) in snap.yearHeatmap.sorted(by: { $0.key < $1.key }) {
             csv += "\(isoDate(d)),\(v)\n"
         }
         let fm = FileManager.default

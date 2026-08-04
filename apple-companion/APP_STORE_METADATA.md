@@ -1,13 +1,20 @@
 # App Store Connect Metadata
 
-Use this file as the source text when preparing the first public App Store submission for Code Island.
+> **Rebrand note (NotchDeck fork):** This file was forked from `wxtsky/CodeIsland`
+> (original app "Code Island Buddy"). The names, repo links, bundle id, copyright,
+> and privacy URL below have been updated for the **NotchDeck** rebrand. Items marked
+> `TODO` still require *your* input and must match the App Store Connect record you
+> create for the companion app (it is a separate product from the NotchDeck Mac app).
+> Do **not** submit until the `TODO` fields are filled with your own values.
+
+Use this file as the source text when preparing the first public App Store submission for NotchDeck Buddy.
 
 ## Version
 
 - Version: `1.0.0`
 - Build: `4`
 - Platforms: iPhone, Apple Watch
-- Bundle ID: `top.fengye.CodeIslandCompanion`
+- Bundle ID: `com.notchdeck.buddy`  <!-- TODO: must exactly match the Bundle ID you register in App Store Connect for the companion target and the value set in the Xcode companion target. Suggested prefix mirrors the Mac app (`com.notchdeck.mac`). -->
 - Category: Developer Tools
 - Secondary category: Productivity
 
@@ -18,7 +25,7 @@ Use this file as the source text when preparing the first public App Store submi
 Name:
 
 ```text
-Code Island Buddy
+NotchDeck Buddy
 ```
 
 Subtitle:
@@ -30,20 +37,20 @@ Subtitle:
 Promotional text:
 
 ```text
-在 iPhone 灵动岛、锁屏、StandBy 和 Apple Watch 上查看 Code Island 的实时会话状态。
+在 iPhone 灵动岛、锁屏、StandBy 和 Apple Watch 上查看 NotchDeck 的实时会话状态。
 ```
 
 Description:
 
 ```text
-Code Island Buddy 是 Code Island Mac 应用的 iPhone 与 Apple Watch 端。
+NotchDeck Buddy 是 NotchDeck Mac 应用的 iPhone 与 Apple Watch 端。
 
 它会把 Mac 上当前 AI agent 的状态同步到 iPhone、灵动岛、锁屏、StandBy 和 Apple Watch。你可以快速查看当前会话、工作区、工具调用、最近动态，以及需要你回答的问题。
 
 适合希望在 Mac 外继续关注 AI 编程会话的开发者：当 agent 正在处理、等待审批、遇到问题或进入空闲状态时，iPhone 和 Apple Watch 都能给你一个轻量的状态窗口。
 
 主要功能：
-- iPhone 端连接 Mac 上的 Code Island
+- iPhone 端连接 Mac 上的 NotchDeck
 - 灵动岛和锁屏实时活动展示当前会话
 - StandBy 横屏展示一个或多个会话状态
 - Apple Watch app 和小组件同步最新状态
@@ -55,13 +62,13 @@ Code Island Buddy 是 Code Island Mac 应用的 iPhone 与 Apple Watch 端。
 Keywords:
 
 ```text
-AI,agent,开发者,Mac,灵动岛,StandBy,Apple Watch,效率,编程,Code Island
+AI,agent,开发者,Mac,灵动岛,StandBy,Apple Watch,效率,编程,NotchDeck
 ```
 
 What's New:
 
 ```text
-首个公开版本。支持 iPhone、灵动岛、锁屏、StandBy、Apple Watch app 和 watchOS 小组件，用于同步 Code Island Mac 端的 AI 会话状态。
+首个公开版本。支持 iPhone、灵动岛、锁屏、StandBy、Apple Watch app 和 watchOS 小组件，用于同步 NotchDeck Mac 端的 AI 会话状态。
 ```
 
 ### English
@@ -69,7 +76,7 @@ What's New:
 Name:
 
 ```text
-Code Island Buddy
+NotchDeck Buddy
 ```
 
 Subtitle:
@@ -81,20 +88,20 @@ AI agent status on iPhone and Watch
 Promotional text:
 
 ```text
-Follow your Code Island sessions from Dynamic Island, Lock Screen, StandBy, and Apple Watch.
+Follow your NotchDeck sessions from Dynamic Island, Lock Screen, StandBy, and Apple Watch.
 ```
 
 Description:
 
 ```text
-Code Island Buddy brings Code Island Mac sessions to iPhone and Apple Watch.
+NotchDeck Buddy brings NotchDeck Mac sessions to iPhone and Apple Watch.
 
 It mirrors the current AI agent state from your Mac to iPhone, Dynamic Island, Lock Screen, StandBy, and Apple Watch. You can glance at the active session, workspace, tool activity, recent messages, and questions that need your attention.
 
 It is built for developers who want a lightweight way to keep an eye on AI coding sessions while away from the Mac. When an agent is processing, waiting for approval, blocked by a question, or idle, your iPhone and Apple Watch can show the latest state.
 
 Features:
-- Connect to Code Island running on your Mac
+- Connect to NotchDeck running on your Mac
 - Show the current session in Live Activities, Dynamic Island, and Lock Screen
 - Present one or more sessions in StandBy
 - Sync status to Apple Watch app and watchOS widgets
@@ -106,13 +113,13 @@ No account is required. No external server is required. Device sync happens thro
 Keywords:
 
 ```text
-AI,agent,developer,Mac,Dynamic Island,StandBy,Apple Watch,productivity,coding,Code Island
+AI,agent,developer,Mac,Dynamic Island,StandBy,Apple Watch,productivity,coding,NotchDeck
 ```
 
 What's New:
 
 ```text
-Initial public release. Adds iPhone, Dynamic Island, Lock Screen, StandBy, Apple Watch app, and watchOS widget support for mirroring Code Island Mac agent sessions.
+Initial public release. Adds iPhone, Dynamic Island, Lock Screen, StandBy, Apple Watch app, and watchOS widget support for mirroring NotchDeck Mac agent sessions.
 ```
 
 ## URLs
@@ -120,19 +127,19 @@ Initial public release. Adds iPhone, Dynamic Island, Lock Screen, StandBy, Apple
 Support URL:
 
 ```text
-https://github.com/wxtsky/CodeIsland
+https://github.com/zt444888-hub/NotchDeck
 ```
 
 Marketing URL:
 
 ```text
-https://github.com/wxtsky/CodeIsland
+https://github.com/zt444888-hub/NotchDeck
 ```
 
 Privacy Policy URL:
 
 ```text
-https://fengye404.top/code-island-buddy/privacy/
+https://YOUR_DOMAIN/notchdeck-buddy/privacy/  <!-- TODO: replace with your own published privacy policy URL before submission. -->
 ```
 
 If the privacy policy is published somewhere else, update this URL before submission.
@@ -142,13 +149,13 @@ If the privacy policy is published somewhere else, update this URL before submis
 Copyright:
 
 ```text
-© 2026 Haonan Xia
+© 2026 <Your Name / Entity>  <!-- TODO: replace with the publisher name/entity that owns this App Store Connect record. -->
 ```
 
 Content Rights:
 
 ```text
-No, this app does not contain, show, or access third-party media content. It displays local session status generated by Code Island on the user's own Mac.
+No, this app does not contain, show, or access third-party media content. It displays local session status generated by NotchDeck on the user's own Mac.
 ```
 
 Age Rating:
@@ -186,7 +193,7 @@ Use this as the intended App Privacy answer set unless the binary changes before
 
 Notes:
 
-- Local Network is used to discover and communicate with the user's own Mac running Code Island.
+- Local Network is used to discover and communicate with the user's own Mac running NotchDeck.
 - Bluetooth may be used as a local Buddy signal between the user's own devices.
 - WatchConnectivity is used to sync the latest state from iPhone to Apple Watch.
 - Session status is displayed on the user's devices and is not sent to the developer.
