@@ -1,0 +1,102 @@
+# NotchDeck 直分发布清单（Developer ID + notarize）
+
+> 状态：2026-08-04 审计。产物 `.build/release/NotchDeck.app` 已通过本机构建 + 签名验证
+> （`codesign --verify --deep --strict` 通过，Identifier=`com.notchdeck.mac`，TeamIdentifier=`2VBHV3VJ8N`）。
+
+## 0. 现状（已就绪）
+
+- [x] 产物名已改 NotchDeck（build.sh `APP_BINARY`/`APP_NAME` 分离，`CFBundleExecutable=CodeIsland` 与 MacOS 布局一致）
+- [x] `swift build` 已加 `--disable-sandbox`（受限环境兼容）
+- [x] appcast.xml / SUFeedURL 指向 `zt444888-hub/NotchDeck`
+- [x] entitlements：无沙盒，含 bluetooth / automation / disable-library-validation（直分形态）
+
+## 1. 你必须手动完成的两步（一次性）
+
+### 1a. 申请 Developer ID Application 证书
+
+当前钥匙串**只有 Apple Distribution（MAS）+ 2 个 Development 证书，无 Developer ID**。
+`./build.sh --notarize` 的触发条件 `SIGN_ID == *"Developer ID"*` 目前永远为 false，
+且无 Developer ID 时会 fallback 到个人开发证书签名 → 产物**仅本机可跑**。
+
+申请（免费，约 2 分钟）：
+1. 登录 https://developer.apple.com/account → Certificates, Identifiers & Profiles
+2. Certificates → `+` → **Developer ID Application**（在 Software 分组）
+3. 用你的 Mac 生成 CSR（钥匙串访问 → 证书助理 → 从证书颁发机构请求证书）
+4. 下载 `.cer` 双击导入钥匙串
+
+导入后确认：`security find-identity -v -p codesigning` 应出现
+`"Developer ID Application: Shenzhen Yuanbei Technology Co., Ltd. (2VBHV3VJ8N)"`。
+
+### 1b. 存储公证凭证（notarytool）
+
+build.sh 已用 `--keychain-profile "NotchDeck"`，本机执行一次（Apple ID 密码需是**专用密码**，
+https://appleid.apple.com 生成 App-Specific Password）：
+
+```bash
+xcrun notarytool store-credentials "NotchDeck" \
+  --apple-id "<你的 Apple ID 邮箱>" \
+  --team-id "2VBHV3VJ8N" \
+  --password "<app-specific-password>"
+```
+
+验证：`xcrun notarytool history --keychain-profile "NotchDeck"` 能列出记录即可。
+
+## 2. 首次发布流程
+
+```bash
+# 1) 构建 + 签名 + 公证 + 生成 DMG（约 3-5 分钟）
+./build.sh --notarize
+
+# 产物：
+#   .build/release/NotchDeck.app
+#   .build/release/NotchDeck.dmg
+```
+
+- 首次发布建议**先在第二台 Mac（或干净虚拟机）验证**：双击 DMG → 拖入 Applications →
+  打开 → Gatekeeper 不应拦截（Developer ID + 公证已 stapled）。
+- `codesign --verify --deep --strict` + `spctl -a -vv .build/release/NotchDeck.app` 自查。
+
+## 3. 版本 bump 与 appcast（每次发布必做）
+
+1. 决定版本号（当前 appcast 顶格 v1.0.31 是原版版本；NotchDeck 首个版本建议从
+   **v1.1.0** 起，语义上与 fork 区分）。
+2. 更新版本号位置：
+   - `Info.plist` → `CFBundleShortVersionString` / `CFBundleVersion`
+   - `Package.swift`（如有 version）
+   - README 徽章（如引用版本）
+3. 上传 `NotchDeck.dmg` 到 GitHub Release `v<新版本>`。
+4. **重新生成 appcast 条目**：Sparkle 的 `edSignature` 是 DMG 的 EdDSA 签名，**不能沿用原版值**
+   （当前 appcast.xml 里的签名是原版 CodeIsland DMG 的）。用 Sparkle 工具生成：
+   ```bash
+   # 方式一：用 Sparkle 官方工具（openssl 方式）
+   # 生成的 edSignature + length 填入 appcast.xml 新 item
+   ./generate_appcast --download-url-prefix https://github.com/zt444888-hub/NotchDeck/releases/download/v1.1.0/ /path/to/dmgs/
+   # 方式二：手动（需要 Sparkle 私钥）
+   #   edSignature = 对 DMG 的 Ed25519 签名；私钥与公钥见 https://sparkle-project.org/documentation/ 的生成说明
+   ```
+   若没有原版 Sparkle EdDSA 私钥（大概率没有），必须重新生成密钥对并：
+   - 在 App 启动逻辑中设置 `SPUUpdater` 公钥（`SUPublicEDKey` Info.plist 键）
+   - 把公钥写进 `Info.plist` 的 `SUPublicEDKey`
+5. 更新 `appcast.xml`：新增 item（url 指向新 DMG、edSignature、length、版本号），
+   移除或保留旧条目均可（Sparkle 按 `sparkle:version` 比较）。
+
+## 4. 首次发布前最终检查清单
+
+- [ ] `security find-identity` 出现 Developer ID Application 证书
+- [ ] `notarytool history` 可用
+- [ ] 干净机器安装验证通过（无 Gatekeeper 拦截、Sparkle 更新提示正常）
+- [ ] 首次运行验证 hooks 安装链路（`~/.notchdeck/` 创建、各 CLI 配置写入 notchdeck 块）——
+      开发机已确认零残留，首次运行即从干净状态安装
+- [ ] `SUPublicEDKey` 已配置（appcast 签名校验必需）
+- [ ] 隐私营养标签填写（developer.apple.com → App Store Connect → 你的 App → 隐私）
+- [ ] README Buddy 占位链接（`idYOUR_BUDDY_APPSTORE_ID`）等 companion 上架后替换
+- [ ] appcast.xml `sparkle:minimumSystemVersion` 与 Info.plist 的 LSMinimumSystemVersion 一致（14.0）
+
+## 5. 已知边界
+
+- **仅 arm64**：`build.sh` 固定 `--arch arm64`，Intel Mac 用户无法运行。若需要 universal，
+  需在 build.sh 加 `--arch x86_64` 交叉构建 + `lipo` 合并（原版设计如此，发布 v1 可先 arm64-only）。
+- **Sparkle 更新**：SUFeedURL 用 `raw.githubusercontent.com`，GitHub raw 有 CDN 缓存延迟
+  （新版本发布后用户可能数小时才看到更新提示）。正式运营后可换自有域名/对象存储。
+- **appcast 签名密钥**：确认是否有原版 Sparkle EdDSA 私钥；没有则按 §3.4 重新生成并配置
+  `SUPublicEDKey`（影响所有存量测试用户的更新校验，首次发布前定稿）。
