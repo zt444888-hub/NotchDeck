@@ -168,13 +168,21 @@ build_mac() {
         ZIP_PATH="$BUILD_DIR/$APP_NAME.zip"
         ditto -c -k --keepParent "$APP_BUNDLE" "$ZIP_PATH"
 
-        echo "Submitting for notarization..."
-        if xcrun notarytool submit "$ZIP_PATH" --keychain-profile "NotchDeck" --wait 2>&1 | tee /dev/stderr | grep -q "status: Accepted"; then
+        echo "Submitting for notarization (20 min timeout)..."
+        # Capture full output so we can surface the submission id on timeout/failure
+        # instead of losing it to a pipe. --timeout prevents infinite hangs when
+        # Apple's notarization queue is congested (observed 2026-08-04, 80+ min).
+        SUBMIT_OUT=$(xcrun notarytool submit "$ZIP_PATH" --keychain-profile "NotchDeck" --wait --timeout 20m 2>&1)
+        SUBMISSION_ID=$(echo "$SUBMIT_OUT" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+        if echo "$SUBMIT_OUT" | grep -q "status: Accepted"; then
             echo "Stapling notarization ticket..."
             xcrun stapler staple "$APP_BUNDLE"
         else
-            echo "ERROR: Notarization failed. Run 'xcrun notarytool log <submission-id> --keychain-profile NotchDeck' for details."
-            rm -f "$ZIP_PATH"
+            echo "$SUBMIT_OUT" >&2
+            echo "ERROR: Notarization did not complete (submission id: ${SUBMISSION_ID:-unknown})." >&2
+            echo "  Check status:  xcrun notarytool log ${SUBMISSION_ID:-<submission-id>} --keychain-profile NotchDeck" >&2
+            echo "  Once Accepted: xcrun stapler staple \"$APP_BUNDLE\"" >&2
+            echo "  ZIP kept at $ZIP_PATH for resubmission." >&2
             exit 1
         fi
         rm -f "$ZIP_PATH"
@@ -209,11 +217,12 @@ build_mac() {
 
         codesign --force --sign "$SIGN_ID" "$DMG_PATH"
         echo "Notarizing DMG..."
-        if xcrun notarytool submit "$DMG_PATH" --keychain-profile "NotchDeck" --wait 2>&1 | tee /dev/stderr | grep -q "status: Accepted"; then
+        if xcrun notarytool submit "$DMG_PATH" --keychain-profile "NotchDeck" --wait --timeout 20m 2>&1 | tee /dev/stderr | grep -q "status: Accepted"; then
             xcrun stapler staple "$DMG_PATH"
             echo "DMG ready: $DMG_PATH"
         else
-            echo "WARNING: DMG notarization failed, but app is notarized."
+            echo "WARNING: DMG notarization did not complete within timeout, but app is notarized."
+            echo "  Resubmit later: xcrun notarytool submit \"$DMG_PATH\" --keychain-profile NotchDeck --wait"
         fi
     fi
 
