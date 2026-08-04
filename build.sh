@@ -6,7 +6,10 @@ if [ -d /Applications/Xcode.app/Contents/Developer ]; then
     export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 fi
 
-APP_NAME="CodeIsland"
+APP_NAME="NotchDeck"
+# Compiled binary keeps the SwiftPM target name (CodeIsland); only the
+# distributable .app / DMG carry the NotchDeck brand.
+APP_BINARY="CodeIsland"
 BUILD_DIR=".build/release"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 ICON_CATALOG="Assets.xcassets"
@@ -70,7 +73,9 @@ build_watch() {
 
 build_mac() {
     echo "Building $APP_NAME (arm64 only)..."
-    swift build -c release --arch arm64
+    # --disable-sandbox: SwiftPM's internal sandbox-exec is blocked in some
+    # restricted environments (containers, CI runners); harmless on a dev box.
+    swift build -c release --arch arm64 --disable-sandbox
 
     ARM_DIR=".build/arm64-apple-macosx/release"
 
@@ -81,7 +86,7 @@ build_mac() {
     mkdir -p "$APP_BUNDLE/Contents/Resources"
     mkdir -p "$APP_BUNDLE/Contents/Frameworks"
 
-    cp "$ARM_DIR/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+    cp "$ARM_DIR/$APP_BINARY" "$APP_BUNDLE/Contents/MacOS/$APP_BINARY"
     cp "$ARM_DIR/codeisland-bridge" "$APP_BUNDLE/Contents/Helpers/codeisland-bridge"
     cp Info.plist "$APP_BUNDLE/Contents/Info.plist"
 
@@ -96,7 +101,7 @@ build_mac() {
 
     # Add rpath so executables can locate embedded frameworks.
     install_name_tool -add_rpath "@executable_path/../Frameworks" \
-        "$APP_BUNDLE/Contents/MacOS/$APP_NAME" 2>/dev/null || true
+        "$APP_BUNDLE/Contents/MacOS/$APP_BINARY" 2>/dev/null || true
     install_name_tool -add_rpath "@executable_path/../../Frameworks" \
         "$APP_BUNDLE/Contents/Helpers/codeisland-bridge" 2>/dev/null || true
 
@@ -168,7 +173,7 @@ build_mac() {
             echo "Stapling notarization ticket..."
             xcrun stapler staple "$APP_BUNDLE"
         else
-            echo "ERROR: Notarization failed. Run 'xcrun notarytool log <submission-id> --keychain-profile CodeIsland' for details."
+            echo "ERROR: Notarization failed. Run 'xcrun notarytool log <submission-id> --keychain-profile NotchDeck' for details."
             rm -f "$ZIP_PATH"
             exit 1
         fi
