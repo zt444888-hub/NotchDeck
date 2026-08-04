@@ -1,6 +1,6 @@
 <h1 align="center">
-  <img src="logo.png" width="48" height="48" alt="CodeIsland Logo" valign="middle">&nbsp;
-  CodeIsland
+  <img src="logo.png" width="48" height="48" alt="NotchDeck Logo" valign="middle">&nbsp;
+  NotchDeck
 </h1>
 <p align="center">
   <b>Real-time AI coding agent status panel for macOS Dynamic Island (Notch)</b><br>
@@ -14,12 +14,12 @@
 ---
 
 <p align="center">
-  <img src="docs/images/notch-panel.png" width="700" alt="CodeIsland Panel Preview">
+  <img src="docs/images/notch-panel.png" width="700" alt="NotchDeck Panel Preview">
 </p>
 
-## What is CodeIsland?
+## What is NotchDeck?
 
-CodeIsland lives in your MacBook's notch area and shows you what your AI coding agents are doing — in real time. No more switching windows to check if Claude is waiting for approval or if Codex finished its task.
+NotchDeck lives in your MacBook's notch area and shows you what your AI coding agents are doing — in real time. No more switching windows to check if Claude is waiting for approval or if Codex finished its task.
 
 It connects to **13 AI coding tools** via Unix socket IPC, displaying session status, tool calls, permission requests, and more — all in a compact, pixel-art styled panel.
 
@@ -62,39 +62,39 @@ It connects to **13 AI coding tools** via Unix socket IPC, displaying session st
 ### Homebrew (Recommended)
 
 ```bash
-brew tap wxtsky/tap
-brew install --cask codeisland
+brew tap zt444888-hub/tap
+brew install --cask notchdeck
 ```
 
 ### Manual Download
 
-1. Go to [Releases](https://github.com/wxtsky/CodeIsland/releases)
+1. Go to [Releases](https://github.com/zt444888-hub/NotchDeck/releases)
 2. Download `CodeIsland.dmg`
 3. Open the DMG and drag `CodeIsland.app` to your Applications folder
-4. Launch CodeIsland — it will automatically install hooks for all detected AI tools
+4. Launch NotchDeck — it will automatically install hooks for all detected AI tools
 
 > **Note:** On first launch, macOS may show a security warning. Go to **System Settings → Privacy & Security** and click **Open Anyway**.
 
 ### iPhone & Apple Watch Buddy
 
-Code Island Buddy is available on the App Store:
+NotchDeck Buddy is available on the App Store:
 
-[Download Code Island Buddy](https://apps.apple.com/us/app/code-island-buddy/id6773881129)
+[Download NotchDeck Buddy](https://apps.apple.com/us/app/notchdeck-buddy/idYOUR_BUDDY_APPSTORE_ID)
 
 The iPhone app mirrors your Mac sessions to Dynamic Island, Lock Screen, StandBy, and Apple Watch. The Mac app publishes lightweight session snapshots over your local network while the iPhone app is open, and sends compact Bluetooth summaries for background refreshes such as Live Activities and Watch updates.
 
-Code Island Buddy is completely free and open source. It does not require an account or an external server; the companion source code lives in this repository under `ios/CodeIslandCompanion` and `apple-companion`.
+NotchDeck Buddy is completely free and open source. It does not require an account or an external server; the companion source code lives in this repository under `ios/NotchDeckCompanion` and `apple-companion`.
 
 ### Build from Source
 
 Requires **macOS 14+** and **Swift 5.9+**.
 
 ```bash
-git clone https://github.com/wxtsky/CodeIsland.git
-cd CodeIsland
+git clone https://github.com/zt444888-hub/NotchDeck.git
+cd NotchDeck
 
 # Development (debug build + launch; Buddy Bluetooth needs the .app below)
-swift build && ./.build/debug/CodeIsland
+swift build && ./.build/debug/NotchDeck
 
 # Release (universal binary: Apple Silicon + Intel)
 ./build.sh
@@ -108,18 +108,18 @@ AI Tool (Claude/Codex/Gemini/Cursor/...)
   → Hook event triggered
     → codeisland-bridge (native Swift binary, ~86KB)
       → Unix socket → /tmp/codeisland-<uid>.sock
-        → CodeIsland app receives event
+        → NotchDeck app receives event
           → Updates UI in real time
           → Optional local Buddy sync to iPhone / Apple Watch
 ```
 
-CodeIsland installs lightweight hooks into each AI tool's config. When the tool triggers an event (session start, tool call, permission request, etc.), the hook sends a JSON message through a Unix socket. CodeIsland listens on this socket and updates the notch panel instantly.
+NotchDeck installs lightweight hooks into each AI tool's config. When the tool triggers an event (session start, tool call, permission request, etc.), the hook sends a JSON message through a Unix socket. NotchDeck listens on this socket and updates the notch panel instantly.
 
 For **OpenCode**, a JS plugin connects directly to the socket — no bridge binary needed.
 
 ## Settings
 
-CodeIsland provides a 7-tab settings panel:
+NotchDeck provides a 7-tab settings panel:
 
 - **General** — Language, launch at login, display selection
 - **Behavior** — Auto-hide, smart suppress, session cleanup
@@ -150,11 +150,11 @@ This project was inspired by [claude-island](https://github.com/farouqaldori/cla
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=wxtsky%2FCodeIsland&type=date&legend=bottom-right">
+<a href="https://www.star-history.com/?repos=wxtsky%2FNotchDeck&type=date&legend=bottom-right">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=wxtsky/CodeIsland&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=wxtsky/CodeIsland&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=wxtsky/CodeIsland&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=zt444888-hub/NotchDeck&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=zt444888-hub/NotchDeck&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=zt444888-hub/NotchDeck&type=date&legend=top-left" />
  </picture>
 </a>
 

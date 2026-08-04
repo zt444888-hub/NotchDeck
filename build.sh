@@ -164,7 +164,7 @@ build_mac() {
         ditto -c -k --keepParent "$APP_BUNDLE" "$ZIP_PATH"
 
         echo "Submitting for notarization..."
-        if xcrun notarytool submit "$ZIP_PATH" --keychain-profile "CodeIsland" --wait 2>&1 | tee /dev/stderr | grep -q "status: Accepted"; then
+        if xcrun notarytool submit "$ZIP_PATH" --keychain-profile "NotchDeck" --wait 2>&1 | tee /dev/stderr | grep -q "status: Accepted"; then
             echo "Stapling notarization ticket..."
             xcrun stapler staple "$APP_BUNDLE"
         else
@@ -204,7 +204,7 @@ build_mac() {
 
         codesign --force --sign "$SIGN_ID" "$DMG_PATH"
         echo "Notarizing DMG..."
-        if xcrun notarytool submit "$DMG_PATH" --keychain-profile "CodeIsland" --wait 2>&1 | tee /dev/stderr | grep -q "status: Accepted"; then
+        if xcrun notarytool submit "$DMG_PATH" --keychain-profile "NotchDeck" --wait 2>&1 | tee /dev/stderr | grep -q "status: Accepted"; then
             xcrun stapler staple "$DMG_PATH"
             echo "DMG ready: $DMG_PATH"
         else
