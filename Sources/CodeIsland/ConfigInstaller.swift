@@ -5,7 +5,7 @@ import Yams
 // MARK: - Hook Identifiers
 
 private enum HookId {
-    static let current = "codeisland"
+    static let current = "notchdeck"
     static let legacyNames = ["vibenotch", "vibe-island", "vibeisland"]
     static func isOurs(_ s: String) -> Bool {
         let lower = s.lowercased()
@@ -50,7 +50,7 @@ enum HookFormat {
     /// { "<name>": { "<Event>": [ {matcher?, hooks:[{type,command,timeout}]} ] } }.
     /// Differs from `.nested` only by the outer name wrapper (the inner entry is
     /// keyed directly under `root[configKey]` by `installExternalHooks`, so the
-    /// configKey IS the wrapper name "codeisland"). Each command carries
+    /// configKey IS the wrapper name "notchdeck"). Each command carries
     /// `--event <Event>` because Antigravity stdin lacks hook_event_name. Event
     /// names are Claude-style PascalCase (PreToolUse/PostToolUse/Stop), and a
     /// `matcher` is emitted only for the two tool events (#215).
@@ -150,33 +150,33 @@ struct CustomCLIConfig: Codable, Identifiable, Equatable {
 }
 
 struct ConfigInstaller {
-    private static let codeislandDir = NSHomeDirectory() + "/.codeisland"
-    private static let bridgePath = codeislandDir + "/codeisland-bridge"
-    private static let hookScriptPath = codeislandDir + "/codeisland-hook.sh"
-    private static let hookCommand = "~/.codeisland/codeisland-hook.sh"
+    private static let notchdeckDir = NSHomeDirectory() + "/.notchdeck"
+    private static let bridgePath = notchdeckDir + "/notchdeck-bridge"
+    private static let hookScriptPath = notchdeckDir + "/notchdeck-hook.sh"
+    private static let hookCommand = "~/.notchdeck/notchdeck-hook.sh"
     private static let customCLIConfigsKey = SessionSnapshot.customCLIConfigsKey
     /// Absolute path for external CLI hooks — avoids tilde expansion issues in IDE environments
-    private static let bridgeCommand = codeislandDir + "/codeisland-bridge"
+    private static let bridgeCommand = notchdeckDir + "/notchdeck-bridge"
     private static let traecliConfigPath = NSHomeDirectory() + "/.trae/traecli.yaml"
     private static let hermesConfigPath = NSHomeDirectory() + "/.hermes/config.yaml"
     private static let zcodeConfigPath = NSHomeDirectory() + "/.zcode/cli/config.json"
     private static let piAgentDir = NSHomeDirectory() + "/.pi/agent"
     private static let piExtensionDir = NSHomeDirectory() + "/.pi/agent/extensions"
-    private static let piExtensionPath = NSHomeDirectory() + "/.pi/agent/extensions/codeisland.ts"
+    private static let piExtensionPath = NSHomeDirectory() + "/.pi/agent/extensions/notchdeck.ts"
     private static let ompAgentDir = NSHomeDirectory() + "/.omp/agent"
     private static let ompExtensionDir = NSHomeDirectory() + "/.omp/agent/extensions"
-    private static let ompExtensionPath = NSHomeDirectory() + "/.omp/agent/extensions/codeisland.ts"
+    private static let ompExtensionPath = NSHomeDirectory() + "/.omp/agent/extensions/notchdeck.ts"
     // OpenClaw (openclaw.ai) — Gateway daemon. We install a local plugin pack
     // directory and register it in ~/.openclaw/openclaw.json via
-    // plugins.load.paths + plugins.entries.codeisland.enabled.
+    // plugins.load.paths + plugins.entries.notchdeck.enabled.
     private static let openclawDir = NSHomeDirectory() + "/.openclaw"
-    private static let openclawPluginDir = NSHomeDirectory() + "/.openclaw/codeisland-plugin"
+    private static let openclawPluginDir = NSHomeDirectory() + "/.openclaw/notchdeck-plugin"
     private static let openclawConfigPath = NSHomeDirectory() + "/.openclaw/openclaw.json"
 
 
     // Legacy paths for migration cleanup (#32)
-    private static let legacyBridgePath = NSHomeDirectory() + "/.claude/hooks/codeisland-bridge"
-    private static let legacyHookScriptPath = NSHomeDirectory() + "/.claude/hooks/codeisland-hook.sh"
+    private static let legacyBridgePath = NSHomeDirectory() + "/.claude/hooks/notchdeck-bridge"
+    private static let legacyHookScriptPath = NSHomeDirectory() + "/.claude/hooks/notchdeck-hook.sh"
 
     // MARK: - Codex home resolution
 
@@ -428,11 +428,11 @@ struct ConfigInstaller {
         // Google Antigravity (Gemini-based IDE/CLI) — NOT the Claude-fork above.
         // Reads a STANDALONE ~/.gemini/config/hooks.json (NOT Gemini-CLI's
         // settings.json "hooks" key) wrapped in a named-config object keyed by
-        // "codeisland". Event names are Claude-style PascalCase; stdin carries no
+        // "notchdeck". Event names are Claude-style PascalCase; stdin carries no
         // hook_event_name, so each command needs --event <Event> (#215).
         CLIConfig(
             name: "Google Antigravity", source: "google-antigravity",
-            configPath: ".gemini/config/hooks.json", configKey: "codeisland",
+            configPath: ".gemini/config/hooks.json", configKey: "notchdeck",
             format: .antigravityNamed,
             events: defaultEvents(for: .antigravityNamed),
             rootOverride: { NSHomeDirectory() }
@@ -477,7 +477,7 @@ struct ConfigInstaller {
         // GitHub Copilot CLI
         CLIConfig(
             name: "Copilot", source: "copilot",
-            configPath: ".copilot/hooks/codeisland.json", configKey: "hooks",
+            configPath: ".copilot/hooks/notchdeck.json", configKey: "hooks",
             format: .copilot,
             events: [
                 ("sessionStart", 5, false),
@@ -498,11 +498,11 @@ struct ConfigInstaller {
             rootOverride: { ConfigInstaller.kimiHome() },
             displayPathOverride: { ConfigInstaller.displayKimiConfigPath() }
         ),
-        // Kiro CLI — agent-scoped JSON at ~/.kiro/agents/codeisland.json.
-        // User must launch with `kiro --agent codeisland` for hooks to fire (#127).
+        // Kiro CLI — agent-scoped JSON at ~/.kiro/agents/notchdeck.json.
+        // User must launch with `kiro --agent notchdeck` for hooks to fire (#127).
         CLIConfig(
             name: "Kiro", source: "kiro",
-            configPath: ".kiro/agents/codeisland.json", configKey: "hooks",
+            configPath: ".kiro/agents/notchdeck.json", configKey: "hooks",
             format: .kiroAgent,
             events: defaultEvents(for: .kiroAgent)
         ),
@@ -527,7 +527,7 @@ struct ConfigInstaller {
         CLIConfig(
             name: "Pi",
             source: "pi",
-            configPath: ".pi/agent/extensions/codeisland.ts", configKey: "",
+            configPath: ".pi/agent/extensions/notchdeck.ts", configKey: "",
             format: .none,
             events: []
         ),
@@ -535,19 +535,19 @@ struct ConfigInstaller {
         CLIConfig(
             name: "Oh My Pi",
             source: "omp",
-            configPath: ".omp/agent/extensions/codeisland.ts",
+            configPath: ".omp/agent/extensions/notchdeck.ts",
             configKey: "",
             format: .none,
             events: []
         ),
         // OpenClaw — personal-assistant Gateway daemon (openclaw.ai). No shell
-        // hooks: a TypeScript plugin pack is written to ~/.openclaw/codeisland-plugin
+        // hooks: a TypeScript plugin pack is written to ~/.openclaw/notchdeck-plugin
         // and registered in ~/.openclaw/openclaw.json. The user must restart the
         // Gateway afterwards for the plugin to load.
         CLIConfig(
             name: "OpenClaw",
             source: "openclaw",
-            configPath: ".openclaw/codeisland-plugin/index.ts",
+            configPath: ".openclaw/notchdeck-plugin/index.ts",
             configKey: "",
             format: .none,
             events: []
@@ -815,12 +815,12 @@ struct ConfigInstaller {
     private static let hookScript = """
         #!/bin/bash
         # NotchDeck hook v\(hookScriptVersion) — native bridge with shell fallback
-        BRIDGE="$HOME/.codeisland/codeisland-bridge"
+        BRIDGE="$HOME/.notchdeck/notchdeck-bridge"
         if [ -x "$BRIDGE" ]; then
           exec "$BRIDGE" "$@"
         fi
         # Fallback: original shell approach (no binary installed yet)
-        SOCK="/tmp/codeisland-$(id -u).sock"
+        SOCK="/tmp/notchdeck-$(id -u).sock"
         [ -S "$SOCK" ] || exit 0
         INPUT=$(cat)
         _ITERM_GUID="${ITERM_SESSION_ID##*:}"
@@ -836,7 +836,7 @@ struct ConfigInstaller {
     // MARK: - OpenCode plugin paths
 
     private static let opencodePluginDir = NSHomeDirectory() + "/.config/opencode/plugins"
-    private static let opencodePluginPath = NSHomeDirectory() + "/.config/opencode/plugins/codeisland.js"
+    private static let opencodePluginPath = NSHomeDirectory() + "/.config/opencode/plugins/notchdeck.js"
     private static let opencodeConfigPath = NSHomeDirectory() + "/.config/opencode/config.json"
     private static let opencodeConfigPathNew = NSHomeDirectory() + "/.config/opencode/opencode.json"
     // OpenCode recommends opencode.jsonc (with-comments). When the user already
@@ -849,8 +849,8 @@ struct ConfigInstaller {
     static func install() -> Bool {
         let fm = FileManager.default
 
-        // Ensure ~/.codeisland directory
-        try? fm.createDirectory(atPath: codeislandDir, withIntermediateDirectories: true)
+        // Ensure ~/.notchdeck directory
+        try? fm.createDirectory(atPath: notchdeckDir, withIntermediateDirectories: true)
 
         // Clean up legacy paths at ~/.claude/hooks/ (#32)
         try? fm.removeItem(atPath: legacyBridgePath)
@@ -1476,7 +1476,7 @@ struct ConfigInstaller {
                 entry = ["command": baseCommand, "matcher": "*", "timeout_ms": timeout * 1000]
             case .antigravityNamed:
                 // Antigravity named-config entry. The outer wrapper name is the
-                // configKey ("codeisland"), keyed here by installExternalHooks, so we
+                // configKey ("notchdeck"), keyed here by installExternalHooks, so we
                 // emit only the inner {matcher?, hooks:[{type,command,timeout}]} value.
                 // stdin lacks hook_event_name -> the command must carry --event.
                 // `matcher` is meaningful ONLY for PreToolUse/PostToolUse (regex over
@@ -1510,11 +1510,11 @@ struct ConfigInstaller {
         } else if cli.format == .kiroAgent, (originalText == nil || originalText?.isEmpty == true) {
             // Kiro agent JSON requires at minimum a "name" field. Seed a minimal agent
             // skeleton so the file is a valid Kiro agent the user can launch with
-            // `kiro --agent codeisland`.
+            // `kiro --agent notchdeck`.
             seeded = """
             {
-              "name": "codeisland",
-              "description": "Auto-generated by NotchDeck — relays Kiro hook events to the macOS Dynamic Island. Launch with `kiro --agent codeisland`."
+              "name": "notchdeck",
+              "description": "Auto-generated by NotchDeck — relays Kiro hook events to the macOS Dynamic Island. Launch with `kiro --agent notchdeck`."
             }
             """
         }
@@ -1757,8 +1757,8 @@ struct ConfigInstaller {
         let base = bridgeCommand.contains(" ") ? "\"\(bridgeCommand)\"" : bridgeCommand
         let abs = "\(bridgeCommand) --source \(source)"
         let absQuoted = "\"\(bridgeCommand)\" --source \(source)"
-        let tilde = "~/.codeisland/codeisland-bridge --source \(source)"
-        let tildeQuoted = "\"~/.codeisland/codeisland-bridge\" --source \(source)"
+        let tilde = "~/.notchdeck/notchdeck-bridge --source \(source)"
+        let tildeQuoted = "\"~/.notchdeck/notchdeck-bridge\" --source \(source)"
         let actualRendered = "\(base) --source \(source)"
         return [actualRendered, abs, absQuoted, tilde, tildeQuoted]
     }
@@ -2487,7 +2487,7 @@ struct ConfigInstaller {
                     j += 1
                 }
                 let blockText = blockLines.joined(separator: "\n")
-                if !blockText.contains("codeisland-bridge") {
+                if !blockText.contains("notchdeck-bridge") {
                     result.append(contentsOf: blockLines)
                 }
                 i = j
@@ -2542,7 +2542,7 @@ struct ConfigInstaller {
                         .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
                     currentEvent = val
                 }
-                if currentEvent == event && trimmed.contains("codeisland-bridge") {
+                if currentEvent == event && trimmed.contains("notchdeck-bridge") {
                     return true
                 }
             }
@@ -2613,7 +2613,7 @@ struct ConfigInstaller {
 
     // MARK: - Cline file-based hooks
 
-    private static let clineHookMarker = "codeisland-bridge --source cline"
+    private static let clineHookMarker = "notchdeck-bridge --source cline"
 
     // Cline requires valid JSON on stdout from every hook invocation.
     // Run the bridge in the background (forwarding stdin) so it can report
@@ -2621,7 +2621,7 @@ struct ConfigInstaller {
     private static let clineHookScript = """
         #!/bin/bash
         INPUT=$(cat)
-        printf '%s' "$INPUT" | ~/.codeisland/codeisland-bridge --source cline "$@" >/dev/null 2>&1 &
+        printf '%s' "$INPUT" | ~/.notchdeck/notchdeck-bridge --source cline "$@" >/dev/null 2>&1 &
         printf '{"cancel":false}'
         """
 
@@ -2777,8 +2777,8 @@ struct ConfigInstaller {
         guard let execPath = Bundle.main.executablePath else { return }
         let execDir = (execPath as NSString).deletingLastPathComponent
         let contentsDir = (execDir as NSString).deletingLastPathComponent
-        var srcPath = contentsDir + "/Helpers/codeisland-bridge"
-        if !fm.fileExists(atPath: srcPath) { srcPath = execDir + "/codeisland-bridge" }
+        var srcPath = contentsDir + "/Helpers/notchdeck-bridge"
+        if !fm.fileExists(atPath: srcPath) { srcPath = execDir + "/notchdeck-bridge" }
         guard fm.fileExists(atPath: srcPath) else { return }
 
         // Atomic replace: copy to temp file first, then rename (overwrites atomically)
@@ -2810,23 +2810,23 @@ struct ConfigInstaller {
     /// The JS plugin source — embedded as resource or bundled alongside
     private static func opencodePluginSource() -> String? {
         // Try SPM resource bundle (where build actually places it)
-        if let url = Bundle.appModule.url(forResource: "codeisland-opencode", withExtension: "js", subdirectory: "Resources"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-opencode", withExtension: "js", subdirectory: "Resources"),
            let src = try? String(contentsOf: url) { return src }
         // Fallback: try without subdirectory
-        if let url = Bundle.appModule.url(forResource: "codeisland-opencode", withExtension: "js"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-opencode", withExtension: "js"),
            let src = try? String(contentsOf: url) { return src }
         return nil
     }
 
     // MARK: - pi Extension
 
-    /// Current pi extension version — bump when codeisland-pi.ts changes.
+    /// Current pi extension version — bump when notchdeck-pi.ts changes.
     private static let piExtensionVersion = "v2"
 
     private static func piExtensionSource() -> String? {
-        if let url = Bundle.appModule.url(forResource: "codeisland-pi", withExtension: "ts", subdirectory: "Resources"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-pi", withExtension: "ts", subdirectory: "Resources"),
            let src = try? String(contentsOf: url) { return src }
-        if let url = Bundle.appModule.url(forResource: "codeisland-pi", withExtension: "ts"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-pi", withExtension: "ts"),
            let src = try? String(contentsOf: url) { return src }
         return nil
     }
@@ -2852,7 +2852,7 @@ struct ConfigInstaller {
         guard fm.fileExists(atPath: piExtensionPath),
               let data = fm.contents(atPath: piExtensionPath),
               let content = String(data: data, encoding: .utf8),
-              content.contains("CodeIsland pi extension")
+              content.contains("NotchDeck pi extension")
         else { return }
         try? fm.removeItem(atPath: piExtensionPath)
     }
@@ -2865,14 +2865,14 @@ struct ConfigInstaller {
               let data = fm.contents(atPath: piExtensionPath),
               let content = String(data: data, encoding: .utf8)
         else { return false }
-        return content.contains("CodeIsland pi extension")
+        return content.contains("NotchDeck pi extension")
             && content.contains("// version: \(piExtensionVersion)")
     }
 
     private static func ompExtensionSource() -> String? {
-        if let url = Bundle.appModule.url(forResource: "codeisland-omp", withExtension: "ts", subdirectory: "Resources"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-omp", withExtension: "ts", subdirectory: "Resources"),
            let src = try? String(contentsOf: url) { return src }
-        if let url = Bundle.appModule.url(forResource: "codeisland-omp", withExtension: "ts"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-omp", withExtension: "ts"),
            let src = try? String(contentsOf: url) { return src }
         return nil
     }
@@ -2914,15 +2914,15 @@ struct ConfigInstaller {
         let parts = file.split(separator: ".", maxSplits: 1).map(String.init)
         let name = parts[0]
         let ext = parts.count > 1 ? parts[1] : ""
-        if let url = Bundle.appModule.url(forResource: name, withExtension: ext, subdirectory: "Resources/codeisland-openclaw"),
+        if let url = Bundle.appModule.url(forResource: name, withExtension: ext, subdirectory: "Resources/notchdeck-openclaw"),
            let src = try? String(contentsOf: url) { return src }
-        if let url = Bundle.appModule.url(forResource: name, withExtension: ext, subdirectory: "codeisland-openclaw"),
+        if let url = Bundle.appModule.url(forResource: name, withExtension: ext, subdirectory: "notchdeck-openclaw"),
            let src = try? String(contentsOf: url) { return src }
         return nil
     }
 
     /// Install the OpenClaw plugin pack (#235): write the three plugin files to
-    /// ~/.openclaw/codeisland-plugin/ and register the pack in
+    /// ~/.openclaw/notchdeck-plugin/ and register the pack in
     /// ~/.openclaw/openclaw.json (plugins.load.paths + plugins.entries).
     ///
     /// openclaw.json is JSON5 — user files with comments/trailing commas won't
@@ -2979,9 +2979,9 @@ struct ConfigInstaller {
         plugins["load"] = load
 
         var entries = plugins["entries"] as? [String: Any] ?? [:]
-        var entry = entries["codeisland"] as? [String: Any] ?? [:]
+        var entry = entries["notchdeck"] as? [String: Any] ?? [:]
         entry["enabled"] = true
-        entries["codeisland"] = entry
+        entries["notchdeck"] = entry
         plugins["entries"] = entries
         config["plugins"] = plugins
 
@@ -2999,7 +2999,7 @@ struct ConfigInstaller {
         // Remove only our plugin pack, never other extensions.
         if fm.fileExists(atPath: openclawPluginDir + "/index.ts"),
            let data = fm.contents(atPath: openclawPluginDir + "/index.ts"),
-           String(data: data, encoding: .utf8)?.contains("CodeIsland OpenClaw plugin") == true {
+           String(data: data, encoding: .utf8)?.contains("NotchDeck OpenClaw plugin") == true {
             try? fm.removeItem(atPath: openclawPluginDir)
         }
 
@@ -3014,7 +3014,7 @@ struct ConfigInstaller {
             plugins["load"] = load
         }
         if var entries = plugins["entries"] as? [String: Any] {
-            entries.removeValue(forKey: "codeisland")
+            entries.removeValue(forKey: "notchdeck")
             plugins["entries"] = entries
         }
         config["plugins"] = plugins
@@ -3029,7 +3029,7 @@ struct ConfigInstaller {
     ) -> Bool {
         guard let data = fm.contents(atPath: openclawPluginDir + "/index.ts"),
               let content = String(data: data, encoding: .utf8) else { return false }
-        return content.contains("CodeIsland OpenClaw plugin")
+        return content.contains("NotchDeck OpenClaw plugin")
             && content.contains("// version: \(openclawPluginVersion)")
     }
 
@@ -3176,19 +3176,19 @@ struct ConfigInstaller {
     private static func backupOpencodeConfig(at path: String, original: String, fm: FileManager) {
         let dir = (path as NSString).deletingLastPathComponent
         let name = (path as NSString).lastPathComponent
-        // Skip if any previous codeisland backup exists for this file.
+        // Skip if any previous notchdeck backup exists for this file.
         if let entries = try? fm.contentsOfDirectory(atPath: dir),
-           entries.contains(where: { $0.hasPrefix(name + ".codeisland.bak.") }) {
+           entries.contains(where: { $0.hasPrefix(name + ".notchdeck.bak.") }) {
             return
         }
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withYear, .withMonth, .withDay, .withTime]
         let stamp = formatter.string(from: Date()).replacingOccurrences(of: ":", with: "")
-        let backupPath = "\(path).codeisland.bak.\(stamp)"
+        let backupPath = "\(path).notchdeck.bak.\(stamp)"
         fm.createFile(atPath: backupPath, contents: Data(original.utf8))
     }
 
-    /// Current OpenCode plugin version — bump when codeisland-opencode.js changes
+    /// Current OpenCode plugin version — bump when notchdeck-opencode.js changes
     private static let opencodePluginVersion = "v6"
 
     private static func isOpencodePluginInstalled(fm: FileManager) -> Bool {

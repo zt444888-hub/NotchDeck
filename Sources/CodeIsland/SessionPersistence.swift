@@ -38,7 +38,7 @@ struct PersistedSession: Codable {
 }
 
 enum SessionPersistence {
-    private static let dirPath = FileManager.default.homeDirectoryForCurrentUser.path + "/.codeisland"
+    private static let dirPath = FileManager.default.homeDirectoryForCurrentUser.path + "/.notchdeck"
     private static let filePath = dirPath + "/sessions.json"
 
     static func save(_ sessions: [String: SessionSnapshot]) {

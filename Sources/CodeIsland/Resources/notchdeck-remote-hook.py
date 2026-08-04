@@ -6,10 +6,10 @@ import subprocess
 import sys
 
 VERSION = "0.1.3"
-# Per-user socket path (#193): CodeIsland injects CODEISLAND_SOCKET_PATH via the hook
+# Per-user socket path (#193): NotchDeck injects CODEISLAND_SOCKET_PATH via the hook
 # command, but fall back to a uid-scoped path so multiple users on a shared host never
-# collide on a single /tmp/codeisland.sock.
-SOCKET_PATH = os.environ.get("CODEISLAND_SOCKET_PATH") or f"/tmp/codeisland-{os.getuid()}.sock"
+# collide on a single /tmp/notchdeck.sock.
+SOCKET_PATH = os.environ.get("CODEISLAND_SOCKET_PATH") or f"/tmp/notchdeck-{os.getuid()}.sock"
 REMOTE_HOST_ID = os.environ.get("CODEISLAND_REMOTE_HOST_ID", "")
 REMOTE_HOST_NAME = os.environ.get("CODEISLAND_REMOTE_HOST_NAME", "")
 SOURCE = os.environ.get("CODEISLAND_SOURCE", "")
@@ -17,7 +17,7 @@ TIMEOUT_SECONDS = 300
 
 
 def _normalize_event(name):
-    """Best-effort normalization matching CodeIslandCore.EventNormalizer."""
+    """Best-effort normalization matching NotchDeckCore.EventNormalizer."""
     if not isinstance(name, str):
         return ""
     # Cursor (camelCase)
@@ -114,7 +114,7 @@ def _claude_jsonl_path(session_id, cwd):
     return path if os.path.exists(path) else None
 
 
-def _codeisland_project_dir_encoded(cwd):
+def _notchdeck_project_dir_encoded(cwd):
     return "".join("-" if ch == "/" or ch == " " or ord(ch) > 127 else ch for ch in cwd)
 
 
@@ -122,7 +122,7 @@ def _qoder_jsonl_path(session_id, cwd):
     if not session_id or not cwd:
         return None
     home = os.path.expanduser("~")
-    project_dir = _codeisland_project_dir_encoded(cwd)
+    project_dir = _notchdeck_project_dir_encoded(cwd)
     path = os.path.join(home, ".qoder", "projects", project_dir, f"{session_id}.jsonl")
     return path if os.path.exists(path) else None
 

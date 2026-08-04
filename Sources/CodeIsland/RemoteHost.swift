@@ -65,7 +65,7 @@ struct RemoteHost: Identifiable, Codable, Equatable, Sendable {
     /// Legacy shared fallback socket path. The live per-user path is resolved at
     /// connect time via `RemoteInstaller.prepareRemoteSocketPath` (#193); this value
     /// is only used when probing the remote UID fails.
-    var remoteSocketPath: String { "/tmp/codeisland.sock" }
+    var remoteSocketPath: String { "/tmp/notchdeck.sock" }
 
     var displayAddress: String {
         if let port {

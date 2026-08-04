@@ -94,7 +94,7 @@ struct CodexPermissionRules {
         }
 
         let rulesDirectory = ConfigInstaller.codexHome() + "/rules"
-        let rulesPath = rulesDirectory + "/codeisland.rules"
+        let rulesPath = rulesDirectory + "/notchdeck.rules"
         let block = Self.ruleBlock(for: pattern)
         let patternLine = Self.patternLine(for: pattern)
 

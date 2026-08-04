@@ -1,7 +1,7 @@
 {
-  "id": "codeisland",
-  "name": "CodeIsland",
-  "description": "Bridges OpenClaw agent activity into the CodeIsland macOS notch panel.",
+  "id": "notchdeck",
+  "name": "NotchDeck",
+  "description": "Bridges OpenClaw agent activity into the NotchDeck macOS notch panel.",
   "version": "1.0.0",
   "configSchema": {
     "type": "object",

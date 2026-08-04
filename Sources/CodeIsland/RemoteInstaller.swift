@@ -45,7 +45,7 @@ enum RemoteInstaller {
     }
 
     /// Probe the remote user's UID and return a per-user socket path so that multiple
-    /// OS users on a shared host don't collide on a single `/tmp/codeisland.sock` (#193).
+    /// OS users on a shared host don't collide on a single `/tmp/notchdeck.sock` (#193).
     /// Falls back to the legacy shared path when the probe fails (older / restricted host).
     static func prepareRemoteSocketPath(host: RemoteHost) async -> String {
         // `id -u` is a bare external command, so it returns the remote uid identically
@@ -54,7 +54,7 @@ enum RemoteInstaller {
         let probe = await runSSH(host: host, command: "id -u", timeout: 8)
         let uid = probe.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
         if probe.ok, !uid.isEmpty, uid.allSatisfy({ $0.isNumber }) {
-            return "/tmp/codeisland-\(uid).sock"
+            return "/tmp/notchdeck-\(uid).sock"
         }
         // Probe failed (old / restricted host) — fall back to the legacy shared path.
         // StreamLocalBindUnlink=yes on the forward already clears any stale socket, so
@@ -64,11 +64,11 @@ enum RemoteInstaller {
     }
 
     private static func remoteHookSource() -> String? {
-        if let url = Bundle.appModule.url(forResource: "codeisland-remote-hook", withExtension: "py", subdirectory: "Resources"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-remote-hook", withExtension: "py", subdirectory: "Resources"),
            let src = try? String(contentsOf: url) {
             return src
         }
-        if let url = Bundle.appModule.url(forResource: "codeisland-remote-hook", withExtension: "py"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-remote-hook", withExtension: "py"),
            let src = try? String(contentsOf: url) {
             return src
         }
@@ -76,11 +76,11 @@ enum RemoteInstaller {
     }
 
     private static func remoteOpencodePluginSource() -> String? {
-        if let url = Bundle.appModule.url(forResource: "codeisland-opencode-remote", withExtension: "js", subdirectory: "Resources"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-opencode-remote", withExtension: "js", subdirectory: "Resources"),
            let src = try? String(contentsOf: url) {
             return src
         }
-        if let url = Bundle.appModule.url(forResource: "codeisland-opencode-remote", withExtension: "js"),
+        if let url = Bundle.appModule.url(forResource: "notchdeck-opencode-remote", withExtension: "js"),
            let src = try? String(contentsOf: url) {
             return src
         }
@@ -92,7 +92,7 @@ enum RemoteInstaller {
         let py = """
 import base64, os, pathlib
 
-target = pathlib.Path.home() / ".codeisland" / "codeisland-remote-hook.py"
+target = pathlib.Path.home() / ".notchdeck" / "notchdeck-remote-hook.py"
 target.parent.mkdir(parents=True, exist_ok=True)
 target.write_bytes(base64.b64decode('''\(encoded)'''))
 os.chmod(target, 0o755)
@@ -107,7 +107,7 @@ print(target)
         let py = """
 import base64, os, pathlib
 
-target = pathlib.Path.home() / ".codeisland" / "codeisland-opencode-remote.js"
+target = pathlib.Path.home() / ".notchdeck" / "notchdeck-opencode-remote.js"
 target.parent.mkdir(parents=True, exist_ok=True)
 target.write_bytes(base64.b64decode('''\(encoded)'''))
 os.chmod(target, 0o644)
@@ -146,7 +146,7 @@ import os
 import re
 
 home = pathlib.Path.home()
-hook_path = home / ".codeisland" / "codeisland-remote-hook.py"
+hook_path = home / ".notchdeck" / "notchdeck-remote-hook.py"
 host_id = \(hostId)
 host_name = \(hostName)
 version = \(version)
@@ -230,7 +230,7 @@ def write_opencode_config(path, data):
     write_json(path, data)
 
 def command_for(source):
-    return f"CODEISLAND_SOCKET_PATH={socket_path} CODEISLAND_REMOTE_HOST_ID={json.dumps(host_id)} CODEISLAND_REMOTE_HOST_NAME={json.dumps(host_name)} CODEISLAND_SOURCE={source} python3 ~/.codeisland/codeisland-remote-hook.py"
+    return f"CODEISLAND_SOCKET_PATH={socket_path} CODEISLAND_REMOTE_HOST_ID={json.dumps(host_id)} CODEISLAND_REMOTE_HOST_NAME={json.dumps(host_name)} CODEISLAND_SOURCE={source} python3 ~/.notchdeck/notchdeck-remote-hook.py"
 
 def append_our_hooks(hooks, event, entries):
     # Preserve user-authored entries (#242): remove_our_hooks() already dropped our
@@ -258,7 +258,7 @@ def remove_our_hooks(hooks):
                 commands.append(entry["command"])
             if isinstance(entry.get("bash"), str):
                 commands.append(entry["bash"])
-            if any("codeisland-remote-hook.py" in c for c in commands):
+            if any("notchdeck-remote-hook.py" in c for c in commands):
                 continue
             next_entries.append(entry)
         if next_entries:
@@ -869,7 +869,7 @@ def install_opencode():
     if not opencode_root.exists() and shutil.which("opencode") is None:
         return "OpenCode skipped"
 
-    plugin_path = home / ".codeisland" / "codeisland-opencode-remote.js"
+    plugin_path = home / ".notchdeck" / "notchdeck-opencode-remote.js"
     if not plugin_path.exists():
         return "OpenCode plugin missing"
 
@@ -886,7 +886,7 @@ def install_opencode():
         plugins = []
     plugins = [
         p for p in plugins
-        if not (isinstance(p, str) and ("vibe-island" in p or "codeisland" in p))
+        if not (isinstance(p, str) and ("vibe-island" in p or "notchdeck" in p))
     ]
     plugins.append(plugin_ref)
     data["plugin"] = plugins
@@ -897,7 +897,7 @@ def install_opencode():
     if legacy_path.exists():
         legacy = ensure_jsonc_object(legacy_path)
         if isinstance(legacy, dict) and isinstance(legacy.get("plugin"), list):
-            cleaned = [p for p in legacy["plugin"] if not (isinstance(p, str) and ("vibe-island" in p or "codeisland" in p))]
+            cleaned = [p for p in legacy["plugin"] if not (isinstance(p, str) and ("vibe-island" in p or "notchdeck" in p))]
             if cleaned != legacy["plugin"]:
                 if cleaned:
                     legacy["plugin"] = cleaned
@@ -1034,7 +1034,7 @@ print(" · ".join(parts))
         let socketPath = remoteSocketPath ?? host.remoteSocketPath
         return source
             .replacingOccurrences(
-                of: #"const SOCKET_PATH = process.env.CODEISLAND_SOCKET_PATH || "/tmp/codeisland.sock";"#,
+                of: #"const SOCKET_PATH = process.env.CODEISLAND_SOCKET_PATH || "/tmp/notchdeck.sock";"#,
                 with: #"const SOCKET_PATH = \#(jsonStringLiteral(socketPath));"#
             )
             .replacingOccurrences(

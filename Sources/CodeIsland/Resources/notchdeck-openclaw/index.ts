@@ -1,20 +1,20 @@
-// CodeIsland OpenClaw plugin
+// NotchDeck OpenClaw plugin
 // version: v1
 
 /**
- * @fileoverview CodeIsland Integration Plugin for OpenClaw (openclaw.ai).
+ * @fileoverview NotchDeck Integration Plugin for OpenClaw (openclaw.ai).
  *
  * OpenClaw runs as a LaunchAgent Gateway daemon and loads this plugin
  * in-process (jiti, TypeScript ok). The plugin mirrors agent lifecycle /
- * tool events onto CodeIsland's Unix socket — the same wire contract as
- * the pi/omp extensions (codeisland-pi.ts / codeisland-omp.ts):
+ * tool events onto NotchDeck's Unix socket — the same wire contract as
+ * the pi/omp extensions (notchdeck-pi.ts / notchdeck-omp.ts):
  *
- *   - fire-and-forget status events  -> /tmp/codeisland-<uid>.sock
- *   - blocking permission questions  -> ~/.codeisland/codeisland-bridge
+ *   - fire-and-forget status events  -> /tmp/notchdeck-<uid>.sock
+ *   - blocking permission questions  -> ~/.notchdeck/notchdeck-bridge
  *
  * Loaded via openclaw.json:
- *   plugins.load.paths   += ["~/.openclaw/codeisland-plugin"]
- *   plugins.entries.codeisland.enabled = true
+ *   plugins.load.paths   += ["~/.openclaw/notchdeck-plugin"]
+ *   plugins.entries.notchdeck.enabled = true
  *
  * No runtime imports from the "openclaw" package on purpose: hook names and
  * payloads changed between OpenClaw releases (before_agent_start vs
@@ -48,18 +48,18 @@ interface HookCtx {
 
 // ── Socket / bridge constants ─────────────────────────────────────────────────
 
-/** Unix socket path CodeIsland listens on (user-scoped). */
+/** Unix socket path NotchDeck listens on (user-scoped). */
 const userId = getuid?.() ?? 0;
-const SOCKET_PATH = `/tmp/codeisland-${userId}.sock`;
+const SOCKET_PATH = `/tmp/notchdeck-${userId}.sock`;
 
 /**
  * Bridge binary path. Used for blocking permission requests because Node's
  * half-close (`sock.end()`) causes NWConnection to close before the response
  * arrives on macOS; the bridge uses POSIX `shutdown(SHUT_WR)` which works.
  */
-const BRIDGE_PATH = `${homedir()}/.codeisland/codeisland-bridge`;
+const BRIDGE_PATH = `${homedir()}/.notchdeck/notchdeck-bridge`;
 
-/** Environment variable keys forwarded to CodeIsland for terminal detection. */
+/** Environment variable keys forwarded to NotchDeck for terminal detection. */
 const ENV_KEYS = [
   "TERM_PROGRAM",
   "ITERM_SESSION_ID",
@@ -130,8 +130,8 @@ function detectTty(): string | null {
 // ── Socket communication ──────────────────────────────────────────────────────
 
 /**
- * Sends a JSON payload to the CodeIsland socket (fire-and-forget).
- * Returns `false` silently when CodeIsland is not running.
+ * Sends a JSON payload to the NotchDeck socket (fire-and-forget).
+ * Returns `false` silently when NotchDeck is not running.
  *
  * @param payload - Event object to serialise and send.
  * @returns `true` on successful delivery, `false` otherwise.
@@ -156,7 +156,7 @@ function sendToSocket(payload: object): Promise<boolean> {
 }
 
 /**
- * Sends a JSON payload via the bridge binary and waits for CodeIsland's response.
+ * Sends a JSON payload via the bridge binary and waits for NotchDeck's response.
  * Used exclusively for blocking permission requests.
  *
  * @param payload    - Blocking request object.
@@ -200,11 +200,11 @@ function sendAndWaitResponse(
 // ── Lane resolution ───────────────────────────────────────────────────────────
 
 /**
- * Derives a stable per-agent "lane" for CodeIsland session identity.
+ * Derives a stable per-agent "lane" for NotchDeck session identity.
  *
  * OpenClaw's provider sessionId rotates on /new and /reset, and tool hooks only
  * carry a sessionKey ("agent:<agentId>:<channel>"). Folding everything onto the
- * agent id keeps one CodeIsland card per OpenClaw agent, stable across resets —
+ * agent id keeps one NotchDeck card per OpenClaw agent, stable across resets —
  * the daemon-appropriate analogue of one card per CLI process.
  */
 function laneOf(ctx: HookCtx | undefined): string {
@@ -221,7 +221,7 @@ function laneOf(ctx: HookCtx | undefined): string {
 // ── Event builders ────────────────────────────────────────────────────────────
 
 /**
- * Builds the base fields required on every CodeIsland event payload.
+ * Builds the base fields required on every NotchDeck event payload.
  *
  * @param lane  - OpenClaw agent lane (prefixed with `"openclaw-"`).
  * @param cwd   - Working directory shown on the session card.
@@ -275,7 +275,7 @@ function extractLastAssistantText(messages: readonly unknown[]): string {
 function register(api: OpenClawPluginApiLike): void {
   if (typeof api?.on !== "function") {
     api?.logger?.warn?.(
-      "[codeisland] this OpenClaw build has no plugin hook API (api.on); plugin inactive",
+      "[notchdeck] this OpenClaw build has no plugin hook API (api.on); plugin inactive",
     );
     return;
   }
@@ -284,11 +284,11 @@ function register(api: OpenClawPluginApiLike): void {
   /** TTY path detected once at startup (null for the LaunchAgent daemon). */
   const tty = detectTty();
 
-  /** Lanes for which CodeIsland has already received SessionStart. */
+  /** Lanes for which NotchDeck has already received SessionStart. */
   const startedLanes = new Set<string>();
   /**
    * Lanes with a blocking PermissionRequest in flight. Non-lifecycle events
-   * for these lanes are suppressed so CodeIsland's "answered externally"
+   * for these lanes are suppressed so NotchDeck's "answered externally"
    * heuristic doesn't auto-deny while the approval card is visible.
    */
   const pendingPermissionLanes = new Set<string>();
@@ -445,9 +445,9 @@ function register(api: OpenClawPluginApiLike): void {
 
         if (decision?.behavior === "deny") {
           // OpenClaw's before_tool_call contract: block + blockReason.
-          return { block: true, blockReason: "Blocked by CodeIsland" };
+          return { block: true, blockReason: "Blocked by NotchDeck" };
         }
-        // Approved (or CodeIsland unreachable) — fall through to PreToolUse.
+        // Approved (or NotchDeck unreachable) — fall through to PreToolUse.
       }
 
       if (!pendingPermissionLanes.has(lane)) {
@@ -493,7 +493,7 @@ function register(api: OpenClawPluginApiLike): void {
 
   on("gateway_stop", async () => {
     // Daemon shutting down — clear every lane's card instead of leaving
-    // zombie sessions until CodeIsland's idle sweep catches them.
+    // zombie sessions until NotchDeck's idle sweep catches them.
     const lanes = [...startedLanes];
     startedLanes.clear();
     await Promise.all(
@@ -509,9 +509,9 @@ function register(api: OpenClawPluginApiLike): void {
 }
 
 export default {
-  id: "codeisland",
-  name: "CodeIsland",
+  id: "notchdeck",
+  name: "NotchDeck",
   description:
-    "Bridges OpenClaw agent activity into the CodeIsland macOS notch panel.",
+    "Bridges OpenClaw agent activity into the NotchDeck macOS notch panel.",
   register,
 };

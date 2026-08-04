@@ -371,7 +371,7 @@ final class L10n: ObservableObject {
         "update_retry": "Retry",
         "update_homebrew_title": "Update Available",
         "update_homebrew_body": "NotchDeck %@ is available. Since you installed via Homebrew, please run:",
-        "update_homebrew_command": "brew upgrade codeisland",
+        "update_homebrew_command": "brew upgrade notchdeck",
         "update_copy_command": "Copy Command",
 
         // NotchPanel
@@ -714,7 +714,7 @@ final class L10n: ObservableObject {
         "update_retry": "Erneut versuchen",
         "update_homebrew_title": "Update verfügbar",
         "update_homebrew_body": "NotchDeck %@ ist verfügbar. Da du über Homebrew installiert hast, führe bitte aus:",
-        "update_homebrew_command": "brew upgrade codeisland",
+        "update_homebrew_command": "brew upgrade notchdeck",
         "update_copy_command": "Befehl kopieren",
 
         // NotchPanel
@@ -1079,7 +1079,7 @@ final class L10n: ObservableObject {
         "update_retry": "重试",
         "update_homebrew_title": "发现新版本",
         "update_homebrew_body": "NotchDeck %@ 已发布。由于您通过 Homebrew 安装，请运行：",
-        "update_homebrew_command": "brew upgrade codeisland",
+        "update_homebrew_command": "brew upgrade notchdeck",
         "update_copy_command": "复制命令",
 
         // NotchPanel
@@ -1444,7 +1444,7 @@ final class L10n: ObservableObject {
         "update_retry": "重試",
         "update_homebrew_title": "發現新版本",
         "update_homebrew_body": "NotchDeck %@ 已發布。由於您透過 Homebrew 安裝，請執行：",
-        "update_homebrew_command": "brew upgrade codeisland",
+        "update_homebrew_command": "brew upgrade notchdeck",
         "update_copy_command": "複製指令",
 
         // NotchPanel
@@ -1791,7 +1791,7 @@ final class L10n: ObservableObject {
         "update_retry": "再試行",
         "update_homebrew_title": "アップデートがあります",
         "update_homebrew_body": "NotchDeck %@ が利用可能です。Homebrew でインストールしたため、次を実行してください:",
-        "update_homebrew_command": "brew upgrade codeisland",
+        "update_homebrew_command": "brew upgrade notchdeck",
         "update_copy_command": "コマンドをコピー",
 
         // NotchPanel
@@ -2138,7 +2138,7 @@ final class L10n: ObservableObject {
         "update_retry": "다시 시도",
         "update_homebrew_title": "업데이트 가능",
         "update_homebrew_body": "NotchDeck %@ 버전을 사용할 수 있습니다. Homebrew로 설치했으므로 다음 명령을 실행하세요:",
-        "update_homebrew_command": "brew upgrade codeisland",
+        "update_homebrew_command": "brew upgrade notchdeck",
         "update_copy_command": "명령 복사",
 
         // NotchPanel
@@ -2485,7 +2485,7 @@ final class L10n: ObservableObject {
         "update_retry": "Tekrar Dene",
         "update_homebrew_title": "Güncelleme Mevcut",
         "update_homebrew_body": "NotchDeck %@ mevcut. Homebrew ile yüklediğiniz için, lütfen şunu çalıştırın:",
-        "update_homebrew_command": "brew upgrade codeisland",
+        "update_homebrew_command": "brew upgrade notchdeck",
         "update_copy_command": "Komutu Kopyala",
 
         // NotchPanel

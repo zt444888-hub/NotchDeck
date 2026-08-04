@@ -60,7 +60,7 @@ struct DiagnosticsExporter {
             ("\(home)/.qoder/settings.json", "configs/qoder-settings.json"),
             ("\(home)/.factory/settings.json", "configs/factory-settings.json"),
             ("\(home)/.codebuddy/settings.json", "configs/codebuddy-settings.json"),
-            ("\(home)/.codeisland/sessions.json", "configs/persisted-sessions.json"),
+            ("\(home)/.notchdeck/sessions.json", "configs/persisted-sessions.json"),
         ]
         for item in configs {
             copyIfExists(from: item.source, to: root.appendingPathComponent(item.dest))

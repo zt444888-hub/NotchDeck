@@ -1,11 +1,11 @@
-// CodeIsland pi extension
+// NotchDeck pi extension
 // version: v2
 // OMP-compatible install
 
 /**
- * @fileoverview CodeIsland Integration Extension for Oh My Pi / OMP.
+ * @fileoverview NotchDeck Integration Extension for Oh My Pi / OMP.
  *
- * This is the same socket bridge as codeisland-pi.ts, but imports OMP's
+ * This is the same socket bridge as notchdeck-pi.ts, but imports OMP's
  * package scope so `omp` can load it from ~/.omp/agent/extensions.
  */
 
@@ -18,18 +18,18 @@ import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent/extensibility/exten
 
 // ── Socket / bridge constants ─────────────────────────────────────────────────
 
-/** Unix socket path CodeIsland listens on (user-scoped). */
+/** Unix socket path NotchDeck listens on (user-scoped). */
 const userId = getuid?.() ?? 0;
-const SOCKET_PATH = `/tmp/codeisland-${userId}.sock`;
+const SOCKET_PATH = `/tmp/notchdeck-${userId}.sock`;
 
 /**
  * Bridge binary path. Used for blocking permission requests because Node's
  * half-close (`sock.end()`) causes NWConnection to close before the response
  * arrives on macOS; the bridge uses POSIX `shutdown(SHUT_WR)` which works.
  */
-const BRIDGE_PATH = `${homedir()}/.codeisland/codeisland-bridge`;
+const BRIDGE_PATH = `${homedir()}/.notchdeck/notchdeck-bridge`;
 
-/** Environment variable keys forwarded to CodeIsland for terminal detection. */
+/** Environment variable keys forwarded to NotchDeck for terminal detection. */
 const ENV_KEYS = [
   "TERM_PROGRAM",
   "ITERM_SESSION_ID",
@@ -96,8 +96,8 @@ function detectTty(): string | null {
 // ── Socket communication ──────────────────────────────────────────────────────
 
 /**
- * Sends a JSON payload to the CodeIsland socket (fire-and-forget).
- * Returns `false` silently when CodeIsland is not running.
+ * Sends a JSON payload to the NotchDeck socket (fire-and-forget).
+ * Returns `false` silently when NotchDeck is not running.
  *
  * @param payload - Event object to serialise and send.
  * @returns `true` on successful delivery, `false` otherwise.
@@ -122,7 +122,7 @@ function sendToSocket(payload: object): Promise<boolean> {
 }
 
 /**
- * Sends a JSON payload via the bridge binary and waits for CodeIsland's response.
+ * Sends a JSON payload via the bridge binary and waits for NotchDeck's response.
  * Used exclusively for blocking permission/question requests.
  *
  * @param payload    - Blocking request object.
@@ -166,7 +166,7 @@ function sendAndWaitResponse(
 // ── Event builders ────────────────────────────────────────────────────────────
 
 /**
- * Builds the base fields required on every CodeIsland event payload.
+ * Builds the base fields required on every NotchDeck event payload.
  *
  * @param sessionId - Pi session UUID (prefixed with `"pi-"`).
  * @param cwd       - Current working directory.
@@ -219,17 +219,17 @@ function extractLastAssistantText(
 
 // ── Extension ─────────────────────────────────────────────────────────────────
 
-export default function codeislandExtension(pi: ExtensionAPI) {
+export default function notchdeckExtension(pi: ExtensionAPI) {
   /** TTY path detected once at startup. */
   const tty = detectTty();
 
   /**
    * Session IDs for which a blocking PermissionRequest is currently in flight.
-   * Non-lifecycle events for these sessions are suppressed to prevent CodeIsland's
+   * Non-lifecycle events for these sessions are suppressed to prevent NotchDeck's
    * "answered externally" heuristic from auto-denying while the card is visible.
    */
   const pendingPermissionSessions = new Set<string>();
-  /** Sessions for which CodeIsland has already received SessionStart. */
+  /** Sessions for which NotchDeck has already received SessionStart. */
   const startedSessions = new Set<string>();
 
   async function ensureSessionStarted(sessionId: string, cwd: string): Promise<void> {
@@ -248,14 +248,14 @@ export default function codeislandExtension(pi: ExtensionAPI) {
 
 
   /**
-   * Forwards an `ask` tool call to CodeIsland as an AskUserQuestion and waits
+   * Forwards an `ask` tool call to NotchDeck as an AskUserQuestion and waits
    * for the user's on-island answer (#244).
    *
    * @returns A block result carrying the answers when the user answered in
-   *          CodeIsland, or `null` when the question should fall through to
-   *          OMP's own TUI dialog (skipped, denied, or CodeIsland not running).
+   *          NotchDeck, or `null` when the question should fall through to
+   *          OMP's own TUI dialog (skipped, denied, or NotchDeck not running).
    */
-  async function forwardAskToCodeIsland(
+  async function forwardAskToNotchDeck(
     event: { input: Record<string, unknown>; toolCallId: string },
     ctx: { cwd: string },
     sessionId: string,
@@ -287,7 +287,7 @@ export default function codeislandExtension(pi: ExtensionAPI) {
       };
     });
 
-    // CodeIsland keys answers by question text, deduping repeats with `_2`,
+    // NotchDeck keys answers by question text, deduping repeats with `_2`,
     // `_3`… suffixes — reproduce that here so we can translate back to ids.
     const usedKeys = new Set<string>();
     const answerKeys = questions.map(({ question }) => {
@@ -341,7 +341,7 @@ export default function codeislandExtension(pi: ExtensionAPI) {
     return {
       block: true,
       reason:
-        "The user already answered these questions through the CodeIsland desktop app. " +
+        "The user already answered these questions through the NotchDeck desktop app. " +
         "Their answers:\n" +
         lines.join("\n") +
         "\nDo not ask again — proceed using these answers.",
@@ -419,14 +419,14 @@ export default function codeislandExtension(pi: ExtensionAPI) {
       if (path) toolInput.file_path = path;
     }
 
-    // `ask` tool → mirror the question into CodeIsland's question UI (#244).
+    // `ask` tool → mirror the question into NotchDeck's question UI (#244).
     // tool_call fires BEFORE the TUI dialog opens and OMP awaits this handler,
     // so we can hold the tool, let the user answer on the island (or watch/
     // phone), and feed the answers back by blocking the tool with a result
-    // message. Skip/deny or an unreachable CodeIsland falls through to OMP's
+    // message. Skip/deny or an unreachable NotchDeck falls through to OMP's
     // own TUI dialog — graceful degradation, never a lost question.
     if (event.toolName === "ask") {
-      const answered = await forwardAskToCodeIsland(event, ctx, sessionId, sid, tty);
+      const answered = await forwardAskToNotchDeck(event, ctx, sessionId, sid, tty);
       if (answered) return answered;
       return undefined;
     }
@@ -458,7 +458,7 @@ export default function codeislandExtension(pi: ExtensionAPI) {
       )?.decision as Record<string, unknown> | undefined;
 
       if (behavior?.behavior === "deny") {
-        return { block: true, reason: "Blocked by CodeIsland" };
+        return { block: true, reason: "Blocked by NotchDeck" };
       }
 
       // Approved — fall through to normal PreToolUse event below.
