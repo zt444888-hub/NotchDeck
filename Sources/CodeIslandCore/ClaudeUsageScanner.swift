@@ -31,16 +31,46 @@ public enum ClaudeUsageScanner {
     public struct Snapshot: Equatable, Sendable {
         public let last5h: ClaudeUsageTotals
         public let today: ClaudeUsageTotals
+        /// Trailing 7-day and 30-day totals (rolling windows).
+        public let last7d: ClaudeUsageTotals
+        public let last30d: ClaudeUsageTotals
+        /// Full token totals for the trailing ~365 days (superset of all other
+        /// windows). Used as the cost-estimation basis and the `.year` window.
+        public let yearTotals: ClaudeUsageTotals
+        /// Per-day output-token totals for the trailing ~365 days, keyed by the
+        /// day's midnight `Date`. Drives the year heatmap; days with no activity
+        /// are simply absent (treated as zero by the UI).
+        public let year: [Date: Int]
         /// Output tokens per hour for the trailing `sparklineHours` hours,
         /// index 0 oldest, last index = the current hour.
         public let hourlyOutputTokens: [Int]
         public let scannedAt: Date
 
-        public init(last5h: ClaudeUsageTotals, today: ClaudeUsageTotals, hourlyOutputTokens: [Int], scannedAt: Date) {
+        public init(
+            last5h: ClaudeUsageTotals,
+            today: ClaudeUsageTotals,
+            hourlyOutputTokens: [Int],
+            scannedAt: Date,
+            last7d: ClaudeUsageTotals = ClaudeUsageTotals(),
+            last30d: ClaudeUsageTotals = ClaudeUsageTotals(),
+            yearTotals: ClaudeUsageTotals = ClaudeUsageTotals(),
+            year: [Date: Int] = [:]
+        ) {
             self.last5h = last5h
             self.today = today
             self.hourlyOutputTokens = hourlyOutputTokens
             self.scannedAt = scannedAt
+            self.last7d = last7d
+            self.last30d = last30d
+            self.yearTotals = yearTotals
+            self.year = year
+        }
+
+        /// True when no tokens were observed in any window (used by the UI to
+        /// render the empty state). Mirrors `ClaudeUsageTotals.isEmpty`.
+        public var isEmpty: Bool {
+            last5h.isEmpty && today.isEmpty && last7d.isEmpty
+                && last30d.isEmpty && yearTotals.isEmpty && year.isEmpty
         }
     }
 
@@ -81,10 +111,19 @@ public enum ClaudeUsageScanner {
         let fiveHoursAgo = now.addingTimeInterval(-5 * 3600)
         let midnight = Calendar.current.startOfDay(for: now)
         let sparklineStart = now.addingTimeInterval(-Double(sparklineHours) * 3600)
-        let cutoff = min(fiveHoursAgo, midnight, sparklineStart)
+        let sevenDaysAgo = now.addingTimeInterval(-7 * 86400)
+        let thirtyDaysAgo = now.addingTimeInterval(-30 * 86400)
+        let yearStart = Calendar.current.startOfDay(for: now.addingTimeInterval(-365 * 86400))
+        // Include the full year window so files touched in the last 12 months
+        // are read; per-entry timestamp filters narrow to the actual windows.
+        let cutoff = min(fiveHoursAgo, midnight, sparklineStart, yearStart)
 
         var last5h = ClaudeUsageTotals()
         var today = ClaudeUsageTotals()
+        var last7d = ClaudeUsageTotals()
+        var last30d = ClaudeUsageTotals()
+        var yearTotals = ClaudeUsageTotals()
+        var year: [Date: Int] = [:]
         var hourly = [Int](repeating: 0, count: sparklineHours)
         var activeFiles = Set<String>()
 
@@ -117,6 +156,13 @@ public enum ClaudeUsageScanner {
                 for message in entry.entries where message.timestamp <= now {
                     if message.timestamp >= fiveHoursAgo { last5h.add(message.usage) }
                     if message.timestamp >= midnight { today.add(message.usage) }
+                    if message.timestamp >= sevenDaysAgo { last7d.add(message.usage) }
+                    if message.timestamp >= thirtyDaysAgo { last30d.add(message.usage) }
+                    if message.timestamp >= yearStart {
+                        yearTotals.add(message.usage)
+                        let dayKey = Calendar.current.startOfDay(for: message.timestamp)
+                        year[dayKey, default: 0] += message.usage.outputTokens
+                    }
                     let hoursAgo = Int(now.timeIntervalSince(message.timestamp) / 3600)
                     if hoursAgo >= 0 && hoursAgo < sparklineHours {
                         hourly[sparklineHours - 1 - hoursAgo] += message.usage.outputTokens
@@ -126,7 +172,16 @@ public enum ClaudeUsageScanner {
         }
         // Files that fell out of the mtime window carry no in-window entries.
         cache.files = cache.files.filter { activeFiles.contains($0.key) }
-        return Snapshot(last5h: last5h, today: today, hourlyOutputTokens: hourly, scannedAt: now)
+        return Snapshot(
+            last5h: last5h,
+            today: today,
+            hourlyOutputTokens: hourly,
+            scannedAt: now,
+            last7d: last7d,
+            last30d: last30d,
+            yearTotals: yearTotals,
+            year: year
+        )
     }
 
     /// Read bytes past `entry.consumedBytes` and parse the COMPLETE lines only —
@@ -180,7 +235,7 @@ public enum ClaudeUsageScanner {
     }()
     private static let plainFormatter = ISO8601DateFormatter()
 
-    static func parseISO8601(_ raw: String) -> Date? {
+    public static func parseISO8601(_ raw: String) -> Date? {
         fractionalFormatter.date(from: raw) ?? plainFormatter.date(from: raw)
     }
 

@@ -16,6 +16,7 @@ enum SettingsPage: String, Identifiable, Hashable {
     case hooks
     case buddy
     case about
+    case usage
 
     var id: String { rawValue }
 
@@ -31,6 +32,7 @@ enum SettingsPage: String, Identifiable, Hashable {
         case .hooks: return "link.circle.fill"
         case .buddy: return "dot.radiowaves.left.and.right"
         case .about: return "info.circle.fill"
+        case .usage: return "chart.bar.xaxis"
         }
     }
 
@@ -46,6 +48,7 @@ enum SettingsPage: String, Identifiable, Hashable {
         case .hooks: return .purple
         case .buddy: return .red
         case .about: return .cyan
+        case .usage: return .teal
         }
     }
 }
@@ -56,7 +59,7 @@ private struct SidebarGroup: Hashable {
 }
 
 private let sidebarGroups: [SidebarGroup] = [
-    SidebarGroup(title: nil, pages: [.general, .behavior, .appearance, .mascots, .sound, .shortcuts]),
+    SidebarGroup(title: nil, pages: [.general, .behavior, .appearance, .mascots, .sound, .shortcuts, .usage]),
     SidebarGroup(title: "CodeIsland", pages: [.remote, .hooks, .buddy, .about]),
 ]
 
@@ -98,6 +101,7 @@ struct SettingsView: View {
                 case .hooks: HooksPage()
                 case .buddy: BuddyPage()
                 case .about: AboutPage()
+                case .usage: UsageCostPage()
                 }
             }
         }
