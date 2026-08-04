@@ -14,7 +14,7 @@ import CodeIslandCore
 final class ESP32StatePublisher {
     static let shared = ESP32StatePublisher()
 
-    private static let log = Logger(subsystem: "com.codeisland", category: "esp32-publisher")
+    private static let log = Logger(subsystem: "com.notchdeck.mac", category: "esp32-publisher")
 
     private weak var appState: AppState?
     private let bridge: ESP32BridgeManager

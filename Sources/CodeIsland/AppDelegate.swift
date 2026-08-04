@@ -5,7 +5,7 @@ import CodeIslandCore
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
-    nonisolated private static let log = Logger(subsystem: "com.codeisland", category: "AppDelegate")
+    nonisolated private static let log = Logger(subsystem: "com.notchdeck.mac", category: "AppDelegate")
 
     var panelController: PanelWindowController?
     private var hookServer: HookServer?

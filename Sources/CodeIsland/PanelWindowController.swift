@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import os.log
 
-private let log = Logger(subsystem: "com.codeisland", category: "Panel")
+private let log = Logger(subsystem: "com.notchdeck.mac", category: "Panel")
 
 private class KeyablePanel: NSPanel {
     override var canBecomeKey: Bool { true }

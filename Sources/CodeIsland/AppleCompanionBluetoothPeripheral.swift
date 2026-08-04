@@ -8,7 +8,7 @@ final class AppleCompanionBluetoothPeripheral: NSObject, ObservableObject {
     static let serviceUUID = CBUUID(string: "6D951BA3-8F41-4C45-9D8A-12085E0D7A10")
     static let notifyCharacteristicUUID = CBUUID(string: "25C1B67B-E903-4A0C-8A78-3EE8AB7317B7")
 
-    private static let log = Logger(subsystem: "com.codeisland", category: "apple-companion-ble")
+    private static let log = Logger(subsystem: "com.notchdeck.mac", category: "apple-companion-ble")
     private static let maxChunkPayloadBytes = 120
 
     @Published private(set) var poweredOn = false

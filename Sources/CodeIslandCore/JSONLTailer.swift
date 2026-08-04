@@ -94,7 +94,7 @@ public final class JSONLTailer: @unchecked Sendable {
     private var watches: [String: Watch] = [:]
 
     public init(
-        queue: DispatchQueue = DispatchQueue(label: "com.codeisland.jsonl-tailer"),
+        queue: DispatchQueue = DispatchQueue(label: "com.notchdeck.mac.jsonl-tailer"),
         onDelta: @escaping DeltaHandler
     ) {
         self.queue = queue

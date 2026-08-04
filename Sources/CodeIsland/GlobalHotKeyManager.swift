@@ -9,7 +9,7 @@ import os.log
 /// app, so an NSEvent local monitor only fires while our own window is focused).
 /// See #217.
 final class GlobalHotKeyManager {
-    nonisolated private static let log = Logger(subsystem: "com.codeisland", category: "GlobalHotKey")
+    nonisolated private static let log = Logger(subsystem: "com.notchdeck.mac", category: "GlobalHotKey")
 
     /// One installed Carbon hotkey plus the callback to run when it fires.
     private struct Entry {

@@ -13,7 +13,7 @@ import CodeIslandCore
 /// tab / Kitty window / tmux pane / Cursor project window / etc.
 @MainActor
 enum ESP32FocusCoordinator {
-    private static let log = Logger(subsystem: "com.codeisland", category: "esp32-focus")
+    private static let log = Logger(subsystem: "com.notchdeck.mac", category: "esp32-focus")
 
     /// Ordered status priority — richer statuses win the tiebreak so that a
     /// button press preferentially lands on the session actually needing

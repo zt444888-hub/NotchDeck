@@ -75,7 +75,7 @@ struct DiagnosticsExporter {
         // 5. Unified system logs (last 2 hours)
         let logOutput = runCommand("/usr/bin/log", args: [
             "show", "--style", "compact", "--info", "--debug",
-            "--last", "2h", "--predicate", "subsystem == \"com.codeisland\""
+            "--last", "2h", "--predicate", "subsystem == \"com.notchdeck.mac\""
         ])
         try? logOutput.write(to: root.appendingPathComponent("logs/unified.log"), atomically: true, encoding: .utf8)
 
@@ -209,7 +209,7 @@ struct DiagnosticsExporter {
             .appendingPathComponent("Library/Logs/DiagnosticReports")
         guard let files = try? fm.contentsOfDirectory(at: diagDir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return }
         let recent = files
-            .filter { $0.lastPathComponent.lowercased().contains("codeisland") }
+            .filter { $0.lastPathComponent.lowercased().contains("notchdeck") }
             .sorted {
                 let d1 = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
                 let d2 = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast

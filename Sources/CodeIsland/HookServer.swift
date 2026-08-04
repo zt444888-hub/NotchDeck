@@ -3,7 +3,7 @@ import Network
 import os.log
 import CodeIslandCore
 
-private let log = Logger(subsystem: "com.codeisland", category: "HookServer")
+private let log = Logger(subsystem: "com.notchdeck.mac", category: "HookServer")
 
 @MainActor
 class HookServer {

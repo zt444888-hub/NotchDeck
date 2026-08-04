@@ -138,7 +138,7 @@ public final class CodexAppServerClient: @unchecked Sendable {
         self.executableURL = executableURL
         self.arguments = arguments
         self.callbackQueue = callbackQueue
-        self.ioQueue = DispatchQueue(label: "com.codeisland.codex-app-server-io")
+        self.ioQueue = DispatchQueue(label: "com.notchdeck.mac.codex-app-server-io")
     }
 
     /// Default location of the Codex binary bundled with the desktop app.

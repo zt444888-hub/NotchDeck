@@ -17,7 +17,7 @@ enum UpdateState: Equatable {
 @MainActor
 final class UpdateChecker: NSObject, ObservableObject {
     static let shared = UpdateChecker()
-    private static let log = Logger(subsystem: "com.codeisland", category: "UpdateChecker")
+    private static let log = Logger(subsystem: "com.notchdeck.mac", category: "UpdateChecker")
 
     @Published private(set) var state: UpdateState = .idle
 

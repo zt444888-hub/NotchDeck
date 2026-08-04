@@ -118,7 +118,7 @@ struct DiscoveredBuddy: Identifiable, Equatable {
 final class ESP32BridgeManager: NSObject {
     static let shared = ESP32BridgeManager()
 
-    private static let log = Logger(subsystem: "com.codeisland", category: "esp32-bridge")
+    private static let log = Logger(subsystem: "com.notchdeck.mac", category: "esp32-bridge")
 
     // Observable for SettingsView
     private(set) var status: ESP32BridgeStatus = .off

@@ -2,7 +2,7 @@ import Foundation
 import os.log
 import CodeIslandCore
 
-private let log = Logger(subsystem: "com.codeisland", category: "PermissionDeny")
+private let log = Logger(subsystem: "com.notchdeck.mac", category: "PermissionDeny")
 
 /// Cached metadata for an in-flight tool_use_id, written on PreToolUse and consumed by
 /// downstream PermissionRequest / PostToolUse events.
