@@ -124,27 +124,31 @@ server 内部：构造 `HookEvent` → `appState.recordHookEvent(...)` → `appS
 
 ## 7. 实现计划
 
-| 阶段 | 内容 | 工作量 |
+| 阶段 | 内容 | 状态 |
 |---|---|---|
-| P0 | HTTP server（Swift 原生，复用 CodeIslandCore）+ JSON-RPC 2.0 + tools/list + tools/call → HookEvent → handleEvent | 核心 |
-| P0 | supportedSources 加 `trae-work`/`windsurf` 等 + 面板来源徽标 | 小 |
-| P1 | 面板设置页加「MCP Server」开关 + 显示状态（监听中/事件数） | 中 |
-| P1 | 各工具接入指引文档（README + docs/） | 小 |
-| P2 | 可选：stdio 传输（给终端 CLI）、SSE 流式 notifications | 中 |
+| P0 | HTTP server（Swift 原生，复用 CodeIslandCore）+ JSON-RPC 2.0 + tools/list + tools/call → HookEvent → handleEvent | ✅ 1.1.8 |
+| P0 | supportedSources 加 `trae-work`/`windsurf`/`zoo-code`/`openhands` 等 + 面板来源徽标 | ✅ 1.1.8 |
+| P1 | 面板设置页加「MCP Server」开关 + 显示状态（监听中/事件数） | ✅ 1.1.8 |
+| P1 | 事件去重（同 source/session_id/时间窗 5s） | ✅ 1.1.8 |
+| P1 | 各工具接入指引文档（README + docs/） | ✅ 1.1.8 |
+| P2 | 设置页 Start/Stop/Restart 按钮 + 事件计数流式刷新 | ✅ 1.1.8 |
+| P2 | MCP 专属通知样式（会话卡片 MCP 徽标）+ protocolVersion 协商回显 | ✅ 1.1.8 |
+| P2 | 可选：stdio 传输（给终端 CLI）、SSE 流式 notifications | 未做（协议 v2025-06-18 兼容已足够，实测 TRAE Work 后评估） |
 
 依赖：无（Swift 标准库 + Network/Foundation 即可；MCP SDK 有 Swift 版但可手写 JSON-RPC，协议简单）
 
 ## 8. 与 hooks 的关系
 
 - **双轨策略**：hooks 提供硬性、精确的事件；MCP 提供全覆盖兜底
-- 同一工具两条都配时：事件可能重复 → 面板侧按 (source, session_id, 时间窗) 去重（P1）
-- 面板「连接方式」列显示每条会话来自 hooks / MCP / 两者
+- 同一工具两条都配时：事件可能重复 → 服务端按 (source, session_id, event_name) 5s 窗口去重（✅ P1，MCPServer.handleReport）
+- 面板「连接方式」列显示每条会话来自 hooks / MCP / 两者（MCP-only source 会话卡片带「MCP」徽标）
 
 ## 9. 开放问题
 
-1. TRAE Work 的自定义规则是否真的能让 agent 稳定调用 notchdeck_report？（需要实测——这是最大不确定项）
+1. TRAE Work 的自定义规则是否真的能让 agent 稳定调用 notchdeck_report？（实测指引见 docs/TRAE-WORK-MCP-TEST.md——等待用户在 TRAE Work 桌面版实测，这是最大不确定项）
 2. MCP server 端口冲突处理（8765 被占则自动换端口，写入配置）
 3. 是否需要 `notchdeck_session_start` 专用工具（强约束 agent 在会话开始必须调用）？
+4. ZooCode（Roo Code 社区 fork）确认走 MCP 路线（`.roo/mcp.json`），无专门 hooks 适配（✅ 调研结论）
 
 ---
 
