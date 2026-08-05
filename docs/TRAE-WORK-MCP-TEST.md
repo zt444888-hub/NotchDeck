@@ -3,27 +3,27 @@
 > 目标：验证 TRAE Work 的 agent 能调用 `notchdeck_report`，让刘海面板实时显示
 > TRAE Work 会话状态。这是 MCP Server（P0/P1）的最终验收。
 >
-> **v1.1.9 结论**：TRAE Work 配置**自动注入**（MCP server 条目 + Agent skill +
-> 全局规则 user_rules 均自动写入），但 **agent 不会自动调用** `notchdeck_report`
-> ——5 轮实测（hooks / CLAUDE.md / skill / 官方规则 UI）确认这是 TRAE Work
-> 平台边界（云 agent 不主动执行状态上报）。可靠触发方式：**新会话首条消息
-> 引导**（见第 0 节），或使用自定义智能体提示词注入（系统级指令，遵守度最高）。
+> **v1.1.9 结论（已实测验证 ✅ 22:30）**：TRAE Work 配置**自动注入**（MCP server
+> 条目 + Agent skill + 全局规则 user_rules 均自动写入）。agent **不会主动**调用
+> `notchdeck_report`，但**服从明确指令**——新会话**首条消息引导**后会话内持续
+> 上报（实测：命令式消息 → SessionStart 创建会话 → 下一条消息 UserPromptSubmit
+> 持续更新 → 刘海面板实时显示 ✅）。引导句写进自定义智能体提示词可免每会话手动。
 >
 > 前置条件：NotchDeck 已启动且 MCP Server 监听中
 > （Settings → MCP 显示 Listening，或 `nc -z 127.0.0.1 8765` 返回 PORT OPEN）。
 
-## 0. 使用方式（v1.1.9 起）
+## 0. 使用方式（v1.1.9 起，已实测通过 ✅）
 
 1. 确认 NotchDeck 已启动（设置 → Hooks 里 TRAE Work 状态为「已激活」）
 2. 打开 TRAE Work 桌面版，**新开一个会话**
-3. **首条消息**附上引导（agent 才会开始上报，之后会话内自动持续）：
+3. **首条消息**附上引导（实测有效，之后会话内自动持续）：
    ```
    本次会话请持续调用 MCP 工具 notchdeck_report 汇报状态：
    会话开始 event=SessionStart；收到消息 event=UserPromptSubmit；
    工具前后 event=PreToolUse/PostToolUse；回合结束 event=Stop。
    source 固定 trae-work，session_id 保持稳定。
    ```
-4. 刘海面板出现 trae-work 会话并实时更新
+4. 刘海面板出现 trae-work 会话并实时更新（实测确认 ✅）
 
 > 升级路径：自定义智能体把上述指令写进**提示词（Prompt）**——system-prompt
 > 级约束，agent 遵守度远高于规则文件，可免去每会话首条消息引导。
