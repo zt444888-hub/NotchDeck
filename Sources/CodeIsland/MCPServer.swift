@@ -61,18 +61,40 @@ final class MCPServer {
 
     var isRunning: Bool { listener != nil }
 
+    /// Port actually listening on. Nil until start() binds; equals `port`
+    /// normally, or a higher port when the default was busy.
+    @MainActor private(set) var activePort: UInt16?
+
     func start() {
         guard listener == nil else { return }
+        activePort = nil
+        tryBind(from: port)
+    }
+
+    /// Try to bind starting at `candidate`, walking up a few ports when the
+    /// requested one is taken (EADDRINUSE). Handles both failure paths:
+    /// NWListener init throws synchronously, or the state handler reports
+    /// .failed after init succeeded.
+    private func tryBind(from candidate: UInt16) {
+        let startingPort = self.port
+        let maxCandidate = min(startingPort + 9, UInt16.max)
+        guard candidate <= maxCandidate else {
+            Self.log.error("MCP: no free port in \(startingPort)...\(maxCandidate)")
+            return
+        }
+        guard let portNumber = NWEndpoint.Port(rawValue: candidate) else {
+            tryBind(from: candidate + 1)
+            return
+        }
         let params = NWParameters.tcp
         params.allowLocalEndpointReuse = true // survive app restarts
         params.requiredInterfaceType = .loopback // 127.0.0.1 only — privacy
-        let port = self.port
         let listener: NWListener
         do {
-            guard let portNumber = NWEndpoint.Port(rawValue: port) else { return }
             listener = try NWListener(using: params, on: portNumber)
         } catch {
-            Self.log.error("MCPServer failed to listen on \(port): \(error.localizedDescription)")
+            Self.log.warning("MCP: port \(candidate) busy (\(error.localizedDescription)), trying \(candidate + 1)")
+            tryBind(from: candidate + 1)
             return
         }
         listener.newConnectionHandler = { [weak self] conn in
@@ -80,23 +102,35 @@ final class MCPServer {
                 self?.handleConnection(conn)
             }
         }
-        listener.stateUpdateHandler = { state in
-            switch state {
-            case .ready:
-                Self.log.info("MCP listening on 127.0.0.1:\(port)")
-            case .failed(let err):
-                Self.log.error("MCP listener failed: \(err.localizedDescription)")
-            default:
-                break
+        listener.stateUpdateHandler = { [weak self] state in
+            Task { @MainActor in
+                guard let self else { return }
+                switch state {
+                case .ready:
+                    Self.log.info("MCP listening on 127.0.0.1:\(candidate)")
+                case .failed(let err):
+                    // init succeeded but bind failed asynchronously — only
+                    // react if this is still the current listener.
+                    guard self.listener === listener else { return }
+                    Self.log.warning("MCP: listener on \(candidate) failed (\(err.localizedDescription)), trying \(candidate + 1)")
+                    self.listener?.cancel()
+                    self.listener = nil
+                    self.activePort = nil
+                    self.tryBind(from: candidate + 1)
+                default:
+                    break
+                }
             }
         }
         listener.start(queue: workQueue)
         self.listener = listener
+        self.activePort = candidate
     }
 
     func stop() {
         listener?.cancel()
         listener = nil
+        activePort = nil
         dedupCache.removeAll()
         eventCount = 0
     }

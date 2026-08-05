@@ -133,7 +133,8 @@ server 内部：构造 `HookEvent` → `appState.recordHookEvent(...)` → `appS
 | P1 | 各工具接入指引文档（README + docs/） | ✅ 1.1.8 |
 | P2 | 设置页 Start/Stop/Restart 按钮 + 事件计数流式刷新 | ✅ 1.1.8 |
 | P2 | MCP 专属通知样式（会话卡片 MCP 徽标）+ protocolVersion 协商回显 | ✅ 1.1.8 |
-| P2 | 可选：stdio 传输（给终端 CLI）、SSE 流式 notifications | 未做（协议 v2025-06-18 兼容已足够，实测 TRAE Work 后评估） |
+| P2 | MCP 端口冲突自动换端口（8765 被占 → 8766+，设置页显示实际端口+警告） | ✅ dev |
+| P2 | 可选：stdio 传输（给终端 CLI）、SSE 流式 notifications | ❌ 评估后不做：MCP server 是"被调用"角色，SSE 推送对 AI agent 客户端无消费方；stdio 传输同理（terminal CLI 直接走 hooks）；协议 v2025-06-18 兼容已足够 |
 
 依赖：无（Swift 标准库 + Network/Foundation 即可；MCP SDK 有 Swift 版但可手写 JSON-RPC，协议简单）
 

@@ -790,6 +790,8 @@ private struct MCPPage: View {
 
     private var server: MCPServer? { appState?.mcpServer }
     private var isRunning: Bool { server?.isRunning ?? false }
+    private var activePort: UInt16 { server?.activePort ?? MCPServer.defaultPort }
+    private var portChanged: Bool { server?.activePort != nil && server?.activePort != MCPServer.defaultPort }
 
     var body: some View {
         Form {
@@ -832,9 +834,20 @@ private struct MCPPage: View {
                     Text("Address")
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text("127.0.0.1:\(MCPServer.defaultPort)")
+                    Text("127.0.0.1:\(activePort)")
                         .font(.system(.body, design: .monospaced))
                         .textSelection(.enabled)
+                }
+
+                if portChanged {
+                    Label {
+                        Text("Port \(MCPServer.defaultPort) is busy — using \(activePort). Update the URL in your AI tool.")
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack {
@@ -889,7 +902,7 @@ private struct MCPPage: View {
                     Text("MCP URL")
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text("http://127.0.0.1:\(MCPServer.defaultPort)/mcp")
+                    Text("http://127.0.0.1:\(activePort)/mcp")
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
                         .lineLimit(1)
@@ -897,7 +910,7 @@ private struct MCPPage: View {
                 }
 
                 Button {
-                    let url = "http://127.0.0.1:\(MCPServer.defaultPort)/mcp"
+                    let url = "http://127.0.0.1:\(activePort)/mcp"
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(url, forType: .string)
                 } label: {
