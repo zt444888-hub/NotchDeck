@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.1.0] - 2026-08-05
+
+### English
+- NotchDeck initial release — independent fork of Code Island v1.0.31 with rebranded identity, bundle id `com.notchdeck.mac`, and isolated install contracts (`~/.notchdeck/`, `notchdeck-*` resource scripts)
+- New "Usage & Cost" settings page — merge Claude Code and Codex token usage into quota cards, estimated cost per model/provider/window, 30-day bar chart, 53×7 yearly heatmap, CSV export (editable per-model USD/MTok price table)
+
+### 中文
+- NotchDeck 首发版——Code Island v1.0.31 的独立 fork，全新品牌与 bundle id `com.notchdeck.mac`，安装契约全面隔离（`~/.notchdeck/`、`notchdeck-*` 资源脚本）
+- 新增「Usage & Cost」设置页——合并统计 Claude Code 与 Codex 的 token 用量：配额卡、按模型/服务商/时间窗口估算费用、30 天柱状图、53×7 年度热力图、CSV 导出（单价表按模型可编辑，USD/MTok）
+
 ## [v1.0.31] - 2026-07-23
 
 ### English
