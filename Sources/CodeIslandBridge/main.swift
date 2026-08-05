@@ -1,5 +1,5 @@
 // ============================================================
-// codeisland-bridge — Native Claude Code hook event forwarder
+// notchdeck-bridge — Native hook event forwarder
 // ============================================================
 // Replaces shell script + nc with:
 // • Proper JSON parsing (no string manipulation)
@@ -101,7 +101,7 @@ func buildAncestry(startingAt pid: pid_t, maxDepth: Int = 6) -> [(pid: pid_t, ex
 func debugLog(_ message: String) {
     let ts = ISO8601DateFormatter().string(from: Date())
     let line = "[\(ts)] \(message)\n"
-    let path = "/tmp/codeisland-bridge.log"
+    let path = "/tmp/notchdeck-bridge.log"
     if let handle = FileHandle(forWritingAtPath: path) {
         handle.seekToEndOfFile()
         handle.write(Data(line.utf8))
