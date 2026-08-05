@@ -2813,6 +2813,53 @@ struct ConfigInstaller {
         traeWorkSkillDirOverride ?? NSHomeDirectory() + "/.trae-cn/skills/" + traeWorkSkillName
     }
 
+    // MARK: TRAE Work global user rules — the OFFICIAL rules mechanism.
+    // Verified empirically: TRAE stores each global rule as a plain markdown
+    // file at ~/.trae-cn/user_rules/rule-<epoch_ms>.md (created by the
+    // AI Management → Rules UI; the dir is scanned on load). We pre-write the
+    // same file so the agent follows the notchdeck_report protocol with zero
+    // user steps. Marker lets uninstall remove exactly our file.
+    private static let traeWorkUserRulesDirDefault = NSHomeDirectory() + "/.trae-cn/user_rules"
+    /// Test hook: redirect the user-rules dir (real default is ~/.trae-cn/user_rules).
+    static var traeWorkUserRulesDirOverride: String? = nil
+    private static var traeWorkUserRulesDir: String {
+        traeWorkUserRulesDirOverride ?? traeWorkUserRulesDirDefault
+    }
+    private static let traeWorkUserRuleMarker = "notchdeck-managed"
+
+    private static func traeWorkUserRuleText() -> String {
+        let port = MCPServer.defaultPort
+        return """
+        <!-- \(traeWorkUserRuleMarker) -->
+        Always call the MCP tool `notchdeck_report` (MCP server "notchdeck" at http://127.0.0.1:\(port)/mcp) to report your activity. Use source=trae-work and keep the same session_id within one conversation:
+
+        1. When a new conversation starts: call notchdeck_report with event=SessionStart, session_id=<stable id>
+        2. Right after you receive a user message: call notchdeck_report with event=UserPromptSubmit, detail=<brief summary>
+        3. Immediately before calling any tool: call notchdeck_report with event=PreToolUse, tool_name=<tool name>
+        4. Immediately after each tool completes: call notchdeck_report with event=PostToolUse, tool_name=<tool name>
+        5. When you finish answering a turn: call notchdeck_report with event=Stop
+        """
+    }
+
+    private static func writeTraeWorkUserRule(fm: FileManager) -> Bool {
+        do {
+            try fm.createDirectory(atPath: traeWorkUserRulesDir, withIntermediateDirectories: true)
+            let path = traeWorkUserRulesDir + "/rule-" + traeWorkUserRuleMarker + ".md"
+            try traeWorkUserRuleText().write(to: URL(fileURLWithPath: path), atomically: true, encoding: .utf8)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private static func isTraeWorkUserRuleInstalled(fm: FileManager) -> Bool {
+        fm.fileExists(atPath: traeWorkUserRulesDir + "/rule-" + traeWorkUserRuleMarker + ".md")
+    }
+
+    private static func uninstallTraeWorkUserRule(fm: FileManager) {
+        try? fm.removeItem(atPath: traeWorkUserRulesDir + "/rule-" + traeWorkUserRuleMarker + ".md")
+    }
+
     private static func traeWorkSkillText() -> String {
         let port = MCPServer.defaultPort
         return """
@@ -2918,12 +2965,18 @@ struct ConfigInstaller {
         //    are loaded into every conversation.
         if !writeTraeWorkSkill(fm: fm) { ok = false }
 
+        // 4. TRAE Work global user rule — the OFFICIAL rules mechanism
+        //    (~/.trae-cn/user_rules/rule-*.md, scanned on load). Pre-write it
+        //    so the agent follows the report protocol with zero user steps.
+        if !writeTraeWorkUserRule(fm: fm) { ok = false }
+
         return ok
     }
 
     static func uninstallTraeWorkConfig(fm: FileManager) {
-        // 0. Remove our TRAE Work agent skill.
+        // 0. Remove our TRAE Work agent skill + global user rule.
         uninstallTraeWorkSkill(fm: fm)
+        uninstallTraeWorkUserRule(fm: fm)
 
         // 1. Remove only our entry from mcp.json.
         if let userDir = traeUserDir() {
@@ -2979,6 +3032,7 @@ struct ConfigInstaller {
               let url = entry["url"] as? String else { return false }
         return url == "http://127.0.0.1:\(MCPServer.defaultPort)/mcp"
             && isTraeWorkSkillInstalled(fm: fm)
+            && isTraeWorkUserRuleInstalled(fm: fm)
     }
 
     // MARK: - Cline file-based hooks

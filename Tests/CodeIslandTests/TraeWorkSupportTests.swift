@@ -7,22 +7,32 @@ import CodeIslandCore
 /// workspace, and clean up cleanly on uninstall.
 final class TraeWorkSupportTests: XCTestCase {
 
-    private func makeTempTRAE() throws -> (userDir: String, workspaceDir: String, skillDir: String, root: URL) {
+    override func tearDown() {
+        ConfigInstaller.traeUserRootsOverride = nil
+        ConfigInstaller.traeWorkSkillDirOverride = nil
+        ConfigInstaller.traeWorkUserRulesDirOverride = nil
+        super.tearDown()
+    }
+
+    private func makeTempTRAE() throws -> (userDir: String, workspaceDir: String, skillDir: String, userRulesDir: String, root: URL) {
         let fm = FileManager.default
         let root = fm.temporaryDirectory.appendingPathComponent("trae-test-\(UUID().uuidString)")
         let userDir = root.appendingPathComponent("User").path
         let ws = root.appendingPathComponent("Workspaces/ws1").path
         let skillDir = root.appendingPathComponent(".trae-cn/skills/notchdeck-report").path
+        let userRulesDir = root.appendingPathComponent(".trae-cn/user_rules").path
         try fm.createDirectory(atPath: userDir, withIntermediateDirectories: true)
         try fm.createDirectory(atPath: ws, withIntermediateDirectories: true)
         try fm.createDirectory(atPath: skillDir, withIntermediateDirectories: true)
+        try fm.createDirectory(atPath: userRulesDir, withIntermediateDirectories: true)
         try "{}".write(toFile: ws + "/workspace.json", atomically: true, encoding: .utf8)
-        return (userDir, ws, skillDir, root)
+        return (userDir, ws, skillDir, userRulesDir, root)
     }
 
-    private func setOverrides(_ temp: (userDir: String, workspaceDir: String, skillDir: String, root: URL)) {
+    private func setOverrides(_ temp: (userDir: String, workspaceDir: String, skillDir: String, userRulesDir: String, root: URL)) {
         ConfigInstaller.traeUserRootsOverride = [temp.userDir]
         ConfigInstaller.traeWorkSkillDirOverride = temp.skillDir
+        ConfigInstaller.traeWorkUserRulesDirOverride = temp.userRulesDir
     }
 
     func testTraeWorkConfigRegisteredInBuiltInCLIs() {
@@ -69,6 +79,15 @@ final class TraeWorkSupportTests: XCTestCase {
         XCTAssertTrue(skill.contains("notchdeck_report"))
         XCTAssertTrue(skill.contains("source=trae-work"))
         XCTAssertTrue(skill.contains("USE THIS SKILL IN EVERY CONVERSATION"))
+
+        // Global user rule — the OFFICIAL TRAE rules mechanism
+        // (~/.trae-cn/user_rules/rule-*.md).
+        let rulesDir = temp.userRulesDir
+        let ruleFiles = try fm.contentsOfDirectory(atPath: rulesDir).filter { $0.hasSuffix(".md") }
+        XCTAssertFalse(ruleFiles.isEmpty, "no rule file written")
+        let ruleContent = try String(contentsOfFile: rulesDir + "/" + ruleFiles[0], encoding: .utf8)
+        XCTAssertTrue(ruleContent.contains("notchdeck_report"))
+        XCTAssertTrue(ruleContent.contains("notchdeck-managed"))
 
         XCTAssertTrue(ConfigInstaller.isTraeWorkInstalled(fm: fm))
     }
@@ -133,12 +152,17 @@ final class TraeWorkSupportTests: XCTestCase {
 
         // Our skill removed.
         XCTAssertFalse(fm.fileExists(atPath: temp.skillDir + "/SKILL.md"))
+
+        // Our user rule removed.
+        let ruleFilesAfter = try fm.contentsOfDirectory(atPath: temp.userRulesDir).filter { $0.hasSuffix(".md") }
+        XCTAssertTrue(ruleFilesAfter.allSatisfy { !$0.contains("notchdeck-managed") })
     }
 
     func testInstallWithoutTRAEReturnsFalse() {
         let fm = FileManager.default
         ConfigInstaller.traeUserRootsOverride = ["/nonexistent/trae/user"]
         ConfigInstaller.traeWorkSkillDirOverride = "/nonexistent/skills/notchdeck-report"
+        ConfigInstaller.traeWorkUserRulesDirOverride = "/nonexistent/user_rules"
         XCTAssertFalse(ConfigInstaller.installTraeWorkConfig(fm: fm))
         XCTAssertNil(ConfigInstaller.traeWorkMcpPath())
         XCTAssertFalse(ConfigInstaller.isTraeWorkInstalled(fm: fm))
