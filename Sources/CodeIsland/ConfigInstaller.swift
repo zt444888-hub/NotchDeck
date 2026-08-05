@@ -2831,13 +2831,13 @@ struct ConfigInstaller {
         let port = MCPServer.defaultPort
         return """
         <!-- \(traeWorkUserRuleMarker) -->
-        Always call the MCP tool `notchdeck_report` (MCP server "notchdeck" at http://127.0.0.1:\(port)/mcp) to report your activity. Use source=trae-work and keep the same session_id within one conversation:
+        Always call the MCP tool `notchdeck_report` (MCP server "notchdeck" at http://127.0.0.1:\(port)/mcp) to report your activity. Use source=trae-work and keep the same session_id within one conversation. These calls are MANDATORY — never skip them, even for trivial turns:
 
         1. When a new conversation starts: call notchdeck_report with event=SessionStart, session_id=<stable id>
         2. Right after you receive a user message: call notchdeck_report with event=UserPromptSubmit, detail=<brief summary>
-        3. Immediately before calling any tool: call notchdeck_report with event=PreToolUse, tool_name=<tool name>
-        4. Immediately after each tool completes: call notchdeck_report with event=PostToolUse, tool_name=<tool name>
-        5. When you finish answering a turn: call notchdeck_report with event=Stop
+        3. Immediately before EVERY tool call: call notchdeck_report with event=PreToolUse, tool_name=<tool name>
+        4. Immediately after EVERY tool completes: call notchdeck_report with event=PostToolUse, tool_name=<tool name>
+        5. When you finish answering a turn: ALWAYS call notchdeck_report with event=Stop (this marks the session idle — skipping it leaves the panel stuck showing activity)
         """
     }
 

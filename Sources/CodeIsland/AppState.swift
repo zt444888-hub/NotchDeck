@@ -7,6 +7,13 @@ import CodeIslandCore
 
 private let log = Logger(subsystem: "com.notchdeck.mac", category: "AppState")
 
+/// Sources that report through the built-in MCP server (no native hooks, no
+/// process monitor). Their session liveness is driven purely by explicit agent
+/// reports, so a missed Stop/PostToolUse must not leave the panel spinning for
+/// the generic 180-300s stall timeout.
+private let mcpReportingSources: Set<String> = ["trae-work", "mcp", "claude-desktop", "zoo-code", "openhands"]
+private let mcpIdleTimeout: TimeInterval = 45
+
 /// FSEventStream context target. Callbacks hold an unretained pointer to this
 /// box (not `AppState`), and reach the owner only through `weak`, so queued
 /// main-queue deliveries stay safe if `AppState` tears down off the main actor.
@@ -267,6 +274,10 @@ final class AppState {
         //    process exit instead of synthesizing idle and risking false-idle mid-thought.
         //    - No tool + no monitor: 300s (agents can think for several minutes)
         //    - Has tool + no monitor: 180s (long build / deep thinking with missed exit)
+        //    - MCP-reporting sources: 45s — these sessions (TRAE Work etc.) have no
+        //      process monitor and are driven purely by the agent's explicit reports.
+        //      If the agent misses Stop/PostToolUse (common with guided MCP reporting),
+        //      a 180s stall leaves the panel spinning after the task finished.
         //    - waitingApproval/Question + no monitor: 300s (connection likely dropped)
         //
         //    Skip remote sessions: they NEVER have a local process monitor (the CLI runs
@@ -280,9 +291,13 @@ final class AppState {
             && !session.isRemote {
             let elapsed = -session.lastActivity.timeIntervalSinceNow
             let threshold: TimeInterval
-            switch session.status {
-            case .waitingApproval, .waitingQuestion: threshold = 300
-            default: threshold = session.currentTool != nil ? 180 : 300
+            if mcpReportingSources.contains(session.source) {
+                threshold = mcpIdleTimeout
+            } else {
+                switch session.status {
+                case .waitingApproval, .waitingQuestion: threshold = 300
+                default: threshold = session.currentTool != nil ? 180 : 300
+                }
             }
             if elapsed > threshold {
                 sessions[key]?.status = .idle
