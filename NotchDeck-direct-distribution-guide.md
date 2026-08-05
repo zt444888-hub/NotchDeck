@@ -1,9 +1,9 @@
 # NotchDeck 直分发布清单（Developer ID + notarize）
 
-> 状态：2026-08-04。产物 `.build/release/NotchDeck.app` 已通过本机构建 + 签名验证
-> （`codesign --verify --deep --strict` 通过，Identifier=`com.notchdeck.mac`，TeamIdentifier=`2VBHV3VJ8N`）。
-> Developer ID 证书已签发导入，notarytool 凭证已存（profile `NotchDeck`），
-> build.sh 公证段已加 20min 超时保护。首次公证因 Apple 服务停滞待重提（见 §6）。
+> 状态：2026-08-05。**v1.1.0 已正式发布**：DMG 公证 Accepted（29fe66fd）+ staple，
+> GitHub Release 已创建（https://github.com/zt444888-hub/NotchDeck/releases/tag/v1.1.0），
+> appcast.xml 已更新（仅 v1.1.0 条目，新 Ed25519 签名），远程 sha256 与本地一致。
+> 本次发布链执行记录见 2026-08-05 工作日志。
 
 ## 0. 现状（已就绪）
 
@@ -14,6 +14,7 @@
 - [x] Developer ID Application 证书已导入钥匙串（G2 Sub-CA，2031-08 到期）
 - [x] notarytool 凭证已存（`--keychain-profile NotchDeck`）
 - [x] build.sh 公证段有 `--timeout 20m` + submission id 恢复逻辑
+- [x] v1.1.0 发布完成（DMG + appcast + Release；app 与 DMG 均已 staple）
 
 ## 1. 你必须手动完成的两步（一次性）
 
@@ -87,15 +88,15 @@ xcrun notarytool store-credentials "NotchDeck" \
 
 ## 4. 首次发布前最终检查清单
 
-- [ ] `security find-identity` 出现 Developer ID Application 证书
-- [ ] `notarytool history` 可用
+- [x] `security find-identity` 出现 Developer ID Application 证书
+- [x] `notarytool history` 可用
 - [ ] 干净机器安装验证通过（无 Gatekeeper 拦截、Sparkle 更新提示正常）
 - [ ] 首次运行验证 hooks 安装链路（`~/.notchdeck/` 创建、各 CLI 配置写入 notchdeck 块）——
       开发机已确认零残留，首次运行即从干净状态安装
 - [x] `SUPublicEDKey` 已配置（`fXonIxJvmDAY3DmfcPZxoDjzMAcrrjDk1eSfFPjuCgc=`，2026-08-04 生成密钥对）
 - [ ] 隐私营养标签填写（developer.apple.com → App Store Connect → 你的 App → 隐私）
 - [ ] README Buddy 占位链接（`idYOUR_BUDDY_APPSTORE_ID`）等 companion 上架后替换
-- [ ] appcast.xml `sparkle:minimumSystemVersion` 与 Info.plist 的 LSMinimumSystemVersion 一致（14.0）
+- [x] appcast.xml `sparkle:minimumSystemVersion` 与 Info.plist 的 LSMinimumSystemVersion 一致（14.0）
 
 ## 5. 已知边界
 
