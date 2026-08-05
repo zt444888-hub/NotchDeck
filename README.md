@@ -3,12 +3,12 @@
   NotchDeck
 </h1>
 <p align="center">
-  <b>Real-time AI coding agent status panel for macOS Dynamic Island (Notch)</b><br>
+  <b>See what your AI agent is doing — in the notch and on your iPhone</b><br>
   <a href="#installation">Install</a> •
   <a href="#features">Features</a> •
   <a href="#supported-tools">Supported Tools</a> •
   <a href="#mcp-server-v120">MCP Server</a> •
-  <a href="#build-from-source">Build</a> •
+  <a href="#roadmap">Roadmap</a> •
   <a href="PRIVACY.md">Privacy</a><br>
   English | <a href="README.zh-CN.md">简体中文</a>
 </p>
@@ -16,19 +16,23 @@
 ---
 
 <p align="center">
-  <img src="docs/images/notch-panel.png" width="700" alt="NotchDeck Panel Preview">
+  <img src="docs/images/notchdeck-phone-demo.gif" width="800" alt="NotchDeck: Mac notch panel mirrored to iPhone in real time via Bluetooth">
 </p>
 
 ## What is NotchDeck?
 
-NotchDeck lives in your MacBook's notch area and shows you what your AI coding agents are doing — in real time. No more switching windows to check if Claude is waiting for approval or if Codex finished its task.
+NotchDeck shows you what your AI coding agents are doing — **in your MacBook notch and on your iPhone, in real time**. No more switching windows to check if Claude is waiting for approval or if Codex finished its task.
 
-It connects to **13 AI coding tools** via Unix socket IPC, displaying session status, tool calls, permission requests, and more — all in a compact, pixel-art styled panel.
+Your **MacBook notch** expands into a compact panel that tracks every agent session, tool call, and permission request. Walk away from your desk and your **iPhone picks up the same status via Bluetooth** — Dynamic Island, Lock Screen, StandBy, and Apple Watch all mirror the activity.
+
+It connects to **28+ AI coding tools** via native hooks and a built-in MCP server — supporting Claude Code, Codex, Gemini CLI, Cursor, Windsurf, TRAE Work, and more.
 
 ## Features
 
 - **Notch-native UI** — Expands from the MacBook notch, collapses when idle
-- **28 AI tools supported** — Claude Code, Codex, Gemini CLI, Cursor, Copilot, Trae / Trae CN / TraeCli, Qoder / QoderWork, Factory, CodeBuddy / CodyBuddyCN, StepFun, AntiGravity, WorkBuddy, Hermes, Qwen Code, Kimi Code CLI, Cline, Kiro, Pi / Oh My Pi, OpenCode, OpenClaw, ZCode, Google Antigravity
+- **iPhone & Apple Watch Buddy** *(zero-config Bluetooth pairing)* — Mirror session status to Dynamic Island, Lock Screen, StandBy, and Apple Watch
+- **28+ AI tools supported** — Claude Code, Codex, Gemini CLI, Cursor, Copilot, Trae / Trae CN / TraeCli, Qoder / QoderWork, Factory, CodeBuddy / CodyBuddyCN, StepFun, AntiGravity, WorkBuddy, Hermes, Qwen Code, Kimi Code CLI, Cline, Kiro, Pi / Oh My Pi, OpenCode, OpenClaw, ZCode, Google Antigravity
+- **Built-in MCP server** — Any MCP-capable tool (TRAE Work, Zoo Code, OpenHands, Continue, Aider...) can report events through `notchdeck_report`
 - **Live status tracking** — See active sessions, tool calls, and AI responses in real time
 - **Permission management** — Approve/deny tool permissions directly from the panel
 - **Question answering** — Respond to agent questions without leaving your current app
@@ -37,9 +41,9 @@ It connects to **13 AI coding tools** via Unix socket IPC, displaying session st
 - **Smart suppress** — Tab-level terminal detection: only suppresses notifications when you're looking at the specific session tab, not just the terminal app
 - **Sound effects** — Optional 8-bit sound notifications for session events
 - **Auto hook install** — Automatically configures hooks for all detected CLI tools, with auto-repair and version tracking
-- **iPhone & Apple Watch Buddy** — Mirror session status to Dynamic Island, Lock Screen, StandBy, and Apple Watch
 - **Bilingual UI** — English and Chinese, auto-detects system language
 - **Multi-display** — Works with external monitors, auto-detects notch displays
+- **Local & private** — All processing on your machine. No cloud, no telemetry, no account required
 
 ## Supported Tools
 
@@ -258,6 +262,14 @@ All shortcuts are configurable — and more actions (always-allow, skip question
 
 - macOS 14.0 (Sonoma) or later
 - Works best on MacBooks with a notch, but also works on external displays
+- **iPhone & Apple Watch companion**: requires Xcode 26+ (iOS 18+) for sideloading via TestFlight or signing; see [docs/ROADMAP.md](docs/ROADMAP.md)
+
+## Roadmap
+
+We're shipping fast. See [docs/ROADMAP.md](docs/ROADMAP.md) for the full plan.
+
+**v1.2.0 — Remote AI conversation from your phone (next up):**
+A full conversation you can drive from your iPhone while away from your Mac — type, get streaming replies, multi-turn context. Built on CloudKit (data stays in your iCloud, developer can't read it). Phone becomes a first-class remote for your AI, not just a status mirror.
 
 ## Acknowledgments
 

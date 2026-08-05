@@ -20,8 +20,8 @@
 - 完善个人 profile（头像、bio 写"iOS/macOS indie dev"）
 
 ### 2. 必备物料清单（对照打勾）
-- [ ] **主视觉图（最关键）**：1 张演示动图（GIF）——Claude Code 干活 → 刘海面板实时跳动 → 完成。1440x810 或 16:9。PH 首页展示位
-- [ ] 5-8 张截图：面板展开、会话列表、批准/问题弹窗、设置页（Hooks 列表）、MCP 设置页、手机 companion（iPhone 镜像）
+- [ ] **主视觉图（最关键）**：`docs/images/notchdeck-phone-demo.gif`——Mac 刘海面板 + iPhone 实时镜像（BLE 同步），主视觉同时展示 Mac/iPhone 双端。PH 首页展示位
+- [ ] 5-8 张截图：面板展开、会话列表、批准/问题弹窗、设置页（Hooks 列表）、MCP 设置页、手机 companion（iPhone + 灵动岛）、Apple Watch
 - [ ] **YouTube 演示视频**（1-2 分钟，可选项但推荐）：录屏 + 简单字幕
 - [ ] 官网/GitHub 链接：`https://github.com/zt444888-hub/NotchDeck`（放 release 下载）
 
@@ -55,32 +55,33 @@ NotchDeck
 
 ### Tagline（≤60 字符）
 ```
-Live AI agent status in your MacBook notch
+See what your AI agent is doing — in the notch and on your iPhone
 ```
-> 备选：`See what your AI coding agent is doing, right in the notch`
+> 备选：`AI agent status, in the notch and on your iPhone`
 
 ### Description（Markdown 正文）
 
 ```
-Your AI coding agent works invisibly. When it gets stuck, burns tokens, or
+Your AI coding agents work invisibly. When one gets stuck, burns tokens, or
 needs approval — you find out after the damage is done.
 
-**NotchDeck puts a live status panel in your MacBook notch**, showing exactly
-what your agent is doing in real time: thinking, running tools, waiting for
-approval, or finished.
+**NotchDeck makes them visible** — a live status panel in your MacBook
+notch, mirrored in real time to your iPhone's Dynamic Island, Lock Screen,
+StandBy, and Apple Watch.
 
 **Works with 30+ AI tools — zero config:**
 - Native hooks for Claude Code, Codex, Gemini CLI, Cursor, Trae, Windsurf,
   Qoder, and 25+ more (auto-installed on first launch)
 - Built-in MCP server for anything else — TRAE Work, Zoo Code, OpenHands…
   (config auto-injected, just start a new conversation)
-- iPhone & Apple Watch companion mirrors the island via Bluetooth
+- iPhone & Apple Watch companion mirrors the island via Bluetooth — no cloud,
+  no account, no setup
 
-**Every event is local.** Hooks and MCP reports stay on your machine —
+**Everything is local.** Hooks and MCP reports stay on your machine —
 no cloud, no telemetry, no account. MIT-licensed open source.
 
-Watch your agent work, catch failures early, and never lose track of what
-your AI is doing again.
+Watch your agent work from the notch, or walk away and watch from your
+iPhone. Never lose track of what your AI is doing again.
 ```
 
 ### Topics / Tags
