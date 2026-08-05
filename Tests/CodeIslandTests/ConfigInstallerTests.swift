@@ -216,7 +216,14 @@ final class ConfigInstallerTests: XCTestCase {
 
         XCTAssertEqual(cli.configPath, ".trae/hooks.json")
         XCTAssertEqual(cli.format.storageValue, HookFormat.traeIDE.storageValue)
-        XCTAssertTrue(cli.events.contains { $0.0 == "beforeReadFile" })
+        // TRAE uses PascalCase event names (docs.trae.cn/ide_hook-configuration-reference):
+        // SessionStart / UserPromptSubmit / PreToolUse / PostToolUse / Stop / Notification.
+        // NotchDeck <=1.1.6 wrote Cursor-style camelCase names (beforeSubmitPrompt,
+        // beforeReadFile, ...) which TRAE never matches — hooks loaded but never fired.
+        XCTAssertTrue(cli.events.contains { $0.0 == "PreToolUse" })
+        XCTAssertTrue(cli.events.contains { $0.0 == "SessionStart" })
+        XCTAssertTrue(cli.events.contains { $0.0 == "Stop" })
+        XCTAssertFalse(cli.events.contains { $0.0 == "beforeReadFile" })
     }
 
     func testTraeCLINextUsesTraeXHooksSchema() throws {

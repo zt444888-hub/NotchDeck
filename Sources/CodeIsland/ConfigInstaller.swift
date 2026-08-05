@@ -596,7 +596,7 @@ struct ConfigInstaller {
                 ("PostToolUse", 5, false),
                 ("Stop", 5, false),
             ]
-        case .flat, .traeIDE:
+        case .flat:
             return [
                 ("beforeSubmitPrompt", 5, false),
                 ("beforeShellExecution", 5, false),
@@ -608,6 +608,20 @@ struct ConfigInstaller {
                 ("afterAgentThought", 5, false),
                 ("afterAgentResponse", 5, false),
                 ("stop", 5, false),
+            ]
+        case .traeIDE:
+            // TRAE IDE / TRAE SOLO use PascalCase event names (docs.trae.cn/ide_hook-configuration-reference):
+            // SessionStart / UserPromptSubmit / PreToolUse / PostToolUse / Stop / Notification.
+            // NotchDeck <=1.1.6 wrote Cursor-style camelCase names into ~/.trae-cn/hooks.json,
+            // which TRAE never matches — hooks loaded but silently never fired.
+            // Default isHooksInstalled(events.allSatisfy) auto-detects the mismatch and rewrites.
+            return [
+                ("SessionStart", 5, false),
+                ("UserPromptSubmit", 5, false),
+                ("PreToolUse", 5, false),
+                ("PostToolUse", 5, false),
+                ("Stop", 5, false),
+                ("Notification", 5, false),
             ]
         case .traecli:
             return [
@@ -1420,6 +1434,12 @@ struct ConfigInstaller {
         if cli.source == "traecli-next" {
             // Clean up NotchDeck-managed entries written with the old Trae IDE
             // event names (for example beforeReadFile) at the new Trae CLI path.
+            hooks = removeManagedHookEntries(from: hooks)
+        }
+        if cli.format == .traeIDE {
+            // Remove stale Cursor-style camelCase keys written by NotchDeck <=1.1.6
+            // (beforeSubmitPrompt, afterShellExecution, ...). TRAE ignores unknown
+            // keys, but keeping the file clean avoids confusion in settings UI.
             hooks = removeManagedHookEntries(from: hooks)
         }
         // Quote the path in case home directory contains spaces or special characters
