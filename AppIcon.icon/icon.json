@@ -5,8 +5,8 @@
       "layers" : [
         {
           "blend-mode" : "normal",
-          "glass" : true,
-          "image-name" : "logo 2.svg",
+          "glass" : false,
+          "image-name" : "logo 2.png",
           "name" : "logo 2",
           "position" : {
             "scale" : 2,
