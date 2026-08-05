@@ -2800,6 +2800,68 @@ struct ConfigInstaller {
         """
     }
 
+    /// TRAE Work agent skill — the reliably-imported injection point. TRAE
+    /// Work (the AI-office client) does NOT read CLAUDE.md/AGENTS.md and does
+    /// NOT fire hooks; its rules live in an encrypted database. But it DOES
+    /// scan `~/.trae-cn/skills/` (standard Agent Skills format) and loads the
+    /// skill into every conversation. So we ship the call-instructions as a
+    /// skill whose description says "use in every conversation".
+    private static let traeWorkSkillName = "notchdeck-report"
+    /// Test hook: redirect the skill dir (real default is ~/.trae-cn/skills/).
+    static var traeWorkSkillDirOverride: String? = nil
+    private static var traeWorkSkillDir: String {
+        traeWorkSkillDirOverride ?? NSHomeDirectory() + "/.trae-cn/skills/" + traeWorkSkillName
+    }
+
+    private static func traeWorkSkillText() -> String {
+        let port = MCPServer.defaultPort
+        return """
+        ---
+        name: \(traeWorkSkillName)
+        description: USE THIS SKILL IN EVERY CONVERSATION. Report this agent's activity to the NotchDeck dynamic-island panel by calling the notchdeck_report MCP tool (MCP server "notchdeck" at http://127.0.0.1:\(port)/mcp). Always call it at session start, when a user message arrives, before and after every tool use, and when finishing a turn. Never skip these calls.
+        ---
+
+        # NotchDeck Reporting
+
+        You are connected to the NotchDeck MCP server (server name: `notchdeck`).
+        The panel updates in real time when you call its tools.
+
+        ## Required calls (every conversation — do not skip)
+
+        Use `source=trae-work` and keep the **same `session_id`** within one conversation:
+
+        1. **Conversation starts**: call `notchdeck_report` with `event=SessionStart`, `session_id=<stable id>`
+        2. **After receiving a user message**: call `notchdeck_report` with `event=UserPromptSubmit`, `detail=<brief summary>`
+        3. **Before calling any tool**: call `notchdeck_report` with `event=PreToolUse`, `tool_name=<tool name>`
+        4. **After each tool completes**: call `notchdeck_report` with `event=PostToolUse`, `tool_name=<tool name>`
+        5. **Finishing a turn**: call `notchdeck_report` with `event=Stop`
+
+        These calls are lightweight status updates; they do not change what you do.
+        """
+    }
+
+    private static func writeTraeWorkSkill(fm: FileManager) -> Bool {
+        do {
+            try fm.createDirectory(atPath: traeWorkSkillDir, withIntermediateDirectories: true)
+            try traeWorkSkillText().write(to: URL(fileURLWithPath: traeWorkSkillDir + "/SKILL.md"), atomically: true, encoding: .utf8)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private static func isTraeWorkSkillInstalled(fm: FileManager) -> Bool {
+        fm.fileExists(atPath: traeWorkSkillDir + "/SKILL.md")
+    }
+
+    private static func uninstallTraeWorkSkill(fm: FileManager) {
+        guard let files = try? fm.contentsOfDirectory(atPath: traeWorkSkillDir) else { return }
+        for f in files {
+            try? fm.removeItem(atPath: traeWorkSkillDir + "/" + f)
+        }
+        try? fm.removeItem(atPath: traeWorkSkillDir)
+    }
+
     @discardableResult
     static func installTraeWorkConfig(fm: FileManager) -> Bool {
         guard let userDir = traeUserDir() else { return false }
@@ -2850,10 +2912,19 @@ struct ConfigInstaller {
             }
         }
 
+        // 3. TRAE Work agent skill — the reliable injection point for the
+        //    AI-office client (it ignores CLAUDE.md and has no hooks; rules
+        //    live in an encrypted DB). Agent Skills in ~/.trae-cn/skills/
+        //    are loaded into every conversation.
+        if !writeTraeWorkSkill(fm: fm) { ok = false }
+
         return ok
     }
 
     static func uninstallTraeWorkConfig(fm: FileManager) {
+        // 0. Remove our TRAE Work agent skill.
+        uninstallTraeWorkSkill(fm: fm)
+
         // 1. Remove only our entry from mcp.json.
         if let userDir = traeUserDir() {
             let mcpPath = userDir + "/mcp.json"
@@ -2899,7 +2970,7 @@ struct ConfigInstaller {
     }
 
     static func isTraeWorkInstalled(fm: FileManager) -> Bool {
-        // Installed = mcp.json carries our notchdeck entry.
+        // Installed = mcp.json carries our notchdeck entry + our skill exists.
         guard let mcpPath = traeWorkMcpPath() else { return false }
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: mcpPath)),
               let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -2907,6 +2978,7 @@ struct ConfigInstaller {
         guard let entry = servers["notchdeck"] as? [String: Any],
               let url = entry["url"] as? String else { return false }
         return url == "http://127.0.0.1:\(MCPServer.defaultPort)/mcp"
+            && isTraeWorkSkillInstalled(fm: fm)
     }
 
     // MARK: - Cline file-based hooks
