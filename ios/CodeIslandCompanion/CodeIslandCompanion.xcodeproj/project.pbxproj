@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -237,7 +237,7 @@
 		83800637B7C6322D5633FD36 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		83B07028BAA056A1DA7C7791 /* BuddyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuddyView.swift; sourceTree = "<group>"; };
 		8843E069F081B15AE433EA8D /* CodeIslandCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeIslandCompanionApp.swift; sourceTree = "<group>"; };
-		9A2B84F4F96272BE5A760B08 /* CodeIslandCompanion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CodeIslandCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9A2B84F4F96272BE5A760B08 /* CodeIslandCompanion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodeIslandCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A637A87231D2C2493FF97990 /* CursorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorView.swift; sourceTree = "<group>"; };
 		A6470A3909D478701A3B07E5 /* DexView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DexView.swift; sourceTree = "<group>"; };
 		AB36FBACC9BA81390F2EC8BE /* CodeIslandWatchWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CodeIslandWatchWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -551,7 +551,6 @@
 						ProvisioningStyle = Automatic;
 					};
 					F3973306BF558558774D5BD7 = {
-						DevelopmentTeam = 6SLN844AVD;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -567,7 +566,6 @@
 			);
 			mainGroup = D4F4B4DFF32FD06A20C575CA;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 54;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -846,7 +844,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CODE_SIGN_ENTITLEMENTS = CodeIslandWatchApp/CodeIslandWatchApp.entitlements;
 				INFOPLIST_FILE = CodeIslandWatchApp/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanion.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanion.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -932,7 +930,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanion.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanion.Widget;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -950,7 +948,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanion.watchkitapp.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanion.watchkitapp.Widget;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -969,7 +967,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanionUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanionUITests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = CodeIslandCompanion;
@@ -987,7 +985,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanionUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanionUITests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = CodeIslandCompanion;
@@ -1000,13 +998,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 2VBHV3VJ8N;
 				INFOPLIST_FILE = CodeIslandCompanion/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanion;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanion;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1019,7 +1018,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CODE_SIGN_ENTITLEMENTS = CodeIslandWatchApp/CodeIslandWatchApp.entitlements;
 				INFOPLIST_FILE = CodeIslandWatchApp/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanion.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanion.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -1038,7 +1037,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanion.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanion.Widget;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1051,13 +1050,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 2VBHV3VJ8N;
 				INFOPLIST_FILE = CodeIslandCompanion/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanion;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanion;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1074,7 +1074,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.fengye.CodeIslandCompanion.watchkitapp.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.CodeIslandCompanion.watchkitapp.Widget;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;

@@ -173,7 +173,7 @@ final class WatchConnection: NSObject, ObservableObject {
                 source: "claude",
                 status: .waitingQuestion,
                 toolName: "AskUserQuestion",
-                workspaceName: "fengye",
+                workspaceName: "notchdeck-demo",
                 messages: [
                     CompanionMessagePreview(role: .user, text: L10n.t(zh: "帮我写一篇长篇小说", en: "Help me write a full-length novel")),
                     CompanionMessagePreview(role: .assistant, text: L10n.t(zh: "我需要先确认小说类型和基调。", en: "I need to confirm the genre and tone first."))
