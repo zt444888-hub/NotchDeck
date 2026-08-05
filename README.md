@@ -7,7 +7,8 @@
   <a href="#installation">Install</a> •
   <a href="#features">Features</a> •
   <a href="#supported-tools">Supported Tools</a> •
-  <a href="#build-from-source">Build</a><br>
+  <a href="#build-from-source">Build</a> •
+  <a href="PRIVACY.md">Privacy</a><br>
   English | <a href="README.zh-CN.md">简体中文</a>
 </p>
 
@@ -69,11 +70,11 @@ brew install --cask notchdeck
 ### Manual Download
 
 1. Go to [Releases](https://github.com/zt444888-hub/NotchDeck/releases)
-2. Download `CodeIsland.dmg`
-3. Open the DMG and drag `CodeIsland.app` to your Applications folder
+2. Download `NotchDeck.dmg`
+3. Open the DMG and drag `NotchDeck.app` to your Applications folder
 4. Launch NotchDeck — it will automatically install hooks for all detected AI tools
 
-> **Note:** On first launch, macOS may show a security warning. Go to **System Settings → Privacy & Security** and click **Open Anyway**.
+> **Note:** NotchDeck is Developer ID-signed and Apple-notarized, so Gatekeeper normally lets it run without prompts. If a security warning ever appears, go to **System Settings → Privacy & Security** and click **Open Anyway**.
 
 ### iPhone & Apple Watch Buddy
 
@@ -83,7 +84,7 @@ NotchDeck Buddy is available on the App Store:
 
 The iPhone app mirrors your Mac sessions to Dynamic Island, Lock Screen, StandBy, and Apple Watch. The Mac app publishes lightweight session snapshots over your local network while the iPhone app is open, and sends compact Bluetooth summaries for background refreshes such as Live Activities and Watch updates.
 
-NotchDeck Buddy is completely free and open source. It does not require an account or an external server; the companion source code lives in this repository under `ios/NotchDeckCompanion` and `apple-companion`.
+NotchDeck Buddy is completely free and open source. It does not require an account or an external server; the companion source code lives in this repository under `ios/CodeIslandCompanion` and `apple-companion`.
 
 ### Build from Source
 
@@ -96,9 +97,9 @@ cd NotchDeck
 # Development (debug build + launch; Buddy Bluetooth needs the .app below)
 swift build && ./.build/debug/NotchDeck
 
-# Release (universal binary: Apple Silicon + Intel)
+# Release (Apple Silicon / arm64)
 ./build.sh
-open .build/release/CodeIsland.app
+open .build/release/NotchDeck.app
 ```
 
 ## How It Works
@@ -107,7 +108,7 @@ open .build/release/CodeIsland.app
 AI Tool (Claude/Codex/Gemini/Cursor/...)
   → Hook event triggered
     → codeisland-bridge (native Swift binary, ~86KB)
-      → Unix socket → /tmp/codeisland-<uid>.sock
+      → Unix socket → /tmp/notchdeck-<uid>.sock
         → NotchDeck app receives event
           → Updates UI in real time
           → Optional local Buddy sync to iPhone / Apple Watch
