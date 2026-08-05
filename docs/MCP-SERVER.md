@@ -146,10 +146,11 @@ server 内部：构造 `HookEvent` → `appState.recordHookEvent(...)` → `appS
 
 ## 9. 开放问题
 
-1. TRAE Work 的自定义规则是否真的能让 agent 稳定调用 notchdeck_report？（实测指引见 docs/TRAE-WORK-MCP-TEST.md——等待用户在 TRAE Work 桌面版实测，这是最大不确定项）
-2. MCP server 端口冲突处理（8765 被占则自动换端口，写入配置）
+1. TRAE Work 的 agent 能否稳定调用 notchdeck_report？→ **v1.1.9 已实现自动注入**（ConfigInstaller 写 TRAE User/mcp.json + 最近 workspace 的 AGENTS.md/CLAUDE.md，TRAE 默认导入 CLAUDE.md）。剩余不确定项：规则在会话启动快照 → 用户需新开会话（平台限制）；已实测自动注入文件写入成功，agent 调用稳定性待用户最终验证（docs/TRAE-WORK-MCP-TEST.md 第 0 节）
+2. MCP server 端口冲突处理（8765 被占则自动换端口 8766-8775，设置页显示实际端口 + 警告）✅ dev（commit e02679b）
 3. 是否需要 `notchdeck_session_start` 专用工具（强约束 agent 在会话开始必须调用）？
 4. ZooCode（Roo Code 社区 fork）确认走 MCP 路线（`.roo/mcp.json`），无专门 hooks 适配（✅ 调研结论）
+5. **开箱即用扩展**：MCP 自动注入模式（TRAE Work 已实现）可推广到其它无 hooks 工具（Zoo Code 的 .roo/mcp.json 类似）——按需评估
 
 ---
 

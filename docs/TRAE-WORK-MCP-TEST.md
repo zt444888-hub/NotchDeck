@@ -1,12 +1,27 @@
-# TRAE Work × NotchDeck MCP 实测指引
+# TRAE Work × NotchDeck 实测指引
 
 > 目标：验证 TRAE Work 的 agent 能稳定调用 `notchdeck_report`，让刘海面板实时显示
 > TRAE Work 会话状态。这是 MCP Server（P0/P1）的最终验收。
 >
+> **v1.1.9 起：TRAE Work 已开箱即用（zero-config）**——NotchDeck 启动时自动
+> 注入 MCP server 条目到 TRAE 的 `User/mcp.json`，并自动写入 AGENTS.md +
+> CLAUDE.md 规则到最近使用的 workspace（TRAE 默认导入 CLAUDE.md）。用户
+> **无需任何手动配置**，只需在 TRAE 新开会话。
+>
 > 前置条件：NotchDeck 已启动且 MCP Server 监听中
 > （Settings → MCP 显示 Listening，或 `nc -z 127.0.0.1 8765` 返回 PORT OPEN）。
 
-## 1. 添加 MCP Server（TRAE Work 桌面版）
+## 0. 快速验证（v1.1.9 开箱即用路径）
+
+1. 确认 NotchDeck 已启动（设置 → Hooks 里 TRAE Work 状态为「已激活」）
+2. 打开 TRAE Work 桌面版，**新开一个会话**（规则在会话启动时快照，旧会话无效）
+3. 正常聊天发任务即可——agent 按注入的规则自动调用 `notchdeck_report`
+4. 刘海面板出现 trae-work 会话并实时更新
+
+> 注意：TRAE 的 MCP 面板里 notchdeck 若未显示「已就绪」，重启 TRAE 一次
+> （让它重新读取 mcp.json）。首次使用请确认运行环境为「本地」。
+
+## 1. 手动添加 MCP Server（fallback，v1.1.9 前或自动注入失效时）
 
 1. 打开 **TRAE Work 桌面版**（网页版无法访问本机 127.0.0.1，必须桌面版）
 2. 左下角点击 **头像** → **设置**
