@@ -1571,6 +1571,7 @@ private struct BuddyPage: View {
     @AppStorage(SettingsKey.buddyScreenOrientation) private var screenOrientation: String = SettingsDefaults.buddyScreenOrientation
     @AppStorage(SettingsKey.appleCompanionEnabled) private var appleCompanionEnabled: Bool = SettingsDefaults.appleCompanionEnabled
     @AppStorage(SettingsKey.appleCompanionHeartbeatSeconds) private var appleCompanionHeartbeat: Double = SettingsDefaults.appleCompanionHeartbeatSeconds
+    @AppStorage(SettingsKey.remoteConversationEnabled) private var remoteConversationEnabled: Bool = SettingsDefaults.remoteConversationEnabled
     @ObservedObject private var appleCompanion = AppleCompanionPublisher.shared
     @State private var refreshTick = 0
 
@@ -1874,6 +1875,20 @@ private struct BuddyPage: View {
                 }
 
                 Text(l10n["apple_companion_desc"])
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section(l10n["remote_conversation"]) {
+                Toggle(l10n["remote_conversation_enable"], isOn: $remoteConversationEnabled)
+                    .onChange(of: remoteConversationEnabled) { _, newValue in
+                        if newValue {
+                            RemoteConversationService.shared.start()
+                        } else {
+                            RemoteConversationService.shared.stop()
+                        }
+                    }
+                Text(l10n["remote_conversation_desc"])
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
