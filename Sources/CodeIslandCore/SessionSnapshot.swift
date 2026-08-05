@@ -38,6 +38,7 @@ public struct SessionSnapshot: Sendable {
         "kiro",
         "cline",
         "zcode",
+        "windsurf",
     ]
 
     public static let ideCompletionSources: Set<String> = [

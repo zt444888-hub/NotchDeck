@@ -65,6 +65,13 @@ enum HookFormat {
     /// is a blocking approval hook: its stdout decision resolves ZCode's
     /// permission dialog (#258).
     case zcode
+    /// Windsurf (Codeium) Cascade style: user-level ~/.codeium/windsurf/hooks.json
+    /// { "hooks": { "<snake_case_event>": [ { "command": "...", "show_output": false } ] } }.
+    /// Events are snake_case (pre_run_command, post_write_code, ...); stdin uses
+    /// agent_action_name / trajectory_id instead of hook_event_name / session_id
+    /// (bridged in the bridge binary). Pre-hooks can block via exit code 2, so
+    /// the bridge must exit 0 (it does). No matcher/timeout keys.
+    case windsurf
 
     var storageValue: String {
         switch self {
@@ -81,6 +88,7 @@ enum HookFormat {
         case .hermes: return "hermes"
         case .antigravityNamed: return "antigravityNamed"
         case .zcode: return "zcode"
+        case .windsurf: return "windsurf"
         }
     }
 
@@ -99,6 +107,7 @@ enum HookFormat {
         case "hermes": self = .hermes
         case "antigravitynamed": self = .antigravityNamed
         case "zcode": self = .zcode
+        case "windsurf": self = .windsurf
         default: return nil
         }
     }
@@ -560,6 +569,28 @@ struct ConfigInstaller {
             configPath: ".zcode/cli/config.json", configKey: "hooks",
             format: .zcode,
             events: defaultEvents(for: .zcode)
+        ),
+        // Windsurf (Codeium) Cascade — user-level ~/.codeium/windsurf/hooks.json.
+        // Snake_case events; stdin carries agent_action_name/trajectory_id
+        // (bridged in the bridge binary). Pre-hooks can block via exit code 2,
+        // so the bridge exits 0. Workspace-level .windsurf/hooks.json is NOT
+        // managed (user's project choice).
+        CLIConfig(
+            name: "Windsurf", source: "windsurf",
+            configPath: ".codeium/windsurf/hooks.json", configKey: "hooks",
+            format: .windsurf,
+            events: [
+                ("pre_user_prompt", 5, false),
+                ("pre_run_command", 5, false),
+                ("post_run_command", 5, false),
+                ("pre_read_code", 5, false),
+                ("post_read_code", 5, false),
+                ("pre_write_code", 5, false),
+                ("post_write_code", 5, false),
+                ("pre_mcp_tool_use", 5, false),
+                ("post_mcp_tool_use", 5, false),
+                ("post_cascade_response", 5, false),
+            ]
         )
     ]
 
@@ -721,6 +752,10 @@ struct ConfigInstaller {
                 ("PostToolUseFailure", 5, true),
                 ("Stop", 5, true),
             ]
+        case .windsurf:
+            // Windsurf events are declared inline on the built-in CLIConfig;
+            // this case exists for switch exhaustiveness only.
+            return []
         }
     }
 
@@ -1001,6 +1036,13 @@ struct ConfigInstaller {
         // ZCode's config lives one level below the app's real root (~/.zcode/cli/),
         // so detect against the root itself rather than cli.dirPath (#245).
         if source == "zcode" { return FileManager.default.fileExists(atPath: NSHomeDirectory() + "/.zcode") }
+        // Windsurf (Codeium) — user config dir ~/.codeium/windsurf (Devin Desktop IDE)
+        // or bare ~/.codeium (JetBrains plugin).
+        if source == "windsurf" {
+            let fm = FileManager.default
+            return fm.fileExists(atPath: NSHomeDirectory() + "/.codeium/windsurf")
+                || fm.fileExists(atPath: NSHomeDirectory() + "/.codeium")
+        }
         // Kimi Code CLI moved from ~/.kimi (kimi-cli) to ~/.kimi-code.
         if source == "kimi" { return kimiPresenceDetected() }
         guard let cli = allCLIs.first(where: { $0.source == source }) else { return false }
@@ -1475,6 +1517,11 @@ struct ConfigInstaller {
             case .traecli:
                 // Treat like flat for custom JSON hook configs; built-in TraeCli uses YAML install path.
                 entry = ["command": "\(baseCommand) --event \(event)"]
+            case .windsurf:
+                // Windsurf Cascade: {command, show_output} flat entries, no matcher.
+                // `show_output: false` keeps the bridge's silence out of the Cascade UI.
+                // Bridge exits 0, so pre-hooks never accidentally block the agent.
+                entry = ["command": "\(baseCommand) --event \(event)", "show_output": false]
             case .copilot:
                 // Copilot CLI stdin lacks session_id/hook_event_name — pass event name via flag
                 let copilotCommand = "\(baseCommand) --event \(event)"

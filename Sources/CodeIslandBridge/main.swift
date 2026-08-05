@@ -247,6 +247,10 @@ if json["hook_event_name"] == nil {
         json["hook_event_name"] = event
     } else if let event = nonEmptyString(json["event"]) {
         json["hook_event_name"] = event
+    } else if let event = nonEmptyString(json["agent_action_name"]) {
+        // Windsurf (Codeium) Cascade: stdin carries `agent_action_name` instead
+        // of hook_event_name (snake_case, e.g. "pre_run_command").
+        json["hook_event_name"] = event
     } else if let event = eventTag {
         json["hook_event_name"] = event
     }
@@ -260,6 +264,9 @@ if json["session_id"] == nil {
     } else if let data = json["data"] as? [String: Any],
               let sessionId = nonEmptyString(data["session_id"]) ?? nonEmptyString(data["sessionId"]) {
         json["session_id"] = sessionId
+    } else if let trajectoryId = nonEmptyString(json["trajectory_id"]) {
+        // Windsurf Cascade: `trajectory_id` is the stable per-conversation key.
+        json["session_id"] = trajectoryId
     } else if let conversationId = nonEmptyString(json["conversationId"]) {
         // Google Antigravity (Gemini-based) stdin carries no session_id; it uses
         // `conversationId` as the stable per-conversation key (#215).

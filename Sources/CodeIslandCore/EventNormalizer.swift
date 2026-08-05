@@ -56,6 +56,19 @@ public enum EventNormalizer {
         case "TaskResume":            return "UserPromptSubmit"
         case "TaskComplete":          return "TaskRoundComplete"
         case "TaskCancel":            return "TaskRoundComplete"
+        // Windsurf (Codeium) Cascade — snake_case events. stdin carries
+        // agent_action_name; bridge maps it to hook_event_name before this
+        // normalizer runs. pre_* hooks exit 0 from the bridge (never blocks).
+        case "pre_user_prompt":       return "UserPromptSubmit"
+        case "pre_run_command":       return "PreToolUse"
+        case "post_run_command":      return "PostToolUse"
+        case "pre_read_code":         return "PreToolUse"
+        case "post_read_code":        return "PostToolUse"
+        case "pre_write_code":        return "PreToolUse"
+        case "post_write_code":       return "PostToolUse"
+        case "pre_mcp_tool_use":      return "PreToolUse"
+        case "post_mcp_tool_use":     return "PostToolUse"
+        case "post_cascade_response": return "AfterAgentResponse"
         default:                      return name
         }
     }
