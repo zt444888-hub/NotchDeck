@@ -72,6 +72,11 @@ enum HookFormat {
     /// (bridged in the bridge binary). Pre-hooks can block via exit code 2, so
     /// the bridge must exit 0 (it does). No matcher/timeout keys.
     case windsurf
+    /// TRAE Work (AI office desktop app) — NO hook mechanism. Integration is
+    /// via the MCP route: NotchDeck auto-writes the server entry into TRAE's
+    /// User/mcp.json and drops a CLAUDE.md rules file (TRAE imports CLAUDE.md
+    /// by default — AI.rules.importClaudeMd). See installTraeWorkConfig.
+    case traeWork
 
     var storageValue: String {
         switch self {
@@ -89,6 +94,7 @@ enum HookFormat {
         case .antigravityNamed: return "antigravityNamed"
         case .zcode: return "zcode"
         case .windsurf: return "windsurf"
+        case .traeWork: return "traeWork"
         }
     }
 
@@ -108,6 +114,7 @@ enum HookFormat {
         case "antigravitynamed": self = .antigravityNamed
         case "zcode": self = .zcode
         case "windsurf": self = .windsurf
+        case "traework": self = .traeWork
         default: return nil
         }
     }
@@ -591,6 +598,18 @@ struct ConfigInstaller {
                 ("post_mcp_tool_use", 5, false),
                 ("post_cascade_response", 5, false),
             ]
+        ),
+        // TRAE Work (AI office desktop app) — no hooks. NotchDeck writes its
+        // MCP server entry into TRAE's User/mcp.json and drops a CLAUDE.md
+        // rules file (TRAE imports CLAUDE.md by default). Events empty: the
+        // agent calls notchdeck_report over MCP per the injected rules.
+        CLIConfig(
+            name: "TRAE Work", source: "trae-work",
+            configPath: "Library/Application Support/TRAE SOLO CN/User/mcp.json",
+            configKey: "mcpServers",
+            format: .traeWork,
+            events: [],
+            displayPathOverride: { ConfigInstaller.traeWorkMcpPath() ?? "~/Library/Application Support/TRAE SOLO CN/User/mcp.json" }
         )
     ]
 
@@ -755,6 +774,9 @@ struct ConfigInstaller {
         case .windsurf:
             // Windsurf events are declared inline on the built-in CLIConfig;
             // this case exists for switch exhaustiveness only.
+            return []
+        case .traeWork:
+            // TRAE Work has no hooks — MCP route, events declared nowhere.
             return []
         }
     }
@@ -925,6 +947,8 @@ struct ConfigInstaller {
                 if !installHermesHooks(fm: fm) { ok = false }
             } else if cli.format == .zcode {
                 if !installZcodeHooks(fm: fm) { ok = false }
+            } else if cli.format == .traeWork {
+                if !installTraeWorkConfig(fm: fm) { ok = false }
             } else if cli.source == "pi" || cli.source == "omp" || cli.source == "openclaw" {
                 continue
             } else {
@@ -976,6 +1000,8 @@ struct ConfigInstaller {
                 uninstallHermesHooks(fm: fm)
             } else if cli.format == .zcode {
                 uninstallZcodeHooks(fm: fm)
+            } else if cli.format == .traeWork {
+                uninstallTraeWorkConfig(fm: fm)
             } else if cli.source == "pi" {
                 uninstallPiExtension(fm: fm)
             } else if cli.source == "omp" {
@@ -1006,6 +1032,7 @@ struct ConfigInstaller {
         if source == "traecli" { return isTraecliHooksInstalled(fm: FileManager.default) }
         if source == "hermes" { return isHermesHooksInstalled(fm: FileManager.default) }
         if source == "zcode" { return isZcodeHooksInstalled(fm: FileManager.default) }
+        if source == "trae-work" { return isTraeWorkInstalled(fm: FileManager.default) }
         if source == "cline" {
             guard let cli = allCLIs.first(where: { $0.source == "cline" }) else { return false }
             return isClineHooksInstalled(cli: cli, fm: FileManager.default)
@@ -1043,6 +1070,8 @@ struct ConfigInstaller {
             return fm.fileExists(atPath: NSHomeDirectory() + "/.codeium/windsurf")
                 || fm.fileExists(atPath: NSHomeDirectory() + "/.codeium")
         }
+        // TRAE Work (AI office desktop app) — detected via its user config dir.
+        if source == "trae-work" { return traeWorkMcpPath() != nil }
         // Kimi Code CLI moved from ~/.kimi (kimi-cli) to ~/.kimi-code.
         if source == "kimi" { return kimiPresenceDetected() }
         guard let cli = allCLIs.first(where: { $0.source == source }) else { return false }
@@ -1522,6 +1551,10 @@ struct ConfigInstaller {
                 // `show_output: false` keeps the bridge's silence out of the Cascade UI.
                 // Bridge exits 0, so pre-hooks never accidentally block the agent.
                 entry = ["command": "\(baseCommand) --event \(event)", "show_output": false]
+            case .traeWork:
+                // TRAE Work is intercepted before this switch (MCP route);
+                // this case exists for switch exhaustiveness only.
+                entry = [:]
             case .copilot:
                 // Copilot CLI stdin lacks session_id/hook_event_name — pass event name via flag
                 let copilotCommand = "\(baseCommand) --event \(event)"
@@ -2676,6 +2709,204 @@ struct ConfigInstaller {
         if let merged, let data = merged.data(using: .utf8) {
             fm.createFile(atPath: cli.fullPath, contents: data)
         }
+    }
+
+    // MARK: - TRAE Work MCP config injection
+
+    /// TRAE Work has no hook mechanism — integration is the MCP route:
+    /// 1. Merge the notchdeck server entry into TRAE's User/mcp.json
+    ///    (`{ "mcpServers": { "notchdeck": { "url": "http://127.0.0.1:8765/mcp" } } }`).
+    /// 2. Drop AGENTS.md + CLAUDE.md (both imported by TRAE by default —
+    ///    `AI.rules.importClaudeMd`) into the most recently used TRAE
+    ///    workspace so the agent auto-reports lifecycle events.
+    /// Uninstall removes only our entry / our rule files.
+
+    /// Candidate user-data roots for the TRAE desktop apps (CN and
+    /// international builds). First existing match wins.
+    private static let traeUserRoots = [
+        "Library/Application Support/TRAE SOLO CN/User",
+        "Library/Application Support/Trae/User",
+        "Library/Application Support/TRAE/User",
+        "Library/Application Support/TraeWork/User",
+    ]
+
+    /// Test hook: override the candidate roots (absolute paths) so tests can
+    /// exercise the injection against a temp dir instead of the real TRAE.
+    static var traeUserRootsOverride: [String]? = nil
+
+    private static let traeWorkRuleMarker = "notchdeck-managed"
+
+    /// Actual TRAE User dir (the one that exists), or nil if no TRAE desktop
+    /// app has ever run on this machine.
+    static func traeUserDir() -> String? {
+        for root in traeUserRootsOverride ?? traeUserRoots {
+            let d = root.hasPrefix("/") ? root : NSHomeDirectory() + "/" + root
+            if FileManager.default.fileExists(atPath: d) { return d }
+        }
+        return nil
+    }
+
+    /// Path to TRAE's User/mcp.json (the one that exists, else the first
+    /// candidate). Nil when no TRAE User dir exists.
+    static func traeWorkMcpPath() -> String? {
+        guard let dir = traeUserDir() else { return nil }
+        return dir + "/mcp.json"
+    }
+
+    /// Most recently used TRAE workspace root (where its workspace.json lives),
+    /// used for rule-file injection. Nil if no workspace has been opened.
+    static func traeLatestWorkspaceRoot() -> String? {
+        guard let base = traeUserDir() else { return nil }
+        // Workspaces live one level up from User, in <App Support>/Workspaces/<id>/.
+        let workspacesDir = ((base as NSString).deletingLastPathComponent as NSString)
+            .appendingPathComponent("Workspaces") as String
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(atPath: workspacesDir) else { return nil }
+        let roots = entries
+            .filter { fm.fileExists(atPath: "\(workspacesDir)/\($0)/workspace.json") }
+            .map { dir -> (dir: String, mod: Date) in
+                let attrs = try? fm.attributesOfItem(atPath: "\(workspacesDir)/\(dir)")
+                let mod = (attrs?[.modificationDate] as? Date) ?? .distantPast
+                return (dir, mod)
+            }
+            .sorted { $0.mod > $1.mod }
+        return roots.first.map { "\(workspacesDir)/\($0.dir)" }
+    }
+
+    /// Rule content telling the TRAE agent to report lifecycle events.
+    private static func traeWorkRulesText() -> String {
+        let port = MCPServer.defaultPort
+        return """
+        # NotchDeck integration (<!-- \(traeWorkRuleMarker) -->)
+
+        You are connected to the NotchDeck MCP server at http://127.0.0.1:\(port)/mcp.
+        Report your activity to the NotchDeck dynamic-island panel by calling the
+        `notchdeck_report` MCP tool. Use `source=trae-work` and keep the same
+        `session_id` within one conversation:
+
+        1. When a new conversation starts: call `notchdeck_report` with
+           event=SessionStart, session_id=<stable id for this conversation>
+        2. Right after you receive a user message: call `notchdeck_report` with
+           event=UserPromptSubmit, detail=<brief summary of the message>
+        3. Immediately before calling any tool: call `notchdeck_report` with
+           event=PreToolUse, tool_name=<name of the tool>
+        4. Immediately after each tool completes: call `notchdeck_report` with
+           event=PostToolUse, tool_name=<name of the tool>
+        5. When you finish answering a turn: call `notchdeck_report` with
+           event=Stop
+
+        These calls are lightweight and must not be skipped; they power the
+        real-time status panel.
+        """
+    }
+
+    @discardableResult
+    static func installTraeWorkConfig(fm: FileManager) -> Bool {
+        guard let userDir = traeUserDir() else { return false }
+        var ok = true
+
+        // 1. Merge notchdeck into mcp.json (create if missing).
+        let mcpPath = userDir + "/mcp.json"
+        var root: [String: Any] = [:]
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: mcpPath)),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            root = json
+        }
+        var servers = root["mcpServers"] as? [String: Any] ?? [:]
+        servers["notchdeck"] = ["url": "http://127.0.0.1:\(MCPServer.defaultPort)/mcp"]
+        root["mcpServers"] = servers
+        if let data = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys]) {
+            do {
+                try data.write(to: URL(fileURLWithPath: mcpPath), options: .atomic)
+            } catch {
+                ok = false
+            }
+        } else {
+            ok = false
+        }
+
+        // 2. Rule files into the most recently used workspace (AGENTS.md is
+        //    TRAE's canonical project rules file; CLAUDE.md is also imported
+        //    via AI.rules.importClaudeMd).
+        if let workspaceRoot = traeLatestWorkspaceRoot() {
+            let rules = traeWorkRulesText()
+            for name in ["AGENTS.md", "CLAUDE.md"] {
+                let path = workspaceRoot + "/" + name
+                let existing = (try? String(contentsOf: URL(fileURLWithPath: path), encoding: .utf8)) ?? ""
+                let merged: String
+                if existing.contains(traeWorkRuleMarker) {
+                    // Replace our previous block in place.
+                    merged = rules
+                } else if existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    merged = rules
+                } else {
+                    merged = existing + "\n\n" + rules
+                }
+                do {
+                    try merged.write(to: URL(fileURLWithPath: path), atomically: true, encoding: .utf8)
+                } catch {
+                    ok = false
+                }
+            }
+        }
+
+        return ok
+    }
+
+    static func uninstallTraeWorkConfig(fm: FileManager) {
+        // 1. Remove only our entry from mcp.json.
+        if let userDir = traeUserDir() {
+            let mcpPath = userDir + "/mcp.json"
+            if let data = try? Data(contentsOf: URL(fileURLWithPath: mcpPath)),
+               var root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               var servers = root["mcpServers"] as? [String: Any] {
+                if servers.removeValue(forKey: "notchdeck") != nil {
+                    if servers.isEmpty {
+                        root.removeValue(forKey: "mcpServers")
+                    } else {
+                        root["mcpServers"] = servers
+                    }
+                    if let out = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys]) {
+                        try? out.write(to: URL(fileURLWithPath: mcpPath), options: .atomic)
+                    }
+                }
+            }
+
+            // 2. Remove our rule files if we wrote them (only ours).
+            if let workspaceRoot = traeLatestWorkspaceRoot() {
+                for name in ["AGENTS.md", "CLAUDE.md"] {
+                    let path = workspaceRoot + "/" + name
+                    guard let content = try? String(contentsOf: URL(fileURLWithPath: path), encoding: .utf8) else { continue }
+                    if content.contains(traeWorkRuleMarker) {
+                        // Strip just our block; leave any pre-existing content.
+                        var lines = content.components(separatedBy: "\n")
+                        if let start = lines.firstIndex(where: { $0.contains("# NotchDeck integration") }) {
+                            // Remove from start to the blank line after the block.
+                            while start < lines.count, lines[start].trimmingCharacters(in: .whitespaces).isEmpty == false {
+                                lines.remove(at: start)
+                            }
+                            if start < lines.count { lines.remove(at: start) } // trailing blank
+                            let cleaned = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                            try? cleaned.write(to: URL(fileURLWithPath: path), atomically: true, encoding: .utf8)
+                        } else {
+                            // Whole file is ours — remove it.
+                            try? fm.removeItem(atPath: path)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    static func isTraeWorkInstalled(fm: FileManager) -> Bool {
+        // Installed = mcp.json carries our notchdeck entry.
+        guard let mcpPath = traeWorkMcpPath() else { return false }
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: mcpPath)),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let servers = root["mcpServers"] as? [String: Any] else { return false }
+        guard let entry = servers["notchdeck"] as? [String: Any],
+              let url = entry["url"] as? String else { return false }
+        return url == "http://127.0.0.1:\(MCPServer.defaultPort)/mcp"
     }
 
     // MARK: - Cline file-based hooks
