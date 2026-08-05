@@ -8,6 +8,19 @@
     <description>Most recent NotchDeck updates</description>
     <language>en</language>
     <item>
+      <title>Version 1.1.7</title>
+      <link>https://github.com/zt444888-hub/NotchDeck/releases/tag/v1.1.7</link>
+      <sparkle:version>1.1.7</sparkle:version>
+      <sparkle:shortVersionString>1.1.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 05 Aug 2026 07:07:55 +0000</pubDate>
+      <enclosure
+        url="https://github.com/zt444888-hub/NotchDeck/releases/download/v1.1.7/NotchDeck.dmg"
+        sparkle:edSignature="ShQSybyzCQuI3xarRJCj3jGIL2YtKD7iY0vtahC5bUwo9+hXeRMy/uJ4UmCN1HRHPOF0UGMBXyq33NPSqfbLBQ=="
+        length="12529341"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.1.6</title>
       <link>https://github.com/zt444888-hub/NotchDeck/releases/tag/v1.1.6</link>
       <sparkle:version>1.1.6</sparkle:version>
