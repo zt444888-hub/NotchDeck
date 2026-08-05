@@ -281,7 +281,10 @@ struct ClineView: View {
     }
 }
 
-#if DEBUG
+// #Preview is guarded to macOS only: this file is shared into the iOS
+// companion targets (Widget extension), where the Previews macro plugin
+// crashes under Xcode 26.x (swift-plugin-server malformed response).
+#if DEBUG && os(macOS)
 #Preview("ClineView") {
     HStack(spacing: 20) {
         ClineView(status: .idle,            size: 54)

@@ -1581,11 +1581,6 @@ private func statusColor(_ status: CompanionStatus) -> Color {
     }
 }
 
-#Preview {
-    ContentView()
-        .environmentObject(CompanionConnection())
-        .environmentObject(LiveActivityController())
-}
 
 // MARK: - 外观偏好（跟随系统 / 浅色 / 深色）
 
