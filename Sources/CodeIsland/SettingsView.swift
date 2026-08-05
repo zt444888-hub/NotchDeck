@@ -14,6 +14,7 @@ enum SettingsPage: String, Identifiable, Hashable {
     case shortcuts
     case remote
     case hooks
+    case mcp
     case buddy
     case about
     case usage
@@ -30,6 +31,7 @@ enum SettingsPage: String, Identifiable, Hashable {
         case .shortcuts: return "command.circle.fill"
         case .remote: return "network"
         case .hooks: return "link.circle.fill"
+        case .mcp: return "arrow.triangle.branch"
         case .buddy: return "dot.radiowaves.left.and.right"
         case .about: return "info.circle.fill"
         case .usage: return "chart.bar.xaxis"
@@ -46,6 +48,7 @@ enum SettingsPage: String, Identifiable, Hashable {
         case .shortcuts: return .indigo
         case .remote: return .mint
         case .hooks: return .purple
+        case .mcp: return .brown
         case .buddy: return .red
         case .about: return .cyan
         case .usage: return .teal
@@ -60,7 +63,7 @@ private struct SidebarGroup: Hashable {
 
 private let sidebarGroups: [SidebarGroup] = [
     SidebarGroup(title: nil, pages: [.general, .behavior, .appearance, .mascots, .sound, .shortcuts, .usage]),
-    SidebarGroup(title: "NotchDeck", pages: [.remote, .hooks, .buddy, .about]),
+    SidebarGroup(title: "NotchDeck", pages: [.remote, .hooks, .mcp, .buddy, .about]),
 ]
 
 // MARK: - Main View
@@ -99,6 +102,7 @@ struct SettingsView: View {
                 case .shortcuts: ShortcutsPage()
                 case .remote: RemoteHostsPage()
                 case .hooks: HooksPage()
+                case .mcp: MCPPage(appState: appState)
                 case .buddy: BuddyPage()
                 case .about: AboutPage()
                 case .usage: UsageCostPage()
@@ -767,6 +771,190 @@ private struct HooksPage: View {
         .formStyle(.grouped)
         .onAppear { refreshCLIStatuses() }
     }
+}
+
+// MARK: - MCP Server Page
+
+private struct MCPPage: View {
+    @ObservedObject private var l10n = L10n.shared
+    @AppStorage(SettingsKey.mcpServerEnabled) private var mcpEnabled = true
+    var appState: AppState?
+
+    // Refresh trigger so we re-read state after toggle/buttons
+    @State private var refreshId = UUID()
+    // Live event-count refresh (MCPServer.eventCount is a plain var — SwiftUI
+    // won't observe it, so poll while the page is visible).
+    @State private var liveEventCount = 0
+    @State private var liveTick = 0
+    private let liveTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private var server: MCPServer? { appState?.mcpServer }
+    private var isRunning: Bool { server?.isRunning ?? false }
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle(isOn: $mcpEnabled) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("MCP Server")
+                            .font(.body)
+                        Text("Let any MCP-capable AI tool report events without native hooks")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .onChange(of: mcpEnabled) { _, newValue in
+                    if newValue {
+                        server?.start()
+                    } else {
+                        server?.stop()
+                    }
+                    refreshId = UUID()
+                }
+            }
+
+            Section("Status") {
+                HStack {
+                    Text("State")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Label {
+                        Text(isRunning ? (mcpEnabled ? "Listening" : "Stopped") : "Stopped")
+                            .foregroundStyle(isRunning ? .green : .secondary)
+                    } icon: {
+                        Image(systemName: isRunning ? "circle.fill" : "circle")
+                            .foregroundStyle(isRunning ? .green : .secondary)
+                            .font(.system(size: 8))
+                    }
+                }
+
+                HStack {
+                    Text("Address")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("127.0.0.1:\(MCPServer.defaultPort)")
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                }
+
+                HStack {
+                    Text("Events received")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(liveEventCount)")
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                }
+            }
+
+            Section("Server Control") {
+                HStack(spacing: 8) {
+                    Button {
+                        server?.start()
+                        refreshId = UUID()
+                    } label: {
+                        Label("Start", systemImage: "play.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isRunning)
+
+                    Button {
+                        server?.stop()
+                        refreshId = UUID()
+                    } label: {
+                        Label("Stop", systemImage: "stop.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!isRunning)
+
+                    Button {
+                        server?.stop()
+                        server?.start()
+                        refreshId = UUID()
+                    } label: {
+                        Label("Restart", systemImage: "arrow.clockwise")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+                Text("Start/Stop take effect immediately — no app restart needed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Endpoint") {
+                HStack {
+                    Text("MCP URL")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("http://127.0.0.1:\(MCPServer.defaultPort)/mcp")
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+
+                Button {
+                    let url = "http://127.0.0.1:\(MCPServer.defaultPort)/mcp"
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url, forType: .string)
+                } label: {
+                    Label("Copy MCP URL", systemImage: "doc.on.doc")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+
+            Section("How to connect") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Add this MCP server URL to your AI tool's MCP settings. The agent can then call notchdeck_report to update the NotchDeck panel.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    ForEach(connectionGuide, id: \.tool) { guide in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(guide.tool)
+                                .font(.subheadline.bold())
+                            Text(guide.how)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .id(refreshId)
+        .onReceive(liveTimer) { _ in
+            guard let server else { return }
+            let count = server.eventCount
+            if count != liveEventCount {
+                liveEventCount = count
+                withAnimation(.snappy(duration: 0.25)) { liveTick += 1 }
+            }
+        }
+        .onAppear {
+            liveEventCount = server?.eventCount ?? 0
+        }
+    }
+
+    private struct Guide { let tool: String; let how: String }
+    private let connectionGuide: [Guide] = [
+        Guide(tool: "TRAE Work",
+              how: "Settings → MCP → Add server: http://127.0.0.1:8765/mcp. Then use rules to call notchdeck_report."),
+        Guide(tool: "Cursor",
+              how: "Settings → MCP → Add server: http://127.0.0.1:8765/mcp"),
+        Guide(tool: "Windsurf",
+              how: "Cascade settings → MCP Servers → Add server URL above"),
+        Guide(tool: "Claude Desktop",
+              how: "claude_desktop_config.json: add to mcpServers with URL above"),
+        Guide(tool: "Zoo Code / OpenHands / Continue / Aider",
+              how: "Add Streamable HTTP MCP server: http://127.0.0.1:8765/mcp (Zoo Code: .roo/mcp.json)"),
+    ]
 }
 
 private struct CLIStatusRow: View {

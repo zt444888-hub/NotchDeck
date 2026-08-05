@@ -66,6 +66,9 @@ final class AppState {
 
     var sessions: [String: SessionSnapshot] = [:]
     var activeSessionId: String?
+    /// MCP Server reference — set by AppDelegate after creation so settings page
+    /// can display status and event count.
+    weak var mcpServer: MCPServer?
     var permissionQueue: [PermissionRequest] = []
     var questionQueue: [QuestionRequest] = []
 

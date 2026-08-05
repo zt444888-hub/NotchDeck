@@ -7,6 +7,7 @@
   <a href="#installation">Install</a> •
   <a href="#features">Features</a> •
   <a href="#supported-tools">Supported Tools</a> •
+  <a href="#mcp-server-v120">MCP Server</a> •
   <a href="#build-from-source">Build</a> •
   <a href="PRIVACY.md">Privacy</a><br>
   English | <a href="README.zh-CN.md">简体中文</a>
@@ -72,8 +73,93 @@ It connects to **13 AI coding tools** via Unix socket IPC, displaying session st
 > **Note on TRAE Work**: TRAE Work mode (the "AI office" desktop app) does **not**
 > expose a hook mechanism (product limitation — TRAE only documents hooks for its
 > IDE/TraCode product line). NotchDeck works with TRAE IDE / SOLO mode and
-> TraeCli; for TRAE Work users we recommend the MCP route (coming soon) or a
-> supported CLI such as Claude Code / Codex / Gemini.
+> TraeCli; for TRAE Work users, see the MCP Server section below — connect once,
+> and any MCP-capable tool gets panel integration without native hooks.
+
+## MCP Server (v1.2.0+)
+
+For AI tools that don't support native hooks (TRAE Work, OpenHands, Continue, Aider, etc.), NotchDeck includes a built-in **MCP (Model Context Protocol) server**. Add it once in your AI tool's MCP settings, and the tool can report events through standard MCP tool calls.
+
+### Quick Start
+
+The MCP server runs locally on your Mac. It's **enabled by default** (toggle in Settings → MCP).
+
+| | |
+|---|---|
+| **Endpoint** | `http://127.0.0.1:8765/mcp` |
+| **Protocol** | MCP Streamable HTTP (JSON-RPC 2.0) |
+| **Auth** | None (localhost only — loopback interface) |
+
+### Connection Guides
+
+**TRAE Work**
+1. Open Settings → MCP → Add server
+2. URL: `http://127.0.0.1:8765/mcp`
+3. Add a rule asking the agent to call `notchdeck_report` at session start:
+   ```
+   At the start of every conversation, call the MCP tool notchdeck_report
+   with event=SessionStart and a stable session_id.
+   When you start processing a user message, report event=UserPromptSubmit.
+   Before using any tool, report event=PreToolUse with the tool_name.
+   After each tool completes, report event=PostToolUse.
+   When you finish a turn, report event=Stop.
+   ```
+
+**Cursor**
+1. Settings → MCP → Add new MCP server
+2. URL: `http://127.0.0.1:8765/mcp`
+
+**Windsurf**
+1. Cascade settings → MCP Servers
+2. Add server with URL: `http://127.0.0.1:8765/mcp`
+
+**Claude Desktop**
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "notchdeck": { "url": "http://127.0.0.1:8765/mcp" }
+  }
+}
+```
+
+**Other MCP tools** (OpenHands, Continue, Aider, etc.)
+Add a Streamable HTTP MCP server with the endpoint above.
+
+**Zoo Code** (VS Code extension, community fork of Roo Code)
+Add to project `.roo/mcp.json` (or the global MCP settings in Zoo Code):
+```json
+{
+  "mcpServers": {
+    "notchdeck": { "url": "http://127.0.0.1:8765/mcp" }
+  }
+}
+```
+Zoo Code has no native hook mechanism (like its Roo Code lineage), so the MCP
+route is the supported integration path.
+
+### MCP Tools Reference
+
+| Tool | Description |
+|------|-------------|
+| `notchdeck_report` | Report an agent lifecycle event to the panel |
+| `notchdeck_status` | Health check — returns NotchDeck version |
+
+**`notchdeck_report` parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `event` | string | ✅ | `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `Notification` |
+| `session_id` | string | ✅ | Stable ID for the current conversation |
+| `source` | string | | Tool badge name (default: `mcp`) |
+| `cwd` | string | | Working directory |
+| `tool_name` | string | | Tool being invoked (for PreToolUse/PostToolUse) |
+| `tool_input` | object | | Tool arguments (for PreToolUse/PostToolUse) |
+| `detail` | string | | Free-form detail (prompt, command, summary) |
+
+### Deduplication
+
+When the same AI tool is configured with **both** native hooks and MCP, events arrive through two paths. NotchDeck automatically deduplicates — events with the same (source, session_id, event_name) arriving within 5 seconds are collapsed into one. No double-counting, no extra setup.
 
 ## Installation
 

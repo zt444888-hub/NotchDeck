@@ -127,6 +127,9 @@ enum SettingsKey {
     static let webhookEnabled = "webhookEnabled"
     static let webhookURL = "webhookURL"
     static let webhookEventFilter = "webhookEventFilter"  // comma-separated allow-list; empty = forward all
+
+    // MCP Server — lets any MCP-capable tool report events without a native hook
+    static let mcpServerEnabled = "mcpServerEnabled"
 }
 
 struct SettingsDefaults {
@@ -204,6 +207,8 @@ struct SettingsDefaults {
     static let webhookEnabled = false
     static let webhookURL = ""
     static let webhookEventFilter = ""
+
+    static let mcpServerEnabled = true
 }
 
 @MainActor
@@ -269,6 +274,7 @@ class SettingsManager {
             SettingsKey.webhookEnabled: SettingsDefaults.webhookEnabled,
             SettingsKey.webhookURL: SettingsDefaults.webhookURL,
             SettingsKey.webhookEventFilter: SettingsDefaults.webhookEventFilter,
+            SettingsKey.mcpServerEnabled: SettingsDefaults.mcpServerEnabled,
         ])
     }
 

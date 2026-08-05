@@ -27,13 +27,32 @@ final class MCPServer {
     private let port: UInt16
     private let workQueue = DispatchQueue(label: "com.notchdeck.mcp-work")
 
-    static let defaultPort: UInt16 = 8765
+    nonisolated static let defaultPort: UInt16 = 8765
 
     /// Supported report event names (internal PascalCase namespace).
     private static let supportedEvents: Set<String> = [
         "SessionStart", "SessionEnd", "UserPromptSubmit",
         "PreToolUse", "PostToolUse", "Stop", "Notification",
     ]
+
+    // MARK: - Live state (read by settings page)
+
+    @MainActor var eventCount: Int = 0
+
+    // MARK: - Event deduplication
+
+    /// When the same tool is configured with both native hooks and MCP, both
+    /// paths report the same event. The hook event arrives first (sub-100ms),
+    /// so we hold recent events here and drop MCP duplicates within the window.
+    private struct DedupKey: Hashable {
+        let source: String
+        let sessionId: String
+        let eventName: String
+    }
+    nonisolated(unsafe) private var dedupCache: [DedupKey: Date] = [:]
+    nonisolated(unsafe) private var lastDedupPrune = Date.distantPast
+    private static let dedupWindowSeconds: TimeInterval = 5.0
+    private static let dedupPruneInterval: TimeInterval = 30.0
 
     init(appState: AppState, port: UInt16 = MCPServer.defaultPort) {
         self.appState = appState
@@ -78,6 +97,8 @@ final class MCPServer {
     func stop() {
         listener?.cancel()
         listener = nil
+        dedupCache.removeAll()
+        eventCount = 0
     }
 
     // MARK: - Connection handling
@@ -175,8 +196,15 @@ final class MCPServer {
 
         switch method {
         case "initialize":
+            // Echo the client's requested protocol version when the handshake
+            // carries one. Strict clients (TRAE Work, recent SDKs) disconnect if
+            // the server unilaterally downgrades the version; our tool surface is
+            // identical across 2024-11-05 / 2025-03-26 / 2025-06-18, so agreeing
+            // to whatever the client speaks is always safe.
+            let params = json["params"] as? [String: Any]
+            let clientVersion = params?["protocolVersion"] as? String
             return Self.jsonRPCResponse(id: id, result: [
-                "protocolVersion": "2025-03-26",
+                "protocolVersion": clientVersion ?? "2025-03-26",
                 "capabilities": ["tools": ["listChanged": false]],
                 "serverInfo": ["name": "notchdeck", "version": Self.bundleVersion],
             ])
@@ -227,6 +255,17 @@ final class MCPServer {
         let toolInput = arguments["tool_input"] as? [String: Any]
         let detail = arguments["detail"] as? String
 
+        // Dedup: when the same AI tool sends events via both hooks and MCP,
+        // the hook arrives first (sub-100ms). Drop the MCP duplicate for the
+        // same (source, session_id, event_name) within the 5-second window.
+        let dedupKey = DedupKey(source: source, sessionId: sessionId, eventName: event)
+        pruneDedupCache()
+        if let last = dedupCache[dedupKey], Date().timeIntervalSince(last) < Self.dedupWindowSeconds {
+            Self.log.info("MCP dedup skip: \(event) session=\(sessionId) source=\(source)")
+            return Self.jsonRPCResponse(id: id, result: Self.toolResult(text: "ok (deduped)"))
+        }
+        dedupCache[dedupKey] = Date()
+
         var raw: [String: Any] = [
             "hook_event_name": event,
             "session_id": sessionId,
@@ -254,8 +293,18 @@ final class MCPServer {
         )
         appState?.handleEvent(hookEvent)
 
+        eventCount += 1
         Self.log.info("MCP report: \(event) session=\(sessionId) source=\(source)")
         return Self.jsonRPCResponse(id: id, result: Self.toolResult(text: "ok"))
+    }
+
+    // MARK: - Dedup helpers
+
+    private func pruneDedupCache() {
+        let now = Date()
+        guard now.timeIntervalSince(lastDedupPrune) >= Self.dedupPruneInterval else { return }
+        lastDedupPrune = now
+        dedupCache = dedupCache.filter { now.timeIntervalSince($0.value) < Self.dedupWindowSeconds }
     }
 
     // MARK: - JSON-RPC helpers

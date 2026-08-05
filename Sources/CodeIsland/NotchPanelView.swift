@@ -2151,6 +2151,16 @@ private struct SessionCard: View {
     @AppStorage(SettingsKey.autoCollapseAfterSessionJump) private var autoCollapseAfterSessionJump = SettingsDefaults.autoCollapseAfterSessionJump
     private var fontSize: CGFloat { CGFloat(contentFontSize) }
     private var aiLineLimit: Int? { aiMessageLines > 0 ? aiMessageLines : nil }
+
+    /// Sources that can only reach the panel through the MCP route (no native
+    /// hooks): shown with an "MCP" tag so the user can tell the event path.
+    private static let mcpOnlySources: Set<String> = [
+        "mcp", "trae-work", "claude-desktop", "zoo-code", "openhands",
+    ]
+    fileprivate static func isMCPSource(_ source: String) -> Bool {
+        mcpOnlySources.contains(source)
+    }
+
     private var approvalQueueIndex: Int? {
         appState.permissionQueue.firstIndex { ($0.event.sessionId ?? "default") == sessionId }
     }
@@ -2241,6 +2251,9 @@ private struct SessionCard: View {
                     HStack(spacing: 4) {
                         if let remote = session.remoteDisplayName {
                             SessionTag("@\(remote)", color: Color(red: 0.45, green: 0.72, blue: 1.0))
+                        }
+                        if Self.isMCPSource(session.source) {
+                            SessionTag("MCP", color: Color(red: 0.35, green: 0.85, blue: 0.75))
                         }
                         if !session.subagents.isEmpty {
                             SessionTag("+\(session.subagents.count) Sub", color: Color(red: 0.65, green: 0.55, blue: 0.95))

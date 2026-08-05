@@ -33,8 +33,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // MCP server: lets any MCP-capable tool (TRAE Work, Cursor, Windsurf,
         // Claude Desktop, ...) report events to the panel without a native hook.
         // Binds 127.0.0.1 only; see docs/MCP-SERVER.md.
-        mcpServer = MCPServer(appState: appState)
-        mcpServer?.start()
+        // Respects the user's preference (enabled by default).
+        if UserDefaults.standard.bool(forKey: SettingsKey.mcpServerEnabled) {
+            mcpServer = MCPServer(appState: appState)
+            appState.mcpServer = mcpServer
+            mcpServer?.start()
+        }
         RemoteManager.shared.onDisconnect = { [weak appState] hostId in
             appState?.removeRemoteSessions(hostId: hostId)
         }
@@ -173,6 +177,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         appState.saveSessions()
         RemoteManager.shared.shutdown()
         hookServer?.stop()
+        mcpServer?.stop()
         appState.stopCodexAppServerWatcher()
         appState.stopSessionDiscovery()
     }
