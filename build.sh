@@ -217,11 +217,21 @@ build_mac() {
 
         codesign --force --sign "$SIGN_ID" "$DMG_PATH"
         echo "Notarizing DMG..."
-        if xcrun notarytool submit "$DMG_PATH" --keychain-profile "NotchDeck" --wait --timeout 20m 2>&1 | tee /dev/stderr | grep -q "status: Accepted"; then
+        # Capture full output so we can both print it and check status without
+        # a `tee | grep -q` pipeline. Under `set -euo pipefail`, grep -q exits
+        # on first match and closes stdin, which makes tee receive SIGPIPE
+        # and the whole pipeline report failure even when notarization
+        # succeeded — skipping the stapler step below. Capture + post-check
+        # avoids that signal interaction entirely.
+        SUBMIT_OUT=$(xcrun notarytool submit "$DMG_PATH" --keychain-profile "NotchDeck" --wait --timeout 20m 2>&1)
+        echo "$SUBMIT_OUT"
+        SUBMISSION_ID=$(echo "$SUBMIT_OUT" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+        if echo "$SUBMIT_OUT" | grep -q "status: Accepted"; then
             xcrun stapler staple "$DMG_PATH"
             echo "DMG ready: $DMG_PATH"
         else
             echo "WARNING: DMG notarization did not complete within timeout, but app is notarized."
+            echo "  Submission id: ${SUBMISSION_ID:-unknown}"
             echo "  Resubmit later: xcrun notarytool submit \"$DMG_PATH\" --keychain-profile NotchDeck --wait"
         fi
     fi
