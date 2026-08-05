@@ -113,6 +113,10 @@ enum SettingsKey {
     static let appleCompanionEnabled = "appleCompanionEnabled"
     static let appleCompanionHeartbeatSeconds = "appleCompanionHeartbeatSeconds"
 
+    // Remote AI conversation (v1.2.0) — phone drives agent turns via CloudKit.
+    // Default OFF: executing commands sent from the phone is an explicit opt-in.
+    static let remoteConversationEnabled = "remoteConversationEnabled"
+
     // Auto-approve tools (comma-separated tool names)
     static let autoApproveTools = "autoApproveTools"
 
@@ -193,6 +197,8 @@ struct SettingsDefaults {
 
     static let appleCompanionEnabled = false
     static let appleCompanionHeartbeatSeconds = 5.0
+
+    static let remoteConversationEnabled = false
 
     // Default to no auto-approval — every tool call goes through the
     // approval flow and the user opts in per tool. The previous default

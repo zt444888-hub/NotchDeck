@@ -13,6 +13,7 @@ struct ContentView: View {
     @EnvironmentObject private var connection: CompanionConnection
     @EnvironmentObject private var liveActivity: LiveActivityController
     @AppStorage(appAppearanceStorageKey) private var appearanceRaw = AppAppearance.system.rawValue
+    @State private var showRemoteConversation = false
 
     private var appearance: AppAppearance {
         AppAppearance(rawValue: appearanceRaw) ?? .system
@@ -44,6 +45,22 @@ struct ContentView: View {
             .animation(CodeIslandMotion.open, value: connection.connectedPeer)
             .animation(CodeIslandMotion.pop, value: connection.latestState?.status)
             .animation(CodeIslandMotion.micro, value: connection.browsing)
+        }
+        // Remote AI conversation entry (v1.2.0) — drive your Mac's AI from here.
+        .overlay(alignment: .bottomTrailing) {
+            Button {
+                showRemoteConversation = true
+            } label: {
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .font(.title3)
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .padding(20)
+            .accessibilityLabel("Remote AI conversation")
+        }
+        .sheet(isPresented: $showRemoteConversation) {
+            RemoteConversationView()
         }
         .background(Color.ciBackground.ignoresSafeArea())
         .preferredColorScheme(appearance.colorScheme)

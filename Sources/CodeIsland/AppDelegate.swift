@@ -115,6 +115,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             heartbeatSeconds: appleCompanionHeartbeat > 0 ? appleCompanionHeartbeat : SettingsDefaults.appleCompanionHeartbeatSeconds
         )
 
+        // Remote AI conversation (v1.2.0) — opt-in via settings.
+        if UserDefaults.standard.bool(forKey: SettingsKey.remoteConversationEnabled) {
+            RemoteConversationService.shared.start()
+        }
+
         // Hooks auto-recovery: periodic + app activation trigger
         hookRecoveryTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -178,6 +183,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         RemoteManager.shared.shutdown()
         hookServer?.stop()
         mcpServer?.stop()
+        RemoteConversationService.shared.stop()
         appState.stopCodexAppServerWatcher()
         appState.stopSessionDiscovery()
     }

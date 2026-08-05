@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F04316F9D8754247AAE04921 /* RemoteConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0DB99B8FC9E45BC9D194051 /* RemoteConversationView.swift */; };
+		C0009DD0DD6046F1AB5EDB14 /* RemoteConversationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 216F0888C7204FAEB5B5F704 /* RemoteConversationViewModel.swift */; };
+		606FEBFE68D141F58C9FE098 /* RemoteConversationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A9CB4489BB4432CB65B0D1B /* RemoteConversationModels.swift */; };
 		0190F180CA1516FF19DE1D09 /* CodeIslandActivityState+Payload.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9F350CB2292BF84421D9BD4 /* CodeIslandActivityState+Payload.swift */; };
 		066BAB67FFF6698F1AA3A05A /* MascotMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77D70D07D1A0B8E65A8B9C66 /* MascotMotion.swift */; };
 		081C2F1FD8D9D8DCCE0D34CB /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83800637B7C6322D5633FD36 /* L10n.swift */; };
@@ -203,6 +206,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D0DB99B8FC9E45BC9D194051 /* RemoteConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConversationView.swift; sourceTree = "<group>"; };
+		216F0888C7204FAEB5B5F704 /* RemoteConversationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConversationViewModel.swift; sourceTree = "<group>"; };
+		1A9CB4489BB4432CB65B0D1B /* RemoteConversationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConversationModels.swift; sourceTree = "<group>"; };
 		014DEC37F3B34948F2B630E4 /* CodeIslandCompanionWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeIslandCompanionWidgetBundle.swift; sourceTree = "<group>"; };
 		030876B03E408787BD569C05 /* LiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityController.swift; sourceTree = "<group>"; };
 		0A1079D20C61C1AF51C7F24A /* CodeIslandLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeIslandLiveActivityWidget.swift; sourceTree = "<group>"; };
@@ -299,6 +305,7 @@
 		4B5DC446285A66B2D47E6894 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				1A9CB4489BB4432CB65B0D1B /* RemoteConversationModels.swift */,
 				BCA23CC7B351415E136CC947 /* CodeIslandActivityAttributes.swift */,
 				4708FC8D74184A554015C647 /* CompanionDisplayText.swift */,
 				83800637B7C6322D5633FD36 /* L10n.swift */,
@@ -320,6 +327,8 @@
 		8190E5C61FF4340B8909CD4F /* CodeIslandCompanion */ = {
 			isa = PBXGroup;
 			children = (
+				D0DB99B8FC9E45BC9D194051 /* RemoteConversationView.swift */,
+				216F0888C7204FAEB5B5F704 /* RemoteConversationViewModel.swift */,
 				D85F2D481FDAD5D904A0F3E5 /* Assets.xcassets */,
 				F9F350CB2292BF84421D9BD4 /* CodeIslandActivityState+Payload.swift */,
 				8843E069F081B15AE433EA8D /* CodeIslandCompanionApp.swift */,
@@ -604,6 +613,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F04316F9D8754247AAE04921 /* RemoteConversationView.swift in Sources */,
+				C0009DD0DD6046F1AB5EDB14 /* RemoteConversationViewModel.swift in Sources */,
+				606FEBFE68D141F58C9FE098 /* RemoteConversationModels.swift in Sources */,
 				F6BF2F0FBFE41711C6160DFE /* AntiGravityView.swift in Sources */,
 				FC9D256D2F2BC3010E633FBF /* BuddyView.swift in Sources */,
 				AF508E52E331531A53A2EA2B /* ClineView.swift in Sources */,
