@@ -39,6 +39,11 @@ public struct SessionSnapshot: Sendable {
         "cline",
         "zcode",
         "windsurf",
+        // MCP-server reported sources (docs/MCP-SERVER.md): any MCP-capable
+        // tool can report via notchdeck_report with its own source tag.
+        "mcp",
+        "trae-work",
+        "claude-desktop",
     ]
 
     public static let ideCompletionSources: Set<String> = [

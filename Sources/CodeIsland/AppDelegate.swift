@@ -9,6 +9,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     var panelController: PanelWindowController?
     private var hookServer: HookServer?
+    private var mcpServer: MCPServer?
     private var hookRecoveryTimer: Timer?
     private var lastHookCheck: Date = .distantPast
     private let hotKeyManager = GlobalHotKeyManager()
@@ -28,6 +29,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // hooks get no response and Claude Code denies them.
         hookServer = HookServer(appState: appState)
         hookServer?.start()
+
+        // MCP server: lets any MCP-capable tool (TRAE Work, Cursor, Windsurf,
+        // Claude Desktop, ...) report events to the panel without a native hook.
+        // Binds 127.0.0.1 only; see docs/MCP-SERVER.md.
+        mcpServer = MCPServer(appState: appState)
+        mcpServer?.start()
         RemoteManager.shared.onDisconnect = { [weak appState] hostId in
             appState?.removeRemoteSessions(hostId: hostId)
         }
