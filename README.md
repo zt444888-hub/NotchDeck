@@ -27,7 +27,7 @@ It connects to **13 AI coding tools** via Unix socket IPC, displaying session st
 ## Features
 
 - **Notch-native UI** — Expands from the MacBook notch, collapses when idle
-- **13 AI tools supported** — Claude Code, Codex, Gemini CLI, Cursor, Copilot, Trae/Traecli, Qoder, Factory, CodeBuddy, OpenCode, Kimi Code CLI, Cline, Pi / Oh My Pi
+- **28 AI tools supported** — Claude Code, Codex, Gemini CLI, Cursor, Copilot, Trae / Trae CN / TraeCli, Qoder / QoderWork, Factory, CodeBuddy / CodyBuddyCN, StepFun, AntiGravity, WorkBuddy, Hermes, Qwen Code, Kimi Code CLI, Cline, Kiro, Pi / Oh My Pi, OpenCode, OpenClaw, ZCode, Google Antigravity
 - **Live status tracking** — See active sessions, tool calls, and AI responses in real time
 - **Permission management** — Approve/deny tool permissions directly from the panel
 - **Question answering** — Respond to agent questions without leaving your current app
@@ -42,21 +42,38 @@ It connects to **13 AI coding tools** via Unix socket IPC, displaying session st
 
 ## Supported Tools
 
-| | Tool | Events | Jump | Status |
-|:---:|------|--------|------|--------|
-| <img src="docs/images/mascots/claude.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/claude.png" width="16"> Claude Code | 13 | Terminal tab | Full |
-| <img src="docs/images/mascots/codex.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/codex.png" width="16"> Codex | 3 | Terminal | Basic |
-| <img src="docs/images/mascots/gemini.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/gemini.png" width="16"> Gemini CLI | 6 | Terminal | Full |
-| <img src="docs/images/mascots/cursor.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/cursor.png" width="16"> Cursor | 10 | IDE | Full |
-| <img src="docs/images/mascots/trae.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/traecli.png" width="16"> TraeCli | 10 | Terminal | Full |
-| <img src="docs/images/mascots/qoder.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/qoder.png" width="16"> Qoder | 10 | IDE | Full |
-| | <img src="Sources/CodeIsland/Resources/cli-icons/copilot.png" width="16"> Copilot | 6 | Terminal | Full |
-| <img src="docs/images/mascots/factory.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/factory.png" width="16"> Factory | 10 | IDE | Full |
-| <img src="docs/images/mascots/codebuddy.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/codebuddy.png" width="16"> CodeBuddy | 10 | APP/Terminal | Full |
-| | <img src="Sources/CodeIsland/Resources/cli-icons/kimi.png" width="16"> Kimi Code CLI | 10 | Terminal | Full |
-| <img src="docs/images/mascots/opencode.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/opencode.png" width="16"> OpenCode | All | APP/Terminal | Full |
-| <img src="docs/images/mascots/cline.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/cline.png" width="16"> Cline | 5 | VSCode | Full |
-| | <img src="Sources/CodeIsland/Resources/cli-icons/pi.png" width="16"> Pi / Oh My Pi | 8 | Terminal | Full |
+| | Tool | Type | Status |
+|:---:|------|------|--------|
+| <img src="docs/images/mascots/claude.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/claude.png" width="16"> Claude Code | Terminal CLI | Full |
+| <img src="docs/images/mascots/codex.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/codex.png" width="16"> Codex | Terminal CLI | Full |
+| <img src="docs/images/mascots/gemini.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/gemini.png" width="16"> Gemini CLI | Terminal CLI | Full |
+| | <img src="Sources/CodeIsland/Resources/cli-icons/kimi.png" width="16"> Kimi Code CLI | Terminal CLI | Full |
+| <img src="docs/images/mascots/qoder.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/qoder.png" width="16"> Qoder | Terminal CLI | Full |
+| | QoderWork | Desktop app | Full |
+| <img src="docs/images/mascots/factory.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/factory.png" width="16"> Factory (droid) | Terminal CLI | Full |
+| <img src="docs/images/mascots/codebuddy.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/codebuddy.png" width="16"> CodeBuddy / CodyBuddyCN | Terminal CLI | Full |
+| | StepFun | Terminal CLI | Full |
+| | AntiGravity | Terminal CLI | Full |
+| | WorkBuddy | Terminal CLI | Full |
+| | Qwen Code | Terminal CLI | Full |
+| | Google Antigravity | IDE/CLI | Full |
+| | Hermes (Nous Research) | Terminal CLI | Full |
+| | <img src="Sources/CodeIsland/Resources/cli-icons/copilot.png" width="16"> GitHub Copilot CLI | Terminal CLI | Full |
+| | <img src="Sources/CodeIsland/Resources/cli-icons/traecli.png" width="16"> TraeCli / Trae CLI Next | Terminal CLI | Full |
+| <img src="docs/images/mascots/cursor.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/cursor.png" width="16"> Cursor | IDE | Full |
+| <img src="docs/images/mascots/trae.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/traecli.png" width="16"> Trae / Trae CN | IDE | Full (since 1.1.7) |
+| <img src="docs/images/mascots/cline.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/cline.png" width="16"> Cline | VSCode extension | Full |
+| | Kiro | Terminal CLI | Full |
+| <img src="docs/images/mascots/opencode.gif" width="28"> | <img src="Sources/CodeIsland/Resources/cli-icons/opencode.png" width="16"> OpenCode | Terminal CLI | Full |
+| | OpenClaw | Terminal CLI | Full |
+| | ZCode | Terminal CLI | Full |
+| | <img src="Sources/CodeIsland/Resources/cli-icons/pi.png" width="16"> Pi / Oh My Pi | Terminal CLI | Full |
+
+> **Note on TRAE Work**: TRAE Work mode (the "AI office" desktop app) does **not**
+> expose a hook mechanism (product limitation — TRAE only documents hooks for its
+> IDE/TraCode product line). NotchDeck works with TRAE IDE / SOLO mode and
+> TraeCli; for TRAE Work users we recommend the MCP route (coming soon) or a
+> supported CLI such as Claude Code / Codex / Gemini.
 
 ## Installation
 
