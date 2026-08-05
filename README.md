@@ -70,15 +70,16 @@ It connects to **13 AI coding tools** via Unix socket IPC, displaying session st
 | | ZCode | Terminal CLI | Full |
 | | <img src="Sources/CodeIsland/Resources/cli-icons/pi.png" width="16"> Pi / Oh My Pi | Terminal CLI | Full |
 | | Windsurf (Codeium) | IDE | Full (since 1.1.8) |
-| | TRAE Work | Desktop app (AI office) | Full (auto, since 1.1.9) |
+| | TRAE Work | Desktop app (AI office) | Auto-config (1.1.9) |
 | | Zoo Code | VSCode extension | MCP (since 1.1.8) |
 | | OpenHands / Continue / Aider | CLI / Web / Extension | MCP (since 1.1.8) |
 
-> **Status legend**: `Full` = native hook integration (auto-installed).
-> `Full (auto)` = works via the MCP route with **zero-config** — NotchDeck
-> auto-injects the MCP server entry and rules (e.g. TRAE Work). `MCP` = add the
-> endpoint once in the tool's MCP settings; see the MCP Server section for
-> per-tool guides.
+> **Status legend**: `Full` = native hook integration (auto-installed, zero-config).
+> `Auto-config` = NotchDeck auto-injects the MCP server + rules, but the tool's
+> cloud agent may not self-trigger reporting — nudge it with one message in a new
+> conversation (TRAE Work platform limitation: no hooks, and rules are not always
+> honored by the cloud agent). `MCP` = add the endpoint once in the tool's MCP
+> settings; see the MCP Server section for per-tool guides.
 
 > **Note on TRAE Work**: TRAE Work mode (the "AI office" desktop app) does **not**
 > expose a hook mechanism (product limitation — TRAE only documents hooks for its
