@@ -47,6 +47,19 @@ struct RemoteConversationView: View {
         .safeAreaInset(edge: .bottom) {
             composer
         }
+        .safeAreaInset(edge: .top) {
+            if let message = viewModel.errorMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.red.opacity(0.85))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.horizontal)
+            }
+        }
     }
 
     private var composer: some View {
@@ -108,6 +121,14 @@ private struct ChatView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
+                    }
+                    if conversation.status == .error,
+                       let hint = RemoteConversationViewModel.friendlyAgentError(conversation.errorMessage) {
+                        Text(hint)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal)
                     }
                 }
                 .padding()

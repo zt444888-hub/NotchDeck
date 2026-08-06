@@ -130,6 +130,40 @@ final class RemoteAgentSessionManager {
 
     // MARK: - Helpers
 
+    // MARK: - Agent detection & install guidance
+
+    /// Supported agent tools.
+    static let supportedTools = ["claude", "codex"]
+
+    /// One agent's installation state, used by the settings readiness panel.
+    struct AgentInstallation {
+        let tool: String
+        let path: String?
+        let installCommand: String
+        var isInstalled: Bool { path != nil }
+    }
+
+    /// Probe every supported agent and report installation state.
+    static func detectAgents() -> [AgentInstallation] {
+        supportedTools.map { tool in
+            AgentInstallation(tool: tool,
+                              path: agentBinaryPath(for: tool),
+                              installCommand: installCommand(for: tool))
+        }
+    }
+
+    /// Copy-paste install command for a tool that is missing.
+    static func installCommand(for tool: String) -> String {
+        switch tool {
+        case "claude":
+            return "npm install -g @anthropic-ai/claude-code"
+        case "codex":
+            return "npm install -g @openai/codex"
+        default:
+            return ""
+        }
+    }
+
     private static func agentBinaryPath(for tool: String) -> String? {
         let candidates: [String]
         switch tool {
@@ -140,8 +174,14 @@ final class RemoteAgentSessionManager {
         default:
             return nil
         }
+        // Codex.app (and Codex++) install the CLI under ~/.codex; the plugin
+        // appserver path is a real, current location on some setups.
         let searchPaths = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
-                           "/Users/\(NSUserName())/.local/bin", "/Users/\(NSUserName())/.codex/bin"]
+                           "/Users/\(NSUserName())/.local/bin",
+                           "/Users/\(NSUserName())/.codex/bin",
+                           "/Users/\(NSUserName())/.codex/plugins/.plugin-appserver",
+                           "/Users/\(NSUserName())/.npm-global/bin",
+                           "/Users/\(NSUserName())/.yarn/bin"]
         for name in candidates {
             if name.contains("/") && FileManager.default.isExecutableFile(atPath: name) {
                 return name

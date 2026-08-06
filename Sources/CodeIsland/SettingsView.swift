@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import CloudKit
 import CodeIslandCore
 
 // MARK: - Navigation Model
@@ -1574,6 +1575,8 @@ private struct BuddyPage: View {
     @AppStorage(SettingsKey.remoteConversationEnabled) private var remoteConversationEnabled: Bool = SettingsDefaults.remoteConversationEnabled
     @ObservedObject private var appleCompanion = AppleCompanionPublisher.shared
     @State private var refreshTick = 0
+    @State private var remoteAccountStatus: CKAccountStatus = .couldNotDetermine
+    @State private var remoteAgents: [RemoteAgentSessionManager.AgentInstallation] = []
 
     private var bridge: ESP32BridgeManager { ESP32BridgeManager.shared }
 
@@ -1880,6 +1883,49 @@ private struct BuddyPage: View {
             }
 
             Section(l10n["remote_conversation"]) {
+                // iCloud readiness: the whole chain dies without a signed-in
+                // account that can reach the container.
+                HStack {
+                    Text(l10n["remote_conversation_icloud"])
+                    Spacer()
+                    Text(remoteAccountStatusText)
+                        .foregroundStyle(remoteAccountStatusColor)
+                }
+                // Agent readiness: at least one agent CLI must be installed.
+                ForEach(remoteAgents, id: \.tool) { agent in
+                    if agent.isInstalled {
+                        HStack(spacing: 6) {
+                            Text(agentToolLabel(agent.tool))
+                            Spacer()
+                            Text(agent.path ?? "")
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(agentToolLabel(agent.tool))
+                                Spacer()
+                                Text(l10n["remote_conversation_agent_missing"])
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                            Text(agent.installCommand)
+                                .font(.caption.monospaced())
+                                .textSelection(.enabled)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Button {
+                    refreshRemoteReadiness()
+                } label: {
+                    Label(l10n["remote_conversation_refresh"], systemImage: "arrow.clockwise")
+                }
                 Toggle(l10n["remote_conversation_enable"], isOn: $remoteConversationEnabled)
                     .onChange(of: remoteConversationEnabled) { _, newValue in
                         if newValue {
@@ -1888,6 +1934,7 @@ private struct BuddyPage: View {
                             RemoteConversationService.shared.stop()
                         }
                     }
+                    .disabled(!remoteConversationChainReady)
                 Text(l10n["remote_conversation_desc"])
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1907,6 +1954,7 @@ private struct BuddyPage: View {
             if enabled {
                 bridge.startDiscovery()
             }
+            refreshRemoteReadiness()
         }
         .onDisappear {
             bridge.stopDiscovery()
@@ -1927,6 +1975,38 @@ private struct BuddyPage: View {
         case ..<(-70): return "wifi"
         default:       return "wifi"
         }
+    }
+
+    private func refreshRemoteReadiness() {
+        remoteAgents = RemoteAgentSessionManager.detectAgents()
+        Task { @MainActor in
+            await RemoteConversationService.shared.refreshAccountStatus()
+            remoteAccountStatus = RemoteConversationService.shared.accountStatus
+        }
+    }
+
+    private var remoteAccountStatusText: String {
+        switch remoteAccountStatus {
+        case .available: return l10n["remote_conversation_icloud_ok"]
+        case .noAccount: return l10n["remote_conversation_icloud_no_account"]
+        case .restricted: return l10n["remote_conversation_icloud_restricted"]
+        case .temporarilyUnavailable: return l10n["remote_conversation_icloud_unavailable"]
+        case .couldNotDetermine: return l10n["remote_conversation_icloud_unknown"]
+        @unknown default: return l10n["remote_conversation_icloud_unknown"]
+        }
+    }
+
+    private var remoteAccountStatusColor: Color {
+        remoteAccountStatus == .available ? .green : (remoteAccountStatus == .noAccount ? .red : .orange)
+    }
+
+    private func agentToolLabel(_ tool: String) -> String {
+        tool == "claude" ? "Claude Code" : "Codex"
+    }
+
+    /// Switch is only meaningful once iCloud + at least one agent are ready.
+    private var remoteConversationChainReady: Bool {
+        remoteAccountStatus == .available && remoteAgents.contains { $0.isInstalled }
     }
 
     private var appleCompanionStatusText: String {

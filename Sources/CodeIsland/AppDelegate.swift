@@ -119,6 +119,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if UserDefaults.standard.bool(forKey: SettingsKey.remoteConversationEnabled) {
             RemoteConversationService.shared.start()
         }
+        // Register for APNs: CloudKit subscription pushes can wake a pending
+        // poll instantly. Only App Store builds carry the aps-environment
+        // entitlement — Developer ID distribution can't include it (restricted
+        // entitlement), so registration fails benignly there and the 5s poll
+        // timer is the always-on fallback.
+        NSApp.registerForRemoteNotifications()
 
         // Hooks auto-recovery: periodic + app activation trigger
         hookRecoveryTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
@@ -172,6 +178,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 withAnimation(NotchAnimation.close) {
                     appState.surface = .collapsed
                 }
+            }
+        }
+    }
+
+    // MARK: - Remote notifications (CloudKit silent push)
+
+    nonisolated func application(_ application: NSApplication,
+                                 didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Self.log.info("APNs registration OK")
+    }
+
+    nonisolated func application(_ application: NSApplication,
+                                 didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        // Expected for Developer ID distribution (restricted entitlement);
+        // the RemoteConversationService poll timer covers this path.
+        Self.log.debug("APNs registration unavailable: \(error.localizedDescription)")
+    }
+
+    nonisolated func application(_ application: NSApplication,
+                                 didReceiveRemoteNotification userInfo: [String: Any]) {
+        // CloudKit subscription push → poll immediately instead of waiting
+        // for the next timer tick.
+        Task { @MainActor in
+            if RemoteConversationService.shared.isRunning {
+                RemoteConversationService.shared.poll()
             }
         }
     }

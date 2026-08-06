@@ -53,6 +53,9 @@ final class RemoteConversationViewModel: ObservableObject {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        // Fail fast with a clear, actionable message instead of a silent save.
+        guard await accountIsReady() else { return }
+
         let message = RemoteConversationMessage(role: "user", text: trimmed)
         do {
             if var conv = conversation {
@@ -66,10 +69,73 @@ final class RemoteConversationViewModel: ObservableObject {
                 let conv = RemoteConversation(title: String(trimmed.prefix(40)), messages: [message])
                 try await db.save(Self.record(from: conv))
             }
+            errorMessage = nil
             await refresh()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = Self.friendlyError(error)
         }
+    }
+
+    /// Returns false (and sets a guidance message) when CloudKit can't work.
+    private func accountIsReady() async -> Bool {
+        do {
+            switch try await container.accountStatus() {
+            case .available:
+                return true
+            case .noAccount:
+                errorMessage = L10n.t(zh: "未登录 iCloud：请到 设置 → 你的头像 → iCloud 登录。远程对话需要同一账号的 iCloud 同步。",
+                                      en: "Not signed in to iCloud: sign in at Settings → your name → iCloud. Remote conversations need iCloud sync on the same account.")
+            case .restricted:
+                errorMessage = L10n.t(zh: "iCloud 在此设备上被限制（可能为组织管理设备）。",
+                                      en: "iCloud is restricted on this device (e.g. managed device).")
+            case .temporarilyUnavailable:
+                errorMessage = L10n.t(zh: "iCloud 暂时不可用，请稍后重试。",
+                                      en: "iCloud temporarily unavailable, try again later.")
+            @unknown default:
+                errorMessage = L10n.t(zh: "iCloud 状态未知，请稍后重试。",
+                                      en: "iCloud status unknown, try again later.")
+            }
+        } catch {
+            errorMessage = L10n.t(zh: "无法检测 iCloud 状态：\(error.localizedDescription)",
+                                  en: "Couldn't check iCloud status: \(error.localizedDescription)")
+        }
+        return false
+    }
+
+    /// Translate an error into an actionable message.
+    static func friendlyError(_ error: Error) -> String {
+        let raw = error.localizedDescription
+        if let ckError = error as? CKError {
+            switch ckError.code {
+            case .notAuthenticated:
+                return L10n.t(zh: "iCloud 未登录或未授权。请在系统设置中登录 iCloud。",
+                              en: "Not authenticated with iCloud. Sign in in System Settings.")
+            case .networkUnavailable:
+                return L10n.t(zh: "网络不可用，请检查连接后重试。",
+                              en: "Network unavailable. Check your connection and retry.")
+            case .quotaExceeded:
+                return L10n.t(zh: "iCloud 存储空间不足，请清理后重试。",
+                              en: "iCloud storage is full. Free up space and retry.")
+            default:
+                break
+            }
+        }
+        return raw
+    }
+
+    /// Map an agent error written back by the Mac into an actionable hint.
+    static func friendlyAgentError(_ raw: String?) -> String? {
+        guard let raw, !raw.isEmpty else { return nil }
+        let lowered = raw.lowercased()
+        if lowered.contains("not found in path") || lowered.contains("failed to launch agent") || lowered.contains("unsupported tool") {
+            return L10n.t(zh: "Mac 未安装可用的 AI 执行器（Claude Code 或 Codex）。请在 Mac 端打开 NotchDeck 设置 → Remote AI Conversation，按提示安装后重试。",
+                          en: "The Mac has no AI agent installed (Claude Code or Codex). Open NotchDeck settings on the Mac → Remote AI Conversation and follow the install guide, then retry.")
+        }
+        if lowered.contains("sign in") || lowered.contains("authentication") || lowered.contains("logged in") {
+            return L10n.t(zh: "Mac 上的 AI 执行器未登录。请先在 Mac 的终端里登录对应账号（claude / codex 的登录流程）。",
+                          en: "The AI agent on the Mac isn't signed in. Sign in from a Mac terminal first (claude / codex login).")
+        }
+        return raw
     }
 
     // MARK: - Record mapping (kept in sync with the Mac service)

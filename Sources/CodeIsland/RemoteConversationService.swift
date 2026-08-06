@@ -24,12 +24,17 @@ final class RemoteConversationService: ObservableObject {
 
     @Published private(set) var conversations: [RemoteConversation] = []
     @Published private(set) var runningCount = 0
+    @Published private(set) var accountStatus: CKAccountStatus = .couldNotDetermine
 
     private let container: CKContainer
     private let db: CKDatabase
     private let sessionManager = RemoteAgentSessionManager()
     private var pollTimer: Timer?
     private(set) var isRunning = false
+
+    /// Poll interval: pushed silent notifications aren't available to
+    /// Developer ID–distributed Mac apps, so keep the fallback snappy.
+    static let pollInterval: TimeInterval = 5
 
     init(containerIdentifier: String = RemoteConversationService.containerIdentifier) {
         let container = CKContainer(identifier: containerIdentifier)
@@ -48,10 +53,21 @@ final class RemoteConversationService: ObservableObject {
             }
         }
         registerSubscription()
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+        pollTimer = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
         }
         poll()
+        Task { await refreshAccountStatus() }
+    }
+
+    /// Check whether the signed-in iCloud account can use this container.
+    /// `.available` means the whole chain can work.
+    func refreshAccountStatus() async {
+        do {
+            accountStatus = try await container.accountStatus()
+        } catch {
+            log.error("accountStatus failed: \(error.localizedDescription)")
+        }
     }
 
     func stop() {
