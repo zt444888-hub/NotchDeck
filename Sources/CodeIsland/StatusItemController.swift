@@ -55,6 +55,14 @@ final class StatusItemController: NSObject {
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
 
+        let remoteItem = NSMenuItem(
+            title: L10n.shared["remote_conversation"],
+            action: #selector(openRemoteConversation),
+            keyEquivalent: "r"
+        )
+        remoteItem.target = self
+        menu.addItem(remoteItem)
+
         let settingsItem = NSMenuItem(
             title: L10n.shared["settings_ellipsis"],
             action: #selector(openSettings),
@@ -74,6 +82,12 @@ final class StatusItemController: NSObject {
         menu.addItem(quitItem)
 
         return menu
+    }
+
+    @objc private func openRemoteConversation() {
+        Task { @MainActor in
+            RemoteConversationWindowController.shared.show()
+        }
     }
 
     @objc private func openSettings() {

@@ -89,6 +89,8 @@
 		C7888E8E0C897416C34C0710 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92DB547C03C0A80C2FB38F34 /* main.swift */; };
 		C80E4B56E525C950E5C75048 /* ClineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1944337CB1FABBCBB8DC0990 /* ClineView.swift */; };
 		CB1CCAB9A11E04649A51F225 /* UsageCostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 516D7A6900E8905BE4895A2E /* UsageCostView.swift */; };
+		CD9A10C1EFF0760511A90823 /* RemoteConversationPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B94543D99E5276400585771F /* RemoteConversationPanelView.swift */; };
+		D1774D976DA1B9358FF50242 /* RemoteConversationWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A2CC3C07E2BC896C5533CBC /* RemoteConversationWindowController.swift */; };
 		D1F1CD4B7797D40C1E6A1E28 /* BundleExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21029547264693B39244BC27 /* BundleExtension.swift */; };
 		D2661004A37003E16980AE3A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = CA7FFC2F02F86AA6F177AC37 /* Sparkle */; };
 		DA9AF7C39678A1C8F9AF7E2A /* AppleCompanionPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59458D1F6DE2656A9235E85D /* AppleCompanionPublisher.swift */; };
@@ -178,11 +180,12 @@
 		5AEEC4FE2ED416483CC01896 /* RemoteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteManager.swift; sourceTree = "<group>"; };
 		61D7A2C169CAE0235D8EA6B2 /* AppState+CodexAppServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppState+CodexAppServer.swift"; sourceTree = "<group>"; };
 		6A9A35EA00800C4A2F7B9FDF /* ESP32StatePublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESP32StatePublisher.swift; sourceTree = "<group>"; };
-		6F43F575E8FC4A5D6FFD9624 /* codeisland-bridge */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = text; path = "codeisland-bridge"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6F43F575E8FC4A5D6FFD9624 /* codeisland-bridge */ = {isa = PBXFileReference; includeInIndex = 0; path = "codeisland-bridge"; sourceTree = BUILT_PRODUCTS_DIR; };
 		728A49C5586525AB4234B1F5 /* AppleCompanionBluetoothPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleCompanionBluetoothPeripheral.swift; sourceTree = "<group>"; };
 		764E9AFD2F82FF6D4A705EAF /* ESP32BridgeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESP32BridgeManager.swift; sourceTree = "<group>"; };
 		77660B41FA610A48AF624AF4 /* GlobalHotKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyManager.swift; sourceTree = "<group>"; };
 		7906A7CE15F27C148C2313A7 /* JSONMinimalEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONMinimalEditor.swift; sourceTree = "<group>"; };
+		7A2CC3C07E2BC896C5533CBC /* RemoteConversationWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConversationWindowController.swift; sourceTree = "<group>"; };
 		7B367708A78F3C00C2F84E18 /* ScreenDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenDetector.swift; sourceTree = "<group>"; };
 		7D146B64E4AFB750FB22529F /* SocketPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketPath.swift; sourceTree = "<group>"; };
 		7DD070F71E384262493B855F /* QoderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QoderView.swift; sourceTree = "<group>"; };
@@ -216,6 +219,7 @@
 		B67ADD3E138EA6DFDCF7A70B /* CopilotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotView.swift; sourceTree = "<group>"; };
 		B80227D0F402BF8CC1FC5D8D /* AppState+ToolUseCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppState+ToolUseCache.swift"; sourceTree = "<group>"; };
 		B82A39F5828189D92AE72D9F /* PiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiView.swift; sourceTree = "<group>"; };
+		B94543D99E5276400585771F /* RemoteConversationPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConversationPanelView.swift; sourceTree = "<group>"; };
 		BE1C185F9AEF101534FD5E18 /* QwenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QwenView.swift; sourceTree = "<group>"; };
 		C10F733F5512DCD11BD7F8C0 /* TerminalActivator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalActivator.swift; sourceTree = "<group>"; };
 		C5655659278F7C3D12883218 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -356,7 +360,9 @@
 				7DD070F71E384262493B855F /* QoderView.swift */,
 				BE1C185F9AEF101534FD5E18 /* QwenView.swift */,
 				89898700546CA749F066AD6F /* RemoteAgentSessionManager.swift */,
+				B94543D99E5276400585771F /* RemoteConversationPanelView.swift */,
 				B343C0FD46C63E5D43F2659D /* RemoteConversationService.swift */,
+				7A2CC3C07E2BC896C5533CBC /* RemoteConversationWindowController.swift */,
 				0BBE571CA90D29F786DB6F12 /* RemoteHost.swift */,
 				E71F024600ACE048D11C677A /* RemoteInstaller.swift */,
 				5AEEC4FE2ED416483CC01896 /* RemoteManager.swift */,
@@ -482,6 +488,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					4B87F7C6B564A92200868B5D = {
+						DevelopmentTeam = 2VBHV3VJ8N;
 						ProvisioningStyle = Automatic;
 					};
 					9B8E09063733A040FE7FE2B8 = {
@@ -583,7 +590,9 @@
 				FCFD7F16380068128FE5E181 /* QoderView.swift in Sources */,
 				BC99247E4765523692AB6A0F /* QwenView.swift in Sources */,
 				0F21AB3F750FAF2692530B4E /* RemoteAgentSessionManager.swift in Sources */,
+				CD9A10C1EFF0760511A90823 /* RemoteConversationPanelView.swift in Sources */,
 				468EF444EE46ED2332D8642A /* RemoteConversationService.swift in Sources */,
+				D1774D976DA1B9358FF50242 /* RemoteConversationWindowController.swift in Sources */,
 				66E614C16DB9301983D03ADD /* RemoteHost.swift in Sources */,
 				1CC07DE21D164C5C3591C5C3 /* RemoteInstaller.swift in Sources */,
 				787A3E0AB15C497E15B6C8DE /* RemoteManager.swift in Sources */,
@@ -659,10 +668,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.bridge;
 				PRODUCT_NAME = "codeisland-bridge";
 				SDKROOT = macosx;
@@ -699,13 +705,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CodeIsland.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 2VBHV3VJ8N;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.mac;
 				PRODUCT_NAME = CodeIsland;
 				SDKROOT = macosx;
@@ -716,10 +718,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.bridge;
 				PRODUCT_NAME = "codeisland-bridge";
 				SDKROOT = macosx;
@@ -887,13 +886,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CodeIsland.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 2VBHV3VJ8N;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.mac;
 				PRODUCT_NAME = CodeIsland;
 				SDKROOT = macosx;

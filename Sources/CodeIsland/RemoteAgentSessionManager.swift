@@ -35,7 +35,16 @@ struct RemoteAgentAdapter {
         case "codex":
             // --skip-git-repo-check: the app's cwd isn't a git repo and
             // codex would refuse to run without it.
-            return ["exec", message, "--skip-git-repo-check"]
+            var args = ["exec", "--skip-git-repo-check"]
+            // Resume the persisted codex session so multi-turn conversations
+            // keep context on the Mac (this is "the agent task" the phone
+            // controls). Falls back to a fresh session on first use.
+            if let sid = UserDefaults.standard.string(forKey: "RemoteConv.codexSessionId"),
+               !sid.isEmpty {
+                args += ["--session", sid]
+            }
+            args.append(message)
+            return args
         case "opencode":
             return ["run", message]
         case "gemini":
@@ -383,6 +392,15 @@ final class RemoteAgentSessionManager {
         let output = String(data: data, encoding: .utf8) ?? ""
 
         process.waitUntilExit()
+
+        // Persist the codex session id (printed on every exec) so the next
+        // turn resumes the same agent task with full context.
+        if tool == "codex", let range = output.range(of: "session id: ") {
+            let sid = output[range.upperBound...].prefix { !$0.isNewline }
+            if !sid.isEmpty {
+                UserDefaults.standard.set(String(sid), forKey: "RemoteConv.codexSessionId")
+            }
+        }
 
         // Real agent failed (not logged in, missing key, bad args, ...):
         // fall back to the local demo reply so the end-to-end chain stays
