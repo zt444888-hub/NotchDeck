@@ -78,18 +78,37 @@ final class RemoteConversationService: ObservableObject {
 
     // MARK: - Read
 
+    /// Run a CKQueryOperation and collect matching conversations.
+    /// Uses CKQueryOperation (not `records(matching:)`) — the newer API
+    /// requires a recordName index even for predicate-only queries, which
+    /// CloudKit cannot provision for the system field.
+    private func runQuery(_ query: CKQuery, limit: Int, onMatch: @escaping (RemoteConversation) -> Void) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let op = CKQueryOperation(query: query)
+            op.resultsLimit = limit
+            op.recordMatchedBlock = { _, result in
+                if case .success(let record) = result,
+                   let conv = Self.conversation(from: record) { onMatch(conv) }
+            }
+            op.queryCompletionBlock = { _, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+            db.add(op)
+        }
+    }
+
     func fetchConversations() async {
-        // Predicate-only query (no remote sort — sorting by a custom field
-        // needs extra composite indexes incl. recordName). Sort client-side.
+        // Predicate-only query, no remote sort (custom-field sort needs
+        // composite indexes incl. recordName). Sort client-side.
         let predicate = NSPredicate(value: true)
         let query = CKQuery(recordType: RemoteConversation.recordType, predicate: predicate)
         do {
-            let (results, _) = try await db.records(matching: query, resultsLimit: 50)
             var items: [RemoteConversation] = []
-            for (_, result) in results {
-                if case .success(let record) = result,
-                   let conv = Self.conversation(from: record) { items.append(conv) }
-            }
+            try await runQuery(query, limit: 50) { items.append($0) }
             conversations = items.sorted { $0.updatedAt > $1.updatedAt }
         } catch {
             log.error("fetchConversations failed: \(error.localizedDescription)")
@@ -100,14 +119,11 @@ final class RemoteConversationService: ObservableObject {
     func poll() {
         let predicate = NSPredicate(format: "status IN %@", [RemoteConversationStatus.pending.rawValue])
         let query = CKQuery(recordType: RemoteConversation.recordType, predicate: predicate)
-        Task {
+        Task { @MainActor in
             do {
-                let (results, _) = try await db.records(matching: query, resultsLimit: 20)
-                for (_, result) in results {
-                    guard case .success(let record) = result,
-                          let conv = Self.conversation(from: record) else { continue }
-                    enqueueExecution(conv)
-                }
+                var pending: [RemoteConversation] = []
+                try await runQuery(query, limit: 20) { pending.append($0) }
+                for conv in pending { enqueueExecution(conv) }
             } catch {
                 log.error("poll failed: \(error.localizedDescription)")
             }

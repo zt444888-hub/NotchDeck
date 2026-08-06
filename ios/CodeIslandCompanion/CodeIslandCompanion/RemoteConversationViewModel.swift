@@ -31,17 +31,28 @@ final class RemoteConversationViewModel: ObservableObject {
     func refresh() async {
         isLoading = true
         defer { isLoading = false }
-        // Predicate-only query: CloudKit needs no indexes for NSPredicate(true).
-        // Remote sort is avoided — sorting by a custom field forces CloudKit to
-        // require extra composite indexes (incl. recordName), which throws
-        // "recordName is not marked queryable". Sort client-side instead.
+        // Use CKQueryOperation (not records(matching:)) — the newer API
+        // requires a recordName index even for predicate-only queries, which
+        // CloudKit cannot provision for the system field. CKQueryOperation
+        // with a plain predicate needs no indexes at all. Sort client-side.
         let query = CKQuery(recordType: RemoteConversation.recordType, predicate: NSPredicate(value: true))
+        var items: [RemoteConversation] = []
         do {
-            let (results, _) = try await db.records(matching: query, resultsLimit: 50)
-            var items: [RemoteConversation] = []
-            for (_, result) in results {
-                if case .success(let record) = result,
-                   let conv = Self.conversation(from: record) { items.append(conv) }
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                let op = CKQueryOperation(query: query)
+                op.resultsLimit = 50
+                op.recordMatchedBlock = { _, result in
+                    if case .success(let record) = result,
+                       let conv = Self.conversation(from: record) { items.append(conv) }
+                }
+                op.queryCompletionBlock = { _, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: ())
+                    }
+                }
+                db.add(op)
             }
             conversations = items.sorted { $0.updatedAt > $1.updatedAt }
         } catch {
