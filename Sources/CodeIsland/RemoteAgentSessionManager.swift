@@ -111,14 +111,43 @@ final class RemoteAgentSessionManager {
         adapters.filter { !$0.isDemo }
     }
 
-    /// Resolve "auto": first installed real agent; `demo` if none at all.
+    /// Resolve "auto": first installed AND usable real agent; `demo` if
+    /// none. Usable means credentials are present — an installed-but-not-
+    /// logged-in CLI (claude without /login) would otherwise be picked,
+    /// fail, and force a demo fallback with a scary error on every turn.
     static func preferredTool() -> String {
         for adapter in realAdapters() {
-            if let binary = adapter.binaryName, agentBinaryPath(for: binary) != nil {
+            if let binary = adapter.binaryName,
+               agentBinaryPath(for: binary) != nil,
+               agentIsUsable(adapter.tool) {
                 return adapter.tool
             }
         }
         return "demo"
+    }
+
+    /// Cheap credential check per agent, so auto skips CLIs that are
+    /// installed but not authenticated. (A real login always wins — once
+    /// `claude /login` completes, auto switches to claude automatically.)
+    private static func agentIsUsable(_ tool: String) -> Bool {
+        let env = ProcessInfo.processInfo.environment
+        let home = NSHomeDirectory()
+        switch tool {
+        case "claude":
+            if env["ANTHROPIC_API_KEY"] != nil { return true }
+            // `claude /login` writes oauthAccount into ~/.claude.json.
+            if let data = try? Data(contentsOf: URL(fileURLWithPath: "\(home)/.claude.json")),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               json["oauthAccount"] != nil { return true }
+            return FileManager.default.fileExists(atPath: "\(home)/.claude/.credentials.json")
+        case "codex":
+            if env["OPENAI_API_KEY"] != nil { return true }
+            return FileManager.default.fileExists(atPath: "\(home)/.codex/auth.json")
+        default:
+            // opencode / gemini: binary presence is the cheapest signal we
+            // have; their auth is configured via the CLI itself.
+            return true
+        }
     }
 
     /// Convenience: enqueue + callback on finish.
@@ -211,7 +240,7 @@ final class RemoteAgentSessionManager {
             [Demo] Mac 收到: "\(userMessage.text)"
 
             这是本地模拟回复——端到端链路验证通过(手机 → CloudKit → Mac → 回传)。
-            未连接真实 AI;安装 Claude Code / Codex / OpenCode / Gemini 任一 CLI 后,auto 会自动切换。
+            未连接真实 AI;安装并登录 Claude Code / Codex / OpenCode / Gemini 任一 CLI 后,auto 会自动切换。
             \(Date())
             """
             updated.messages.append(RemoteConversationMessage(role: "assistant", text: reply))
