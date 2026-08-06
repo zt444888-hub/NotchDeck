@@ -36,12 +36,15 @@ struct RemoteAgentAdapter {
             // --skip-git-repo-check: the app's cwd isn't a git repo and
             // codex would refuse to run without it.
             var args = ["exec", "--skip-git-repo-check"]
-            // Resume the persisted codex session so multi-turn conversations
-            // keep context on the Mac (this is "the agent task" the phone
-            // controls). Falls back to a fresh session on first use.
-            if let sid = UserDefaults.standard.string(forKey: "RemoteConv.codexSessionId"),
-               !sid.isEmpty {
+            let sid = sessionId
+            if !sid.isEmpty, CodexSessionImporter.isCodexSessionId(sid) {
+                // Resume the REAL codex task this conversation maps to —
+                // the phone drives an existing agent task with full context.
                 args += ["--session", sid]
+            } else if let last = UserDefaults.standard.string(forKey: "RemoteConv.codexSessionId"),
+                      !last.isEmpty {
+                // Fallback: the persisted default codex session.
+                args += ["--session", last]
             }
             args.append(message)
             return args

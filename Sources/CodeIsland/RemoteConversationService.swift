@@ -86,6 +86,9 @@ final class RemoteConversationService: ObservableObject {
             }
         }
         Task { @MainActor in await ensureZone() }
+        // Mirror the Mac's local codex sessions into CloudKit so the phone
+        // can see and drive the existing agent tasks.
+        Task { await CodexSessionImporter.syncImportedSessions(db: db) }
         registerSubscription()
         pollTimer = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
