@@ -48,11 +48,28 @@ final class RemoteConversationService: ObservableObject {
         self.db = container.privateCloudDatabase
     }
 
+    // MARK: - Diagnostic (debug aid; logs are not readable from the
+    // WorkBuddy sandbox, so CloudKit failures are also written to a file)
+
+    private static let diagPath = "/tmp/notchdeck-remote-diag.log"
+
+    static func diag(_ msg: String) {
+        let line = "\(Date()) \(msg)\n"
+        if let handle = FileHandle(forWritingAtPath: diagPath) {
+            handle.seekToEndOfFile()
+            handle.write(line.data(using: .utf8) ?? Data())
+            try? handle.close()
+        } else {
+            try? line.write(toFile: diagPath, atomically: true, encoding: .utf8)
+        }
+    }
+
     // MARK: - Lifecycle
 
     func start() {
         guard !isRunning else { return }
         isRunning = true
+        Self.diag("start() called, remoteConversationEnabled=1, container=\(Self.containerIdentifier)")
         sessionManager.onTurnFinished = { [weak self] conversation in
             Task { @MainActor in
                 self?.updateStatus(conversation)
@@ -71,7 +88,10 @@ final class RemoteConversationService: ObservableObject {
     func refreshAccountStatus() async {
         do {
             accountStatus = try await container.accountStatus()
+            Self.diag("accountStatus = \(accountStatus.rawValue) (\(accountStatus))")
         } catch {
+            accountStatus = .couldNotDetermine
+            Self.diag("accountStatus FAILED: \(error.localizedDescription)")
             log.error("accountStatus failed: \(error.localizedDescription)")
         }
     }
@@ -92,6 +112,7 @@ final class RemoteConversationService: ObservableObject {
     private func syncZoneChanges() async {
         do {
             let records = try await fetchZoneChanges()
+            Self.diag("syncZoneChanges OK, \(records.count) records")
             let convs = records
                 .filter { $0.recordType == RemoteConversation.recordType }
                 .compactMap { Self.conversation(from: $0) }
@@ -106,6 +127,7 @@ final class RemoteConversationService: ObservableObject {
             }
             conversations = merged.sorted { $0.updatedAt > $1.updatedAt }
         } catch {
+            Self.diag("syncZoneChanges FAILED: \(error.localizedDescription)")
             log.error("syncZoneChanges failed: \(error.localizedDescription)")
         }
     }
@@ -177,6 +199,7 @@ final class RemoteConversationService: ObservableObject {
                        ckError.code == .changeTokenExpired {
                         UserDefaults.standard.removeObject(forKey: Self.zoneTokenKey)
                     }
+                    Self.diag("fetchZoneChangesPage FAILED: \(error.localizedDescription)")
                     continuation.resume(throwing: error)
                 }
             }
