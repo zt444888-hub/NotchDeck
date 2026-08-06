@@ -262,7 +262,10 @@ final class RemoteConversationService: ObservableObject {
         updated.status = .running
         updated.updatedAt = Date()
         do {
-            try await db.save(Self.record(from: updated))
+            // modifyRecords (not save) so updating an existing record works.
+            try await db.modifyRecords(saving: [Self.record(from: updated)],
+                                       deleting: [],
+                                       savePolicy: .changedKeys)
             Self.diag("appendMessage OK: id=\(conversation.id), status=\(updated.status.rawValue)")
         } catch {
             Self.diag("appendMessage FAILED: id=\(conversation.id), err=\(error.localizedDescription)")
@@ -278,7 +281,12 @@ final class RemoteConversationService: ObservableObject {
         }
         Task {
             do {
-                try await db.save(Self.record(from: conversation))
+                // CKDatabase.save() on an EXISTING recordName tries an insert
+                // and fails with "record to insert already exists". Use
+                // modifyRecords with .changedKeys for a true update.
+                try await db.modifyRecords(saving: [Self.record(from: conversation)],
+                                           deleting: [],
+                                           savePolicy: .changedKeys)
                 Self.diag("updateStatus OK: id=\(conversation.id), status=\(conversation.status.rawValue)")
             } catch {
                 Self.diag("updateStatus FAILED: id=\(conversation.id), err=\(error.localizedDescription)")
