@@ -16,6 +16,12 @@ final class RemoteConversationViewModel: ObservableObject {
     private var db: CKDatabase { container.privateCloudDatabase }
     private var pollTimer: Timer?
 
+    /// Custom zone required by CKFetchRecordZoneChangesOperation —
+    /// the DEFAULT zone does NOT support zone-change sync semantics
+    /// (Apple: "Syncing the default zone is not supported"), so it would
+    /// silently return 0 records forever. All reads/writes use this zone.
+    static let recordZoneID = CKRecordZone.ID(zoneName: "RemoteConversations")
+
     init() {
         pollTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
@@ -26,11 +32,25 @@ final class RemoteConversationViewModel: ObservableObject {
         pollTimer?.invalidate()
     }
 
+    /// Create the custom zone if it doesn't exist yet. CloudKit does NOT
+    /// auto-create custom zones; saving to a missing zone fails. This is
+    /// idempotent — saving an existing zone throws but is harmless.
+    private func ensureZone() async {
+        do {
+            _ = try await db.save(CKRecordZone(zoneID: Self.recordZoneID))
+        } catch {
+            // zoneAlreadyExists (or any other error) is fine — we just need
+            // the zone to exist; the actual save below will surface real
+            // failures.
+        }
+    }
+
     // MARK: - Read
 
     func refresh() async {
         isLoading = true
         defer { isLoading = false }
+        await ensureZone()
         do {
             let records = try await fetchZoneChanges()
             let convs = records
@@ -62,7 +82,7 @@ final class RemoteConversationViewModel: ObservableObject {
     /// "Field recordName is not marked queryable" error that plagues
     /// CKQueryOperation and CKQuery in the development environment.
     private func fetchZoneChanges() async throws -> [CKRecord] {
-        let zoneID = CKRecordZone.default().zoneID
+        let zoneID = Self.recordZoneID
         let tokenKey = "RemoteConv.zoneToken"
 
         var currentToken: CKServerChangeToken? = {
@@ -143,6 +163,7 @@ final class RemoteConversationViewModel: ObservableObject {
 
         // Fail fast with a clear, actionable message instead of a silent save.
         guard await accountIsReady() else { return }
+        await ensureZone()
 
         let message = RemoteConversationMessage(role: "user", text: trimmed)
         do {
@@ -243,7 +264,8 @@ final class RemoteConversationViewModel: ObservableObject {
 
     private static func record(from conversation: RemoteConversation) -> CKRecord {
         let record = CKRecord(recordType: RemoteConversation.recordType,
-                              recordID: CKRecord.ID(recordName: conversation.id))
+                              recordID: CKRecord.ID(recordName: conversation.id,
+                                                    zoneID: RemoteConversationViewModel.recordZoneID))
         record["sessionId"] = conversation.sessionId as CKRecordValue
         record["tool"] = conversation.tool as CKRecordValue
         record["title"] = conversation.title as CKRecordValue

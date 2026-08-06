@@ -38,6 +38,12 @@ final class RemoteConversationService: ObservableObject {
     private var pollTimer: Timer?
     private(set) var isRunning = false
 
+    /// Custom zone required by CKFetchRecordZoneChangesOperation —
+    /// the DEFAULT zone does NOT support zone-change sync semantics
+    /// (Apple: "Syncing the default zone is not supported"), so it would
+    /// silently return 0 records forever. All reads/writes use this zone.
+    static let recordZoneID = CKRecordZone.ID(zoneName: "RemoteConversations")
+
     /// Poll interval: pushed silent notifications aren't available to
     /// Developer ID–distributed Mac apps, so keep the fallback snappy.
     static let pollInterval: TimeInterval = 5
@@ -75,12 +81,25 @@ final class RemoteConversationService: ObservableObject {
                 self?.updateStatus(conversation)
             }
         }
+        Task { @MainActor in await ensureZone() }
         registerSubscription()
         pollTimer = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
         }
         poll()
         Task { await refreshAccountStatus() }
+    }
+
+    /// Create the custom zone if it doesn't exist yet. CloudKit does NOT
+    /// auto-create custom zones; saving to a missing zone fails. This is
+    /// idempotent — saving an existing zone throws but is harmless.
+    func ensureZone() async {
+        do {
+            _ = try await db.save(CKRecordZone(zoneID: Self.recordZoneID))
+            Self.diag("ensureZone: saved/verified zone RemoteConversations")
+        } catch {
+            Self.diag("ensureZone: \(error.localizedDescription) (expected if zone exists)")
+        }
     }
 
     /// Check whether the signed-in iCloud account can use this container.
@@ -135,7 +154,7 @@ final class RemoteConversationService: ObservableObject {
     private static let zoneTokenKey = "RemoteConv.zoneToken"
 
     private func fetchZoneChanges() async throws -> [CKRecord] {
-        let zoneID = CKRecordZone.default().zoneID
+        let zoneID = Self.recordZoneID
         let tokenKey = Self.zoneTokenKey
 
         var currentToken: CKServerChangeToken? = {
@@ -288,7 +307,8 @@ final class RemoteConversationService: ObservableObject {
 
     private static func record(from conversation: RemoteConversation) -> CKRecord {
         let record = CKRecord(recordType: RemoteConversation.recordType,
-                              recordID: CKRecord.ID(recordName: conversation.id))
+                              recordID: CKRecord.ID(recordName: conversation.id,
+                                                    zoneID: RemoteConversationService.recordZoneID))
         record["sessionId"] = conversation.sessionId as CKRecordValue
         record["tool"] = conversation.tool as CKRecordValue
         record["title"] = conversation.title as CKRecordValue

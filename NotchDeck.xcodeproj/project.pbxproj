@@ -178,7 +178,7 @@
 		5AEEC4FE2ED416483CC01896 /* RemoteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteManager.swift; sourceTree = "<group>"; };
 		61D7A2C169CAE0235D8EA6B2 /* AppState+CodexAppServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppState+CodexAppServer.swift"; sourceTree = "<group>"; };
 		6A9A35EA00800C4A2F7B9FDF /* ESP32StatePublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESP32StatePublisher.swift; sourceTree = "<group>"; };
-		6F43F575E8FC4A5D6FFD9624 /* codeisland-bridge */ = {isa = PBXFileReference; includeInIndex = 0; path = "codeisland-bridge"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6F43F575E8FC4A5D6FFD9624 /* codeisland-bridge */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = text; path = "codeisland-bridge"; sourceTree = BUILT_PRODUCTS_DIR; };
 		728A49C5586525AB4234B1F5 /* AppleCompanionBluetoothPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleCompanionBluetoothPeripheral.swift; sourceTree = "<group>"; };
 		764E9AFD2F82FF6D4A705EAF /* ESP32BridgeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESP32BridgeManager.swift; sourceTree = "<group>"; };
 		77660B41FA610A48AF624AF4 /* GlobalHotKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyManager.swift; sourceTree = "<group>"; };
@@ -482,7 +482,6 @@
 						ProvisioningStyle = Automatic;
 					};
 					4B87F7C6B564A92200868B5D = {
-						DevelopmentTeam = 2VBHV3VJ8N;
 						ProvisioningStyle = Automatic;
 					};
 					9B8E09063733A040FE7FE2B8 = {
@@ -660,7 +659,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.bridge;
 				PRODUCT_NAME = "codeisland-bridge";
 				SDKROOT = macosx;
@@ -697,9 +699,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CodeIsland.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 2VBHV3VJ8N;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.mac;
 				PRODUCT_NAME = CodeIsland;
 				SDKROOT = macosx;
@@ -710,7 +716,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.bridge;
 				PRODUCT_NAME = "codeisland-bridge";
 				SDKROOT = macosx;
@@ -878,9 +887,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CodeIsland.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 2VBHV3VJ8N;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.notchdeck.mac;
 				PRODUCT_NAME = CodeIsland;
 				SDKROOT = macosx;
