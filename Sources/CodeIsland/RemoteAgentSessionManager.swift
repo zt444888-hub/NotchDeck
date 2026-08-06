@@ -20,16 +20,23 @@ struct RemoteAgentAdapter {
     let isDemo: Bool
 
     /// Process arguments for one headless turn.
+    ///
+    /// NOTE: session-resume flags (--resume / --session) are deliberately
+    /// omitted. The sessionId stored in CloudKit is the iPhone conversation
+    /// UUID, which is NOT a Claude/Codex session ID — those CLIs validate
+    /// the resume ID strictly and exit immediately with an error for unknown
+    /// IDs. Each turn starts a fresh agent session instead; conversation
+    /// continuity is tracked by CloudKit, not by the CLI.
     func arguments(message: String, sessionId: String) -> [String] {
         switch tool {
         case "claude":
-            return ["-p", message, "--resume", sessionId, "--output-format", "stream-json", "--verbose"]
+            return ["-p", message, "--output-format", "stream-json", "--verbose"]
         case "codex":
-            return ["exec", message, "--session", sessionId]
+            return ["exec", message]
         case "opencode":
-            return ["run", "--session", sessionId, message]
+            return ["run", message]
         case "gemini":
-            return ["-p", message, "--resume", sessionId]
+            return ["-p", message]
         default:
             return []
         }
@@ -132,12 +139,16 @@ final class RemoteAgentSessionManager {
         isExecuting = true
         lock.unlock()
 
-        Task {
-            let result = await execute(next)
+        // Detached so the agent process (which may block for up to the
+        // timeout) never stalls the MainActor the queue callers run on.
+        Task.detached { [self] in
+            let result = await self.execute(next)
             // NSLock is unavailable from async contexts under Swift 6
             // checks, so route the post-execution state change through a
-            // synchronous helper.
-            finishTurn(result)
+            // synchronous helper on the main actor.
+            await MainActor.run {
+                self.finishTurn(result)
+            }
         }
     }
 
@@ -212,28 +223,68 @@ final class RemoteAgentSessionManager {
         do {
             try process.run()
         } catch {
-            var failed = conversation
-            failed.status = .error
-            failed.errorMessage = "Failed to launch agent: \(error.localizedDescription)"
-            return failed
+            return Self.demoFallback(conversation: conversation, tool: tool,
+                                     userMessage: userMessage,
+                                     reason: "Failed to launch agent: \(error.localizedDescription)")
         }
 
-        // Collect stdout.
-        let fileHandle = pipe.fileHandleForReading
-        let data = fileHandle.readDataToEndOfFile()
+        // Hard timeout: a hung agent (e.g. claude waiting for OAuth login)
+        // must never wedge the serial queue forever.
+        let timeout: TimeInterval = 45
+        let deadline = Date().addingTimeInterval(timeout)
+        while process.isRunning && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 200_000_000) // 200ms
+        }
+        if process.isRunning {
+            process.terminate()
+            process.waitUntilExit()
+            return Self.demoFallback(conversation: conversation, tool: tool,
+                                     userMessage: userMessage,
+                                     reason: "timed out after \(Int(timeout))s (not logged in?)")
+        }
+
+        // Process exited — collect output and finalize.
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
         let output = String(data: data, encoding: .utf8) ?? ""
 
         process.waitUntilExit()
 
-        var updated = conversation
-        updated.status = process.terminationStatus == 0 ? .done : .error
-        if process.terminationStatus != 0 {
-            updated.errorMessage = String(output.suffix(500))
+        // Real agent failed (not logged in, missing key, bad args, ...):
+        // fall back to the local demo reply so the end-to-end chain stays
+        // verifiable, while surfacing the real error to the user.
+        guard process.terminationStatus == 0,
+              let reply = adapter.extractReply(from: output), !reply.isEmpty else {
+            let reason = String(output.suffix(300)).trimmingCharacters(in: .whitespacesAndNewlines)
+            return Self.demoFallback(conversation: conversation, tool: tool,
+                                     userMessage: userMessage,
+                                     reason: reason.isEmpty ? "exit code \(process.terminationStatus)" : reason)
         }
-        let reply = adapter.extractReply(from: output) ?? String(output.suffix(2000))
+
+        var updated = conversation
+        updated.status = .done
         updated.messages.append(RemoteConversationMessage(role: "assistant", text: reply))
         updated.updatedAt = Date()
         return updated
+    }
+
+    /// Build a local demo reply when the real agent is unavailable, keeping
+    /// the chain verifiable and the failure reason visible.
+    private static func demoFallback(conversation: RemoteConversation, tool: String,
+                                     userMessage: RemoteConversationMessage,
+                                     reason: String) -> RemoteConversation {
+        var fallback = conversation
+        fallback.status = .done
+        fallback.errorMessage = "Agent '\(tool)' unavailable: \(reason)"
+        let reply = """
+        [Demo] Mac 收到: "\(userMessage.text)"
+
+        真实 Agent '\(tool)' 暂不可用（\(reason)），已回退到本地 Demo 回复——端到端链路验证通过（手机 → CloudKit → Mac → 回传）。
+        安装并登录对应 CLI 后 auto 会自动切换。
+        \(Date())
+        """
+        fallback.messages.append(RemoteConversationMessage(role: "assistant", text: reply))
+        fallback.updatedAt = Date()
+        return fallback
     }
 
     // MARK: - Agent detection & install guidance
