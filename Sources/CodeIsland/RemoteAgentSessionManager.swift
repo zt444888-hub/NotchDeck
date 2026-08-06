@@ -134,12 +134,21 @@ final class RemoteAgentSessionManager {
 
         Task {
             let result = await execute(next)
-            lock.lock()
-            isExecuting = false
-            lock.unlock()
-            onTurnFinished?(result)
-            pump()
+            // NSLock is unavailable from async contexts under Swift 6
+            // checks, so route the post-execution state change through a
+            // synchronous helper.
+            finishTurn(result)
         }
+    }
+
+    /// Synchronous post-execution bookkeeping: flip the running flag under
+    /// the lock, notify, and kick the next queued turn.
+    private func finishTurn(_ result: RemoteConversation) {
+        lock.lock()
+        isExecuting = false
+        lock.unlock()
+        onTurnFinished?(result)
+        pump()
     }
 
     /// Run one turn: send the latest user message to the agent, collect the

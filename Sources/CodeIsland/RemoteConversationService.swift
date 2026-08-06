@@ -23,7 +23,10 @@ private let log = Logger(subsystem: "com.notchdeck.mac", category: "RemoteConver
 final class RemoteConversationService: ObservableObject {
 
     static let shared = RemoteConversationService()
-    static let containerIdentifier = "iCloud.com.notchdeck"
+
+    /// Nonisolated so it can be used as a default argument (default-arg
+    /// evaluation happens in a nonisolated context under Swift 6 checks).
+    nonisolated static let containerIdentifier = "iCloud.com.notchdeck"
 
     @Published private(set) var conversations: [RemoteConversation] = []
     @Published private(set) var runningCount = 0

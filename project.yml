@@ -39,6 +39,13 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.9"
+    # Keep Swift 5 language mode. Xcode 26's default strict-concurrency
+    # checks turn several pre-existing SwiftPM-only warnings (NSLock in async
+    # contexts, @MainActor static in default args) into hard errors. The
+    # SwiftPM build (which this project mirrors) runs in Swift 5 mode, so
+    # matching that keeps both build paths green.
+    SWIFT_STRICT_CONCURRENCY: minimal
+    SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY: NO
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: "2VBHV3VJ8N"
