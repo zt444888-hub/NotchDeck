@@ -33,7 +33,7 @@
 	<string>NotchDeck uses Bluetooth to mirror the island onto Buddy.</string>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_notchdeck._tcp</string>
+		<string>_codeisland._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>NotchDeck advertises itself on the local network so iPhone can mirror the island state.</string>
