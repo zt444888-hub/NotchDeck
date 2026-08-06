@@ -336,27 +336,57 @@ final class RemoteAgentSessionManager {
             return failed
         }
 
+        // Codex: resume the mapped REAL task first (full context from the
+        // original Mac-side session). DeepSeek rejects some tool schemas on
+        // old Codex Desktop sessions, so on failure fall back to a fresh
+        // exec instead of erroring out.
+        if tool == "codex", CodexSessionImporter.isCodexSessionId(conversation.sessionId) {
+            let resumeArgs = ["exec", "resume", conversation.sessionId,
+                              userMessage.text, "--skip-git-repo-check"]
+            let (resumed, _) = await runAgentProcess(agentPath: agentPath, args: resumeArgs,
+                                                     tool: tool, conversation: conversation,
+                                                     userMessage: userMessage)
+            if let resumed { return resumed }
+            Self.diag("execute: codex resume failed → plain exec fallback")
+        }
+
+        // Normal path (adapter args; codex = fresh exec, claude = -p, ...).
+        let (result, reason) = await runAgentProcess(
+            agentPath: agentPath,
+            args: adapter.arguments(message: userMessage.text, sessionId: conversation.sessionId),
+            tool: tool, conversation: conversation, userMessage: userMessage)
+        if let result { return result }
+        return Self.demoFallback(conversation: conversation, tool: tool,
+                                 userMessage: userMessage,
+                                 reason: reason.isEmpty ? "agent failed (not logged in?)" : reason)
+    }
+
+    /// Run the agent binary headless and collect the reply.
+    /// Returns (nil, errorText) on failure so callers can fall back.
+    private func runAgentProcess(agentPath: String,
+                                 args: [String],
+                                 tool: String,
+                                 conversation: RemoteConversation,
+                                 userMessage: RemoteConversationMessage) async -> (RemoteConversation?, String) {
         let process = Process()
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
         process.standardInput = FileHandle.nullDevice
         process.executableURL = URL(fileURLWithPath: agentPath)
-        process.arguments = adapter.arguments(message: userMessage.text, sessionId: conversation.sessionId)
+        process.arguments = args
 
         var env = ProcessInfo.processInfo.environment
         env["PATH"] = (env["PATH"] ?? "") + ":/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
         process.environment = env
 
-        Self.diag("execute: tool=\(tool), path=\(agentPath), args=\(process.arguments?.joined(separator: " ") ?? "")")
+        Self.diag("execute: tool=\(tool), path=\(agentPath), args=\(args.joined(separator: " "))")
 
         do {
             try process.run()
         } catch {
             Self.diag("execute: process.run FAILED: \(error.localizedDescription)")
-            return Self.demoFallback(conversation: conversation, tool: tool,
-                                     userMessage: userMessage,
-                                     reason: "Failed to launch agent: \(error.localizedDescription)")
+            return (nil, error.localizedDescription)
         }
         Self.diag("execute: process started pid=\(process.processIdentifier)")
 
@@ -384,9 +414,7 @@ final class RemoteAgentSessionManager {
                 kill(process.processIdentifier, SIGKILL)
                 process.waitUntilExit()
             }
-            return Self.demoFallback(conversation: conversation, tool: tool,
-                                     userMessage: userMessage,
-                                     reason: "timed out after \(Int(timeout))s (not logged in?)")
+            return (nil, "timed out after \(Int(timeout))s")
         }
         Self.diag("execute: process exited status=\(process.terminationStatus)")
 
@@ -405,16 +433,12 @@ final class RemoteAgentSessionManager {
             }
         }
 
-        // Real agent failed (not logged in, missing key, bad args, ...):
-        // fall back to the local demo reply so the end-to-end chain stays
-        // verifiable, while surfacing the real error to the user.
         guard process.terminationStatus == 0,
+              let adapter = Self.adapter(for: tool),
               let reply = adapter.extractReply(from: output), !reply.isEmpty else {
             let reason = String(output.suffix(300)).trimmingCharacters(in: .whitespacesAndNewlines)
-            Self.diag("execute: nonzero exit → demo fallback (status=\(process.terminationStatus))")
-            return Self.demoFallback(conversation: conversation, tool: tool,
-                                     userMessage: userMessage,
-                                     reason: reason.isEmpty ? "exit code \(process.terminationStatus)" : reason)
+            Self.diag("execute: nonzero exit → fail (status=\(process.terminationStatus))")
+            return (nil, reason.isEmpty ? "exit code \(process.terminationStatus)" : reason)
         }
 
         var updated = conversation
@@ -422,7 +446,7 @@ final class RemoteAgentSessionManager {
         updated.messages.append(RemoteConversationMessage(role: "assistant", text: reply))
         updated.updatedAt = Date()
         Self.diag("execute: done, reply=\(reply.prefix(60))")
-        return updated
+        return (updated, "")
     }
 
     /// Build a local demo reply when the real agent is unavailable, keeping
