@@ -79,9 +79,10 @@ final class RemoteConversationService: ObservableObject {
     // MARK: - Read
 
     func fetchConversations() async {
+        // Predicate-only query (no remote sort — sorting by a custom field
+        // needs extra composite indexes incl. recordName). Sort client-side.
         let predicate = NSPredicate(value: true)
         let query = CKQuery(recordType: RemoteConversation.recordType, predicate: predicate)
-        query.sortDescriptors = [NSSortDescriptor(key: "updatedAt", ascending: false)]
         do {
             let (results, _) = try await db.records(matching: query, resultsLimit: 50)
             var items: [RemoteConversation] = []
@@ -89,7 +90,7 @@ final class RemoteConversationService: ObservableObject {
                 if case .success(let record) = result,
                    let conv = Self.conversation(from: record) { items.append(conv) }
             }
-            conversations = items
+            conversations = items.sorted { $0.updatedAt > $1.updatedAt }
         } catch {
             log.error("fetchConversations failed: \(error.localizedDescription)")
         }

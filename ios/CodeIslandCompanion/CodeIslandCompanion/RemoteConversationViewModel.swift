@@ -31,8 +31,11 @@ final class RemoteConversationViewModel: ObservableObject {
     func refresh() async {
         isLoading = true
         defer { isLoading = false }
+        // Predicate-only query: CloudKit needs no indexes for NSPredicate(true).
+        // Remote sort is avoided — sorting by a custom field forces CloudKit to
+        // require extra composite indexes (incl. recordName), which throws
+        // "recordName is not marked queryable". Sort client-side instead.
         let query = CKQuery(recordType: RemoteConversation.recordType, predicate: NSPredicate(value: true))
-        query.sortDescriptors = [NSSortDescriptor(key: "updatedAt", ascending: false)]
         do {
             let (results, _) = try await db.records(matching: query, resultsLimit: 50)
             var items: [RemoteConversation] = []
@@ -40,7 +43,7 @@ final class RemoteConversationViewModel: ObservableObject {
                 if case .success(let record) = result,
                    let conv = Self.conversation(from: record) { items.append(conv) }
             }
-            conversations = items
+            conversations = items.sorted { $0.updatedAt > $1.updatedAt }
         } catch {
             errorMessage = error.localizedDescription
         }
