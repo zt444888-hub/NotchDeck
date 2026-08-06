@@ -38,6 +38,15 @@ final class WatchBridge: NSObject {
 
     private func flushLatestState(reason: String) {
         guard let state = latestState, WCSession.isSupported() else { return }
+        guard WCSession.default.isPaired else {
+            // No paired Apple Watch (simulator or watch-less iPhone): nothing to sync.
+            Self.log.debug("watch sync skipped: no paired Apple Watch (\(reason))")
+            return
+        }
+        guard WCSession.default.isWatchAppInstalled else {
+            Self.log.debug("watch sync skipped: watch app not installed (\(reason))")
+            return
+        }
         guard activationState == .activated else {
             Self.log.debug("deferred watch sync before activation: \(reason)")
             return
