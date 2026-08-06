@@ -1,5 +1,6 @@
 import Foundation
 import os
+import Darwin
 import CodeIslandCore
 
 private let sessionLog = Logger(subsystem: "com.notchdeck.mac", category: "RemoteAgent")
@@ -142,12 +143,55 @@ final class RemoteAgentSessionManager {
             return FileManager.default.fileExists(atPath: "\(home)/.claude/.credentials.json")
         case "codex":
             if env["OPENAI_API_KEY"] != nil { return true }
-            return FileManager.default.fileExists(atPath: "\(home)/.codex/auth.json")
+            guard FileManager.default.fileExists(atPath: "\(home)/.codex/auth.json") else { return false }
+            // Codex is often routed through a LOCAL proxy (cc-switch etc.,
+            // base_url = http://127.0.0.1:PORT). auth.json existing doesn't
+            // mean the proxy is up — verify the port is actually listening,
+            // else every turn hangs 20s then falls back with a scary error.
+            return Self.codexProxyReachable()
         default:
             // opencode / gemini: binary presence is the cheapest signal we
             // have; their auth is configured via the CLI itself.
             return true
         }
+    }
+
+    /// Parse codex config.toml's base_url; if it points at localhost,
+    /// require the TCP port to actually be open.
+    private static func codexProxyReachable() -> Bool {
+        let configPath = "\(NSHomeDirectory())/.codex/config.toml"
+        guard let config = try? String(contentsOfFile: configPath, encoding: .utf8),
+              let line = config.split(separator: "\n").first(where: { $0.contains("base_url") }) else {
+            return true // no local proxy config → trust auth.json
+        }
+        guard let urlStart = line.range(of: "\""),
+              let urlEnd = line[urlStart.upperBound...].range(of: "\"") else { return true }
+        let url = String(line[urlStart.upperBound..<urlEnd.lowerBound])
+        guard url.contains("127.0.0.1") || url.contains("localhost") else { return true }
+        // url = http://127.0.0.1:15721/v1 → port 15721
+        let comps = url.split(separator: ":")
+        guard comps.count >= 3,
+              let port = Int(comps[2].split(separator: "/").first ?? "") else { return false }
+        return Self.tcpPortOpen(host: "127.0.0.1", port: port)
+    }
+
+    /// 1s-timeout TCP connect probe (blocking; only used at agent selection).
+    private static func tcpPortOpen(host: String, port: Int) -> Bool {
+        var addr = sockaddr_in()
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_port = CFSwapInt16HostToBig(UInt16(port))
+        addr.sin_addr.s_addr = inet_addr(host)
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return false }
+        defer { close(fd) }
+        var to = timeval(tv_sec: 1, tv_usec: 0)
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &to, socklen_t(MemoryLayout<timeval>.size))
+        let ok = withUnsafePointer(to: &addr) { ptr -> Bool in
+            ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in
+                connect(fd, sa, socklen_t(MemoryLayout<sockaddr_in>.size)) == 0
+            }
+        }
+        return ok
     }
 
     /// Convenience: enqueue + callback on finish.
