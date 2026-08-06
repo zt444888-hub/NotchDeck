@@ -52,6 +52,13 @@ final class RemoteConversationViewModel: ObservableObject {
         defer { isLoading = false }
         await ensureZone()
         do {
+            // Fresh view model (page re-entered) must do a FULL fetch — the
+            // stored zone token was advanced by a previous session, so an
+            // incremental fetch would return nothing and history appears
+            // lost. Reset the token when we have no local conversations.
+            if conversations.isEmpty {
+                UserDefaults.standard.removeObject(forKey: "RemoteConv.zoneToken")
+            }
             let records = try await fetchZoneChanges()
             let convs = records
                 .filter { $0.recordType == RemoteConversation.recordType }
@@ -172,7 +179,12 @@ final class RemoteConversationViewModel: ObservableObject {
                 conv.messages.append(message)
                 conv.status = .pending
                 conv.updatedAt = Date()
-                try await db.save(Self.record(from: conv))
+                // modifyRecords (not save): the record already exists, and
+                // save() attempts an INSERT → "record to insert already
+                // exists". This is why multi-turn replies never landed.
+                try await db.modifyRecords(saving: [Self.record(from: conv)],
+                                           deleting: [],
+                                           savePolicy: .changedKeys)
                 // Optimistic update: reflect the new message locally right away.
                 // Zone-changes reads can lag behind a just-completed save, so
                 // never depend on a fetch to show what the user just typed.
