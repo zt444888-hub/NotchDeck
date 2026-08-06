@@ -131,10 +131,15 @@ final class RemoteConversationService: ObservableObject {
     private func syncZoneChanges() async {
         do {
             let records = try await fetchZoneChanges()
-            Self.diag("syncZoneChanges OK, \(records.count) records")
             let convs = records
                 .filter { $0.recordType == RemoteConversation.recordType }
                 .compactMap { Self.conversation(from: $0) }
+            Self.diag("syncZoneChanges OK, raw=\(records.count), parsed=\(convs.count)")
+            if !records.isEmpty {
+                for r in records {
+                    Self.diag("  record \(r.recordID.recordName): type=\(r.recordType), keys=\(r.allKeys().sorted().joined(separator: ",")), status=\(String(describing: r["status"])), updatedAt=\(String(describing: r["updatedAt"]))")
+                }
+            }
 
             var merged = conversations
             for conv in convs {
@@ -236,6 +241,7 @@ final class RemoteConversationService: ObservableObject {
         Task { @MainActor in
             await syncZoneChanges()
             let pending = conversations.filter { $0.status == .pending }
+            Self.diag("poll: total=\(conversations.count), pending=\(pending.count)")
             for conv in pending { enqueueExecution(conv) }
         }
     }
@@ -275,9 +281,11 @@ final class RemoteConversationService: ObservableObject {
 
     func enqueueExecution(_ conversation: RemoteConversation) {
         runningCount += 1
+        Self.diag("enqueueExecution: id=\(conversation.id), tool=\(conversation.tool), status=\(conversation.status.rawValue), msgs=\(conversation.messages.count)")
         sessionManager.enqueue(conversation) { [weak self] updated in
             Task { @MainActor in
                 self?.runningCount = max(0, (self?.runningCount ?? 1) - 1)
+                Self.diag("turn finished: id=\(updated.id), status=\(updated.status.rawValue), msgs=\(updated.messages.count), err=\(updated.errorMessage ?? "nil")")
                 self?.updateStatus(updated)
                 await self?.fetchConversations()
             }
