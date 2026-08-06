@@ -117,8 +117,8 @@ final class RemoteConversationViewModel: ObservableObject {
                 return L10n.t(zh: "网络不可用，请检查连接后重试。",
                               en: "Network unavailable. Check your connection and retry.")
             case .quotaExceeded:
-                return L10n.t(zh: "iCloud 存储空间不足，请清理后重试。",
-                              en: "iCloud storage is full. Free up space and retry.")
+                return L10n.t(zh: "iCloud 存储空间不足。请到 设置 → 你的 Apple ID → iCloud → 管理账户存储 清理照片/备份后重试。",
+                              en: "iCloud storage is full. Free up space at Settings → your name → iCloud → Manage Account Storage, then retry.")
             default:
                 break
             }
