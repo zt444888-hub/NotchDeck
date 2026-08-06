@@ -1926,6 +1926,11 @@ private struct BuddyPage: View {
                 } label: {
                     Label(l10n["remote_conversation_refresh"], systemImage: "arrow.clockwise")
                 }
+                if !remoteAgents.contains(where: { $0.isInstalled }) {
+                    Text(l10n["remote_conversation_demo_hint"])
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
                 Toggle(l10n["remote_conversation_enable"], isOn: $remoteConversationEnabled)
                     .onChange(of: remoteConversationEnabled) { _, newValue in
                         if newValue {
@@ -2001,12 +2006,13 @@ private struct BuddyPage: View {
     }
 
     private func agentToolLabel(_ tool: String) -> String {
-        tool == "claude" ? "Claude Code" : "Codex"
+        RemoteAgentSessionManager.adapter(for: tool)?.displayName ?? tool
     }
 
-    /// Switch is only meaningful once iCloud + at least one agent are ready.
+    /// Switch only needs iCloud; agent selection falls back to the built-in
+    /// demo when no CLI is installed (readiness panel shows what will run).
     private var remoteConversationChainReady: Bool {
-        remoteAccountStatus == .available && remoteAgents.contains { $0.isInstalled }
+        remoteAccountStatus == .available
     }
 
     private var appleCompanionStatusText: String {

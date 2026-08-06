@@ -65,8 +65,11 @@ final class RemoteConversationViewModel: ObservableObject {
                 conv.updatedAt = Date()
                 try await db.save(Self.record(from: conv))
             } else {
-                // New conversation.
-                let conv = RemoteConversation(title: String(trimmed.prefix(40)), messages: [message])
+                // New conversation. tool = "auto": the Mac picks whichever
+                // agent CLI it has installed (falls back to Demo mode).
+                let conv = RemoteConversation(tool: "auto",
+                                              title: String(trimmed.prefix(40)),
+                                              messages: [message])
                 try await db.save(Self.record(from: conv))
             }
             errorMessage = nil

@@ -4,11 +4,73 @@ import CodeIslandCore
 
 private let sessionLog = Logger(subsystem: "com.notchdeck.mac", category: "RemoteAgent")
 
+/// One agent CLI adapter: how to drive this tool headlessly.
+///
+/// NotchDeck drives whatever AI CLI is installed on the Mac — Claude Code,
+/// Codex, OpenCode, Gemini CLI, ... — through a small registry. Each adapter
+/// knows how to build the process arguments and how to extract the assistant
+/// reply from stdout. The `demo` adapter is a local, credential-free
+/// stand-in used to validate the end-to-end chain before a real agent is
+/// configured.
+struct RemoteAgentAdapter {
+    let tool: String            // stable id stored in CloudKit ("claude" | "demo" | ...)
+    let binaryName: String?     // CLI name to probe on disk; nil for demo
+    let displayName: String
+    let installCommand: String
+    let isDemo: Bool
+
+    /// Process arguments for one headless turn.
+    func arguments(message: String, sessionId: String) -> [String] {
+        switch tool {
+        case "claude":
+            return ["-p", message, "--resume", sessionId, "--output-format", "stream-json", "--verbose"]
+        case "codex":
+            return ["exec", message, "--session", sessionId]
+        case "opencode":
+            return ["run", "--session", sessionId, message]
+        case "gemini":
+            return ["-p", message, "--resume", sessionId]
+        default:
+            return []
+        }
+    }
+
+    /// Extract the assistant reply from the process stdout.
+    func extractReply(from output: String) -> String? {
+        switch tool {
+        case "claude":
+            return Self.extractClaudeReply(from: output)
+        default:
+            // codex / opencode / gemini print plain-text replies on stdout.
+            let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+    }
+
+    /// `claude --output-format stream-json` emits one JSON event per line;
+    /// assistant messages carry type:"assistant".
+    private static func extractClaudeReply(from output: String) -> String? {
+        var text = ""
+        for line in output.split(separator: "\n") {
+            guard let data = line.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
+            if obj["type"] as? String == "assistant",
+               let message = obj["message"] as? [String: Any],
+               let content = message["content"] as? String {
+                text += content
+            }
+        }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
 /// Executes remote conversation turns with a headless CLI agent on the Mac.
 ///
-/// Uses `claude -p <message> --resume <sessionId>` (multi-turn: the same
-/// session id keeps context across messages) or `codex exec --session`.
-/// Turns run on a serial queue — one agent task at a time.
+/// Turns run on a serial queue — one agent task at a time. The conversation's
+/// `tool` selects the adapter; `"auto"` picks the first installed agent
+/// (falling back to the built-in `demo` when none is configured), so an
+/// iPhone user never needs to know what the Mac has installed.
 final class RemoteAgentSessionManager {
 
     /// Called when a turn completes with the updated conversation.
@@ -17,6 +79,40 @@ final class RemoteAgentSessionManager {
     private var queue: [RemoteConversation] = []
     private var isExecuting = false
     private let lock = NSLock()
+
+    // MARK: - Adapter registry
+
+    static let adapters: [RemoteAgentAdapter] = [
+        RemoteAgentAdapter(tool: "claude", binaryName: "claude", displayName: "Claude Code",
+                           installCommand: "npm install -g @anthropic-ai/claude-code", isDemo: false),
+        RemoteAgentAdapter(tool: "codex", binaryName: "codex", displayName: "Codex",
+                           installCommand: "npm install -g @openai/codex", isDemo: false),
+        RemoteAgentAdapter(tool: "opencode", binaryName: "opencode", displayName: "OpenCode",
+                           installCommand: "npm install -g opencode-ai", isDemo: false),
+        RemoteAgentAdapter(tool: "gemini", binaryName: "gemini", displayName: "Gemini CLI",
+                           installCommand: "npm install -g @google/gemini-cli", isDemo: false),
+        RemoteAgentAdapter(tool: "demo", binaryName: nil, displayName: "Demo (local)",
+                           installCommand: "", isDemo: true),
+    ]
+
+    static func adapter(for tool: String) -> RemoteAgentAdapter? {
+        adapters.first { $0.tool == tool }
+    }
+
+    /// Non-demo adapters only — shown in the settings readiness panel.
+    static func realAdapters() -> [RemoteAgentAdapter] {
+        adapters.filter { !$0.isDemo }
+    }
+
+    /// Resolve "auto": first installed real agent; `demo` if none at all.
+    static func preferredTool() -> String {
+        for adapter in realAdapters() {
+            if let binary = adapter.binaryName, agentBinaryPath(for: binary) != nil {
+                return adapter.tool
+            }
+        }
+        return "demo"
+    }
 
     /// Convenience: enqueue + callback on finish.
     func enqueue(_ conversation: RemoteConversation,
@@ -56,40 +152,49 @@ final class RemoteAgentSessionManager {
             return failed
         }
 
+        let tool = conversation.tool == "auto" ? Self.preferredTool() : conversation.tool
+        guard let adapter = Self.adapter(for: tool) else {
+            var failed = conversation
+            failed.status = .error
+            failed.errorMessage = "Unsupported tool '\(tool)'"
+            return failed
+        }
+
+        // Demo adapter: local simulated reply — validates the whole chain
+        // (iPhone → CloudKit → Mac → reply) with zero credentials.
+        if adapter.isDemo {
+            var updated = conversation
+            updated.status = .done
+            let reply = """
+            [Demo] Mac 收到: "\(userMessage.text)"
+
+            这是本地模拟回复——端到端链路验证通过(手机 → CloudKit → Mac → 回传)。
+            未连接真实 AI;安装 Claude Code / Codex / OpenCode / Gemini 任一 CLI 后,auto 会自动切换。
+            \(Date())
+            """
+            updated.messages.append(RemoteConversationMessage(role: "assistant", text: reply))
+            updated.updatedAt = Date()
+            return updated
+        }
+
+        // Locate the agent binary — resolved from PATH or common install
+        // locations. macOS GUI apps have a minimal PATH, so we build an
+        // explicit candidate list.
+        guard let binaryName = adapter.binaryName,
+              let agentPath = Self.agentBinaryPath(for: binaryName) else {
+            var failed = conversation
+            failed.status = .error
+            failed.errorMessage = "Agent '\(tool)' not found in PATH"
+            return failed
+        }
+
         let process = Process()
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
         process.standardInput = FileHandle.nullDevice
-
-        // Locate the agent binary (claude / codex) — resolved from PATH or
-        // common install locations. macOS GUI apps have a minimal PATH, so we
-        // build an explicit candidate list.
-        guard let agentPath = Self.agentBinaryPath(for: conversation.tool) else {
-            var failed = conversation
-            failed.status = .error
-            failed.errorMessage = "Agent '\(conversation.tool)' not found in PATH"
-            return failed
-        }
-
-        switch conversation.tool {
-        case "claude":
-            process.executableURL = URL(fileURLWithPath: agentPath)
-            process.arguments = [
-                "-p", userMessage.text,
-                "--resume", conversation.sessionId,
-                "--output-format", "stream-json",
-                "--verbose",
-            ]
-        case "codex":
-            process.executableURL = URL(fileURLWithPath: agentPath)
-            process.arguments = ["exec", userMessage.text, "--session", conversation.sessionId]
-        default:
-            var failed = conversation
-            failed.status = .error
-            failed.errorMessage = "Unsupported tool '\(conversation.tool)'"
-            return failed
-        }
+        process.executableURL = URL(fileURLWithPath: agentPath)
+        process.arguments = adapter.arguments(message: userMessage.text, sessionId: conversation.sessionId)
 
         var env = ProcessInfo.processInfo.environment
         env["PATH"] = (env["PATH"] ?? "") + ":/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
@@ -104,11 +209,10 @@ final class RemoteAgentSessionManager {
             return failed
         }
 
-        // Collect stdout; stream-json emits one JSON event per line.
+        // Collect stdout.
         let fileHandle = pipe.fileHandleForReading
-        var output = ""
         let data = fileHandle.readDataToEndOfFile()
-        output = String(data: data, encoding: .utf8) ?? ""
+        let output = String(data: data, encoding: .utf8) ?? ""
 
         process.waitUntilExit()
 
@@ -117,23 +221,13 @@ final class RemoteAgentSessionManager {
         if process.terminationStatus != 0 {
             updated.errorMessage = String(output.suffix(500))
         }
-        // Extract the assistant text from stream-json lines (type:"assistant").
-        let assistantText = Self.extractAssistantText(from: output)
-        if !assistantText.isEmpty {
-            updated.messages.append(RemoteConversationMessage(role: "assistant", text: assistantText))
-        } else {
-            updated.messages.append(RemoteConversationMessage(role: "assistant", text: String(output.suffix(2000))))
-        }
+        let reply = adapter.extractReply(from: output) ?? String(output.suffix(2000))
+        updated.messages.append(RemoteConversationMessage(role: "assistant", text: reply))
         updated.updatedAt = Date()
         return updated
     }
 
-    // MARK: - Helpers
-
     // MARK: - Agent detection & install guidance
-
-    /// Supported agent tools.
-    static let supportedTools = ["claude", "codex"]
 
     /// One agent's installation state, used by the settings readiness panel.
     struct AgentInstallation {
@@ -143,37 +237,16 @@ final class RemoteAgentSessionManager {
         var isInstalled: Bool { path != nil }
     }
 
-    /// Probe every supported agent and report installation state.
+    /// Probe every real (non-demo) agent and report installation state.
     static func detectAgents() -> [AgentInstallation] {
-        supportedTools.map { tool in
-            AgentInstallation(tool: tool,
-                              path: agentBinaryPath(for: tool),
-                              installCommand: installCommand(for: tool))
+        realAdapters().map { adapter in
+            AgentInstallation(tool: adapter.tool,
+                              path: adapter.binaryName.flatMap { agentBinaryPath(for: $0) },
+                              installCommand: adapter.installCommand)
         }
     }
 
-    /// Copy-paste install command for a tool that is missing.
-    static func installCommand(for tool: String) -> String {
-        switch tool {
-        case "claude":
-            return "npm install -g @anthropic-ai/claude-code"
-        case "codex":
-            return "npm install -g @openai/codex"
-        default:
-            return ""
-        }
-    }
-
-    private static func agentBinaryPath(for tool: String) -> String? {
-        let candidates: [String]
-        switch tool {
-        case "claude":
-            candidates = ["claude"]
-        case "codex":
-            candidates = ["codex"]
-        default:
-            return nil
-        }
+    private static func agentBinaryPath(for binary: String) -> String? {
         // Codex.app (and Codex++) install the CLI under ~/.codex; the plugin
         // appserver path is a real, current location on some setups.
         let searchPaths = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
@@ -182,38 +255,20 @@ final class RemoteAgentSessionManager {
                            "/Users/\(NSUserName())/.codex/plugins/.plugin-appserver",
                            "/Users/\(NSUserName())/.npm-global/bin",
                            "/Users/\(NSUserName())/.yarn/bin"]
-        for name in candidates {
-            if name.contains("/") && FileManager.default.isExecutableFile(atPath: name) {
-                return name
-            }
-            for dir in searchPaths {
-                let p = "\(dir)/\(name)"
+        if binary.contains("/") && FileManager.default.isExecutableFile(atPath: binary) {
+            return binary
+        }
+        for dir in searchPaths {
+            let p = "\(dir)/\(binary)"
+            if FileManager.default.isExecutableFile(atPath: p) { return p }
+        }
+        // PATH fallback
+        if let path = ProcessInfo.processInfo.environment["PATH"] {
+            for dir in path.split(separator: ":") {
+                let p = "\(dir)/\(binary)"
                 if FileManager.default.isExecutableFile(atPath: p) { return p }
-            }
-            // PATH fallback
-            if let path = ProcessInfo.processInfo.environment["PATH"] {
-                for dir in path.split(separator: ":") {
-                    let p = "\(dir)/\(name)"
-                    if FileManager.default.isExecutableFile(atPath: p) { return p }
-                }
             }
         }
         return nil
-    }
-
-    /// Extract assistant text from `claude --output-format stream-json`.
-    /// Each line is a JSON object; assistant messages carry type:"assistant".
-    private static func extractAssistantText(from output: String) -> String {
-        var text = ""
-        for line in output.split(separator: "\n") {
-            guard let data = line.data(using: .utf8),
-                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
-            if obj["type"] as? String == "assistant",
-               let message = obj["message"] as? [String: Any],
-               let content = message["content"] as? String {
-                text += content
-            }
-        }
-        return text
     }
 }
