@@ -78,6 +78,7 @@ final class RemoteConversationService: ObservableObject {
         Self.diag("start() called, remoteConversationEnabled=1, container=\(Self.containerIdentifier)")
         sessionManager.onTurnFinished = { [weak self] conversation in
             Task { @MainActor in
+                Self.diag("turn finished: id=\(conversation.id), status=\(conversation.status.rawValue), msgs=\(conversation.messages.count), err=\(conversation.errorMessage ?? "nil")")
                 self?.updateStatus(conversation)
             }
         }

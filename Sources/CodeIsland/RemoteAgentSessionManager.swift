@@ -125,11 +125,31 @@ final class RemoteAgentSessionManager {
     func enqueue(_ conversation: RemoteConversation,
                  completion: @escaping (RemoteConversation) -> Void) {
         lock.lock()
+        // Deduplicate: poll() re-enqueues every pending conversation every 5s;
+        // without this the queue balloons while a turn is executing.
+        if queue.contains(where: { $0.id == conversation.id }) {
+            lock.unlock()
+            return
+        }
         queue.append(conversation)
         lock.unlock()
         pump()
         // NOTE: completion wiring is handled by callers via onTurnFinished in
         // the service; this signature exists for a clean swap to async/await.
+    }
+
+    /// Append a line to the shared /tmp diag log (os_log is unreadable in
+    /// the dev sandbox, so CloudKit/agent failures are persisted to a file).
+    private static func diag(_ msg: String) {
+        let path = "/tmp/notchdeck-remote-diag.log"
+        let line = "\(Date()) \(msg)\n"
+        if let handle = FileHandle(forWritingAtPath: path) {
+            handle.seekToEndOfFile()
+            handle.write(line.data(using: .utf8) ?? Data())
+            try? handle.close()
+        } else {
+            try? line.write(toFile: path, atomically: true, encoding: .utf8)
+        }
     }
 
     private func pump() {
@@ -220,13 +240,17 @@ final class RemoteAgentSessionManager {
         env["PATH"] = (env["PATH"] ?? "") + ":/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
         process.environment = env
 
+        Self.diag("execute: tool=\(tool), path=\(agentPath), args=\(process.arguments?.joined(separator: " ") ?? "")")
+
         do {
             try process.run()
         } catch {
+            Self.diag("execute: process.run FAILED: \(error.localizedDescription)")
             return Self.demoFallback(conversation: conversation, tool: tool,
                                      userMessage: userMessage,
                                      reason: "Failed to launch agent: \(error.localizedDescription)")
         }
+        Self.diag("execute: process started pid=\(process.processIdentifier)")
 
         // Hard timeout: a hung agent (e.g. claude waiting for OAuth login)
         // must never wedge the serial queue forever.
@@ -236,12 +260,25 @@ final class RemoteAgentSessionManager {
             try? await Task.sleep(nanoseconds: 200_000_000) // 200ms
         }
         if process.isRunning {
+            Self.diag("execute: TIMEOUT after \(Int(timeout))s, terminating")
             process.terminate()
-            process.waitUntilExit()
+            // SIGTERM may be ignored (GUI-launched CLIs often are); escalate
+            // to SIGKILL after a short grace period, else waitUntilExit()
+            // blocks forever.
+            let killDeadline = Date().addingTimeInterval(5)
+            while process.isRunning && Date() < killDeadline {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            if process.isRunning {
+                Self.diag("execute: SIGTERM ignored, SIGKILL")
+                kill(process.processIdentifier, SIGKILL)
+                process.waitUntilExit()
+            }
             return Self.demoFallback(conversation: conversation, tool: tool,
                                      userMessage: userMessage,
                                      reason: "timed out after \(Int(timeout))s (not logged in?)")
         }
+        Self.diag("execute: process exited status=\(process.terminationStatus)")
 
         // Process exited — collect output and finalize.
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
@@ -255,6 +292,7 @@ final class RemoteAgentSessionManager {
         guard process.terminationStatus == 0,
               let reply = adapter.extractReply(from: output), !reply.isEmpty else {
             let reason = String(output.suffix(300)).trimmingCharacters(in: .whitespacesAndNewlines)
+            Self.diag("execute: nonzero exit → demo fallback (status=\(process.terminationStatus))")
             return Self.demoFallback(conversation: conversation, tool: tool,
                                      userMessage: userMessage,
                                      reason: reason.isEmpty ? "exit code \(process.terminationStatus)" : reason)
@@ -264,6 +302,7 @@ final class RemoteAgentSessionManager {
         updated.status = .done
         updated.messages.append(RemoteConversationMessage(role: "assistant", text: reply))
         updated.updatedAt = Date()
+        Self.diag("execute: done, reply=\(reply.prefix(60))")
         return updated
     }
 
