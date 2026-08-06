@@ -44,8 +44,15 @@ struct RemoteConversationView: View {
             }
         }
         .task { await viewModel.refresh() }
+        // The outer composer creates a NEW conversation — only show it when
+        // no conversation is selected, otherwise it overlaps ChatView's own
+        // composer (which appends to the current conversation). On iPhone's
+        // collapsed NavigationSplitView both would be visible at once,
+        // causing the second message to land in a new conversation.
         .safeAreaInset(edge: .bottom) {
-            composer
+            if selectedID == nil {
+                composer
+            }
         }
         .safeAreaInset(edge: .top) {
             if let message = viewModel.errorMessage {
