@@ -6,10 +6,14 @@
 # the only path that produces a signed, CloudKit-capable dev build (and the
 # same project is the foundation for a future Mac App Store submission).
 #
-# Dependencies (Sparkle, Yams) are declared as SPM packages — Xcode GUI
-# resolves and builds them automatically. Do NOT use `xcodebuild` CLI for this
-# project: the CLI sandboxes swift-frontend on macOS 26 and breaks macros
-# (@Observable). Build/Run from Xcode GUI instead.
+# Dependencies (Sparkle, Yams) are VENDORED under Vendor/ — NO SPM packages.
+# This is deliberate: Xcode 26 re-resolves SPM packages every time the
+# project opens, and that resolution is flaky/failing on this machine
+# (sandboxed), leaving the build stuck before compilation. Vendored sources
+# mean opening the project goes straight to build, no network, no resolve.
+# Do NOT use `xcodebuild` CLI for this project: the CLI sandboxes
+# swift-frontend on macOS 26 and breaks macros (@Observable). Build/Run from
+# Xcode GUI instead.
 #
 # Regenerate the project after changing this file:
 #   xcodegen generate
@@ -27,14 +31,6 @@ options:
   createIntermediateGroups: true
   groupSortPosition: top
   xcodeVersion: "16.0"
-
-packages:
-  Sparkle:
-    url: https://github.com/sparkle-project/Sparkle.git
-    from: "2.6.0"
-  Yams:
-    url: https://github.com/jpsim/Yams.git
-    from: "5.0.0"
 
 settings:
   base:
@@ -71,6 +67,33 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 1.0
 
+  # Vendored Yams (SPM checkout copy, see Vendor/Yams). Pure Swift + the
+  # libyaml C sources compiled into the SAME framework. `import CYaml` was
+  # patched out of the .swift files (see Vendor patch); the C types come in
+  # through a bridging header instead — Xcode's Clang importer handles this
+  # deterministically, unlike a custom CYaml module map.
+  Yams:
+    type: framework
+    platform: macOS
+    sources:
+      - path: Vendor/Yams/Sources/Yams
+        excludes:
+          - Yams.h   # never compiled under SwiftPM either
+      - path: Vendor/Yams/Sources/CYaml/src
+      - path: Vendor/Yams/Sources/CYaml/include
+        buildPhase: headers
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.notchdeck.yams
+        SKIP_INSTALL: YES
+        DEFINES_MODULE: YES
+        GENERATE_INFOPLIST_FILE: YES
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: "5.0.0"
+        SWIFT_OBJC_BRIDGING_HEADER: $(SRCROOT)/Vendor/Yams/Bridging.h
+        HEADER_SEARCH_PATHS: $(inherited) $(SRCROOT)/Vendor/Yams/Sources/CYaml/include
+        CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES: YES
+
   # Main app.
   CodeIsland:
     type: application
@@ -93,8 +116,9 @@ targets:
         buildPhase: resources
     dependencies:
       - target: CodeIslandCore
-      - package: Sparkle
-      - package: Yams
+      - target: Yams
+      - framework: Vendor/Sparkle.xcframework
+        embed: true
     # NOTE: We deliberately do NOT use XcodeGen's `info:` / `entitlements:`
     # generators — they REWRITE Info.plist / CodeIsland.entitlements from
     # scratch and would wipe the CloudKit entitlements. Instead we reference
