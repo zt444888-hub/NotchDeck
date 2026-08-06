@@ -12,7 +12,14 @@ extension Bundle {
             return bundle
         }
 
+        #if SWIFT_PACKAGE
         // SPM dev build fallback
         return Bundle.module
+        #else
+        // Xcode project build: Resources are a folder reference copied to
+        // Contents/Resources/Resources/… so Bundle.main resolves the same
+        // "Resources/…" subdirectory paths the SPM bundle used.
+        return Bundle.main
+        #endif
     }()
 }

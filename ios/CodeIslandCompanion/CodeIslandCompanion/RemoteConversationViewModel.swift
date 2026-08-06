@@ -152,6 +152,12 @@ final class RemoteConversationViewModel: ObservableObject {
                 conv.status = .pending
                 conv.updatedAt = Date()
                 try await db.save(Self.record(from: conv))
+                // Optimistic update: reflect the new message locally right away.
+                // Zone-changes reads can lag behind a just-completed save, so
+                // never depend on a fetch to show what the user just typed.
+                if let idx = conversations.firstIndex(where: { $0.id == conv.id }) {
+                    conversations[idx] = conv
+                }
             } else {
                 // New conversation. tool = "auto": the Mac picks whichever
                 // agent CLI it has installed (falls back to Demo mode).
@@ -159,6 +165,10 @@ final class RemoteConversationViewModel: ObservableObject {
                                               title: String(trimmed.prefix(40)),
                                               messages: [message])
                 try await db.save(Self.record(from: conv))
+                // Optimistic update so the new conversation is visible
+                // immediately, even if the zone-changes fetch lags.
+                conversations.insert(conv, at: 0)
+                conversations.sort { $0.updatedAt > $1.updatedAt }
             }
             errorMessage = nil
             await refresh()

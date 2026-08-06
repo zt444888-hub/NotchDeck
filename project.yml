@@ -1,0 +1,128 @@
+# NotchDeck macOS app — XcodeGen project spec.
+#
+# WHY this exists: SwiftPM builds cannot carry CloudKit entitlements through
+# manual codesign on macOS 26 (AMFI rejects), and xcodebuild resolving SwiftPM
+# deps fails in sandboxed environments. A real .xcodeproj built by Xcode GUI is
+# the only path that produces a signed, CloudKit-capable dev build (and the
+# same project is the foundation for a future Mac App Store submission).
+#
+# Dependencies (Sparkle, Yams) are declared as SPM packages — Xcode GUI
+# resolves and builds them automatically. Do NOT use `xcodebuild` CLI for this
+# project: the CLI sandboxes swift-frontend on macOS 26 and breaks macros
+# (@Observable). Build/Run from Xcode GUI instead.
+#
+# Regenerate the project after changing this file:
+#   xcodegen generate
+#
+# Build from Xcode:
+#   open NotchDeck.xcodeproj → select the CodeIsland scheme → Run.
+# Signing: Automatic, Team 2VBHV3VJ8N (Shenzhen Yuanbei Technology).
+# Xcode registers this Mac (ECID 00008112-…) and provisions CloudKit for you.
+
+name: NotchDeck
+options:
+  bundleIdPrefix: com.notchdeck
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  xcodeVersion: "16.0"
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle.git
+    from: "2.6.0"
+  Yams:
+    url: https://github.com/jpsim/Yams.git
+    from: "5.0.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: "2VBHV3VJ8N"
+    ENABLE_HARDENED_RUNTIME: NO
+    CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    CLANG_ENABLE_MODULES: YES
+
+targets:
+  # Core framework — pure logic shared by the app and the bridge helper.
+  CodeIslandCore:
+    type: framework
+    platform: macOS
+    sources:
+      - path: Sources/CodeIslandCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.notchdeck.core
+        SKIP_INSTALL: YES
+        DEFINES_MODULE: YES
+
+  # Main app.
+  CodeIsland:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/CodeIsland
+        excludes:
+          - Resources
+      # Resources as a FOLDER REFERENCE so paths stay "Resources/..." which
+      # matches Bundle.appModule lookups (subdirectory: "Resources").
+      - path: Sources/CodeIsland/Resources
+        type: folder
+        buildPhase: resources
+        excludes:
+          - AppIcon.icns
+      # AppIcon.icns must land in Contents/Resources/ top-level (folder
+      # reference would nest it under Resources/). CFBundleIconFile=AppIcon
+      # looks it up at the top level.
+      - path: Sources/CodeIsland/Resources/AppIcon.icns
+        buildPhase: resources
+    dependencies:
+      - target: CodeIslandCore
+      - package: Sparkle
+      - package: Yams
+    # NOTE: We deliberately do NOT use XcodeGen's `info:` / `entitlements:`
+    # generators — they REWRITE Info.plist / CodeIsland.entitlements from
+    # scratch and would wipe the CloudKit entitlements. Instead we reference
+    # the existing files via build settings below.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.notchdeck.mac
+        PRODUCT_NAME: CodeIsland
+        INFOPLIST_FILE: Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: CodeIsland.entitlements
+        # Automatic signing: Xcode registers the Mac (Xcode 26 uses the
+        # ECID-style identifier 00008112-…, NOT the Hardware UUID) and
+        # manages the iCloud-enabled provisioning profile for us.
+        LD_RUNPATH_SEARCH_PATHS: $(inherited) @executable_path/../Frameworks
+        # Icon comes from Info.plist's CFBundleIconFile=AppIcon → the
+        # AppIcon.icns copied to Contents/Resources/ (the empty
+        # Assets.xcassets has no appiconset, so no ASSETCATALOG setting).
+
+  # Bridge helper — spawned by hooks; talks to the app over a unix socket.
+  codeisland-bridge:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/CodeIslandBridge
+    dependencies:
+      - target: CodeIslandCore
+    settings:
+      base:
+        PRODUCT_NAME: codeisland-bridge
+        PRODUCT_BUNDLE_IDENTIFIER: com.notchdeck.bridge
+        LD_RUNPATH_SEARCH_PATHS: $(inherited) @executable_path/../../Frameworks
+
+schemes:
+  CodeIsland:
+    build:
+      targets:
+        CodeIsland: all
+        CodeIslandCore: [test]
+    run:
+      config: Debug
+    archive:
+      config: Release
