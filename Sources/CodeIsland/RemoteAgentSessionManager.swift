@@ -33,7 +33,9 @@ struct RemoteAgentAdapter {
         case "claude":
             return ["-p", message, "--output-format", "stream-json", "--verbose"]
         case "codex":
-            return ["exec", message]
+            // --skip-git-repo-check: the app's cwd isn't a git repo and
+            // codex would refuse to run without it.
+            return ["exec", message, "--skip-git-repo-check"]
         case "opencode":
             return ["run", message]
         case "gemini":
@@ -48,11 +50,30 @@ struct RemoteAgentAdapter {
         switch tool {
         case "claude":
             return Self.extractClaudeReply(from: output)
+        case "codex":
+            return Self.extractCodexReply(from: output)
         default:
-            // codex / opencode / gemini print plain-text replies on stdout.
+            // opencode / gemini print plain-text replies on stdout.
             let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
             return trimmed.isEmpty ? nil : trimmed
         }
+    }
+
+    /// `codex exec` prints a banner, then the turn transcript, then a
+    /// "tokens used" footer. The assistant reply is the text after the last
+    /// "codex" marker and before "tokens used".
+    private static func extractCodexReply(from output: String) -> String? {
+        var reply: String
+        if let marker = output.range(of: "\ncodex\n", options: .backwards) ?? output.range(of: "codex\n", options: .backwards) {
+            reply = String(output[marker.upperBound...])
+        } else {
+            reply = output
+        }
+        if let tokens = reply.range(of: "\ntokens used") {
+            reply = String(reply[..<tokens.lowerBound])
+        }
+        let trimmed = reply.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     /// `claude --output-format stream-json` emits one JSON event per line;
