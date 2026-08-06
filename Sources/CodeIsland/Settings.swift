@@ -117,6 +117,11 @@ enum SettingsKey {
     // Default OFF: executing commands sent from the phone is an explicit opt-in.
     static let remoteConversationEnabled = "remoteConversationEnabled"
 
+    // Remote diagnostics file (/tmp/notchdeck-remote-diag.log). Default OFF:
+    // every poll writes to disk otherwise. Turn on in Settings → Remote AI
+    // when debugging CloudKit/agent issues.
+    static let remoteDiagEnabled = "remoteDiagEnabled"
+
     // Auto-approve tools (comma-separated tool names)
     static let autoApproveTools = "autoApproveTools"
 
@@ -199,6 +204,9 @@ struct SettingsDefaults {
     static let appleCompanionHeartbeatSeconds = 5.0
 
     static let remoteConversationEnabled = false
+
+    // Diagnostics off by default (file I/O on every poll otherwise).
+    static let remoteDiagEnabled = false
 
     // Default to no auto-approval — every tool call goes through the
     // approval flow and the user opts in per tool. The previous default

@@ -60,6 +60,9 @@ final class RemoteConversationService: ObservableObject {
     private static let diagPath = "/tmp/notchdeck-remote-diag.log"
 
     static func diag(_ msg: String) {
+        // Diagnostics are opt-in (Settings → Remote AI → 诊断日志) to avoid
+        // file I/O on every 5s poll in production.
+        guard UserDefaults.standard.bool(forKey: SettingsKey.remoteDiagEnabled) else { return }
         let line = "\(Date()) \(msg)\n"
         if let handle = FileHandle(forWritingAtPath: diagPath) {
             handle.seekToEndOfFile()

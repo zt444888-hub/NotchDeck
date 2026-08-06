@@ -1573,6 +1573,7 @@ private struct BuddyPage: View {
     @AppStorage(SettingsKey.appleCompanionEnabled) private var appleCompanionEnabled: Bool = SettingsDefaults.appleCompanionEnabled
     @AppStorage(SettingsKey.appleCompanionHeartbeatSeconds) private var appleCompanionHeartbeat: Double = SettingsDefaults.appleCompanionHeartbeatSeconds
     @AppStorage(SettingsKey.remoteConversationEnabled) private var remoteConversationEnabled: Bool = SettingsDefaults.remoteConversationEnabled
+    @AppStorage(SettingsKey.remoteDiagEnabled) private var remoteDiagEnabled: Bool = SettingsDefaults.remoteDiagEnabled
     @ObservedObject private var appleCompanion = AppleCompanionPublisher.shared
     @State private var refreshTick = 0
     @State private var remoteAccountStatus: CKAccountStatus = .couldNotDetermine
@@ -1941,6 +1942,10 @@ private struct BuddyPage: View {
                     }
                     .disabled(!remoteConversationChainReady)
                 Text(l10n["remote_conversation_desc"])
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle(l10n["remote_conversation_diag"], isOn: $remoteDiagEnabled)
+                Text(l10n["remote_conversation_diag_desc"])
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

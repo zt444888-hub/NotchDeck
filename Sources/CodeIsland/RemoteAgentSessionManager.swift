@@ -141,6 +141,8 @@ final class RemoteAgentSessionManager {
     /// Append a line to the shared /tmp diag log (os_log is unreadable in
     /// the dev sandbox, so CloudKit/agent failures are persisted to a file).
     private static func diag(_ msg: String) {
+        // Opt-in, same key as the service: Settings → Remote AI → 诊断日志.
+        guard UserDefaults.standard.bool(forKey: SettingsKey.remoteDiagEnabled) else { return }
         let path = "/tmp/notchdeck-remote-diag.log"
         let line = "\(Date()) \(msg)\n"
         if let handle = FileHandle(forWritingAtPath: path) {
