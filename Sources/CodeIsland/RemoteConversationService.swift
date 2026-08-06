@@ -13,9 +13,12 @@ private let log = Logger(subsystem: "com.notchdeck.mac", category: "RemoteConver
 /// it, the developer never sees the data.
 ///
 /// Synchronization model:
-///   - Subscription (CKQuerySubscription) pushes a silent notification when a
-///     pending conversation appears → we fetch and execute.
-///   - A 30s poll timer is the fallback (push can be delayed/dropped by APNs).
+///   - CKDatabaseSubscription pushes a silent notification when any record
+///     changes → we sync zone changes and execute pending conversations.
+///   - A 5s poll timer is the fallback (push can be delayed/dropped by APNs).
+///   - Data sync uses CKFetchRecordZoneChangesOperation (Apple's recommended
+///     incremental sync API) — requires ZERO query indexes, completely
+///     avoiding the "recordName is not marked queryable" error.
 @MainActor
 final class RemoteConversationService: ObservableObject {
 
@@ -78,55 +81,117 @@ final class RemoteConversationService: ObservableObject {
 
     // MARK: - Read
 
-    /// Run a CKQueryOperation and collect matching conversations.
-    /// Uses CKQueryOperation (not `records(matching:)`) — the newer API
-    /// requires a recordName index even for predicate-only queries, which
-    /// CloudKit cannot provision for the system field.
-    private func runQuery(_ query: CKQuery, limit: Int, onMatch: @escaping (RemoteConversation) -> Void) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let op = CKQueryOperation(query: query)
-            op.resultsLimit = limit
-            op.recordMatchedBlock = { _, result in
-                if case .success(let record) = result,
-                   let conv = Self.conversation(from: record) { onMatch(conv) }
-            }
-            op.queryCompletionBlock = { _, error in
-                if let error {
-                    continuation.resume(throwing: error)
+    /// Sync incremental zone changes and merge into local state.
+    /// Uses CKFetchRecordZoneChangesOperation — Apple's recommended sync
+    /// API that requires ZERO query indexes.  This completely sidesteps the
+    /// "Field recordName is not marked queryable" error that plagues
+    /// CKQueryOperation and CKQuery in the development environment.
+    private func syncZoneChanges() async {
+        do {
+            let records = try await fetchZoneChanges()
+            let convs = records
+                .filter { $0.recordType == RemoteConversation.recordType }
+                .compactMap { Self.conversation(from: $0) }
+
+            var merged = conversations
+            for conv in convs {
+                if let idx = merged.firstIndex(where: { $0.id == conv.id }) {
+                    merged[idx] = conv
                 } else {
-                    continuation.resume(returning: ())
+                    merged.append(conv)
                 }
             }
+            conversations = merged.sorted { $0.updatedAt > $1.updatedAt }
+        } catch {
+            log.error("syncZoneChanges failed: \(error.localizedDescription)")
+        }
+    }
+
+    private static let zoneTokenKey = "RemoteConv.zoneToken"
+
+    private func fetchZoneChanges() async throws -> [CKRecord] {
+        let zoneID = CKRecordZone.default().zoneID
+        let tokenKey = Self.zoneTokenKey
+
+        var currentToken: CKServerChangeToken? = {
+            guard let data = UserDefaults.standard.data(forKey: tokenKey) else { return nil }
+            return try? NSKeyedUnarchiver.unarchivedObject(ofClass: CKServerChangeToken.self, from: data)
+        }()
+
+        var allRecords: [CKRecord] = []
+        var hasMore = true
+
+        while hasMore {
+            let (records, newToken, more) = try await fetchZoneChangesPage(
+                zoneID: zoneID, token: currentToken)
+            allRecords.append(contentsOf: records)
+            if let newToken {
+                currentToken = newToken
+                if let data = try? NSKeyedArchiver.archivedData(
+                    withRootObject: newToken, requiringSecureCoding: true) {
+                    UserDefaults.standard.set(data, forKey: tokenKey)
+                }
+            }
+            hasMore = more
+        }
+
+        return allRecords
+    }
+
+    private func fetchZoneChangesPage(
+        zoneID: CKRecordZone.ID, token: CKServerChangeToken?
+    ) async throws -> (records: [CKRecord],
+                        newToken: CKServerChangeToken?, moreComing: Bool) {
+        try await withCheckedThrowingContinuation { (continuation:
+            CheckedContinuation<(records: [CKRecord],
+                newToken: CKServerChangeToken?, moreComing: Bool), Error>) in
+            var records: [CKRecord] = []
+            var newToken: CKServerChangeToken?
+            var moreComing = false
+
+            let op = CKFetchRecordZoneChangesOperation(recordZoneIDs: [zoneID])
+            let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
+            config.previousServerChangeToken = token
+            op.configurationsByRecordZoneID = [zoneID: config]
+
+            op.recordWasChangedBlock = { _, result in
+                if case .success(let record) = result {
+                    records.append(record)
+                }
+            }
+            op.recordZoneFetchResultBlock = { _, result in
+                if case .success(let zoneResult) = result {
+                    newToken = zoneResult.serverChangeToken
+                    moreComing = zoneResult.moreComing
+                }
+            }
+            op.fetchRecordZoneChangesResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume(returning: (records, newToken, moreComing))
+                case .failure(let error):
+                    if let ckError = error as? CKError,
+                       ckError.code == .changeTokenExpired {
+                        UserDefaults.standard.removeObject(forKey: Self.zoneTokenKey)
+                    }
+                    continuation.resume(throwing: error)
+                }
+            }
+
             db.add(op)
         }
     }
 
     func fetchConversations() async {
-        // Predicate-only query, no remote sort (custom-field sort needs
-        // composite indexes incl. recordName). Sort client-side.
-        let predicate = NSPredicate(value: true)
-        let query = CKQuery(recordType: RemoteConversation.recordType, predicate: predicate)
-        do {
-            var items: [RemoteConversation] = []
-            try await runQuery(query, limit: 50) { items.append($0) }
-            conversations = items.sorted { $0.updatedAt > $1.updatedAt }
-        } catch {
-            log.error("fetchConversations failed: \(error.localizedDescription)")
-        }
+        await syncZoneChanges()
     }
 
-    /// Poll: fetch pending conversations and execute them (subscription fallback).
+    /// Poll: sync incremental changes, then enqueue any pending conversations.
     func poll() {
-        let predicate = NSPredicate(format: "status IN %@", [RemoteConversationStatus.pending.rawValue])
-        let query = CKQuery(recordType: RemoteConversation.recordType, predicate: predicate)
         Task { @MainActor in
-            do {
-                var pending: [RemoteConversation] = []
-                try await runQuery(query, limit: 20) { pending.append($0) }
-                for conv in pending { enqueueExecution(conv) }
-            } catch {
-                log.error("poll failed: \(error.localizedDescription)")
-            }
+            await syncZoneChanges()
+            let pending = conversations.filter { $0.status == .pending }
+            for conv in pending { enqueueExecution(conv) }
         }
     }
 
@@ -176,12 +241,12 @@ final class RemoteConversationService: ObservableObject {
 
     // MARK: - Subscription
 
+    /// Register a database-level subscription (not a query subscription).
+    /// CKDatabaseSubscription fires on ANY record change in the database,
+    /// requiring ZERO query indexes — unlike CKQuerySubscription which
+    /// triggers the "recordName is not marked queryable" error.
     private func registerSubscription() {
-        let predicate = NSPredicate(format: "status == %@", RemoteConversationStatus.pending.rawValue)
-        let sub = CKQuerySubscription(recordType: RemoteConversation.recordType,
-                                      predicate: predicate,
-                                      subscriptionID: "notchdeck-pending-conversations",
-                                      options: [.firesOnRecordCreation, .firesOnRecordUpdate])
+        let sub = CKDatabaseSubscription(subscriptionID: "notchdeck-remote-conv-db")
         sub.notificationInfo = CKSubscription.NotificationInfo()
         sub.notificationInfo?.shouldSendContentAvailable = true // silent push wakes the app
         Task {

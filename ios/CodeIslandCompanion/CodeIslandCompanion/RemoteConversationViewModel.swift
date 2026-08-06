@@ -31,32 +31,106 @@ final class RemoteConversationViewModel: ObservableObject {
     func refresh() async {
         isLoading = true
         defer { isLoading = false }
-        // Use CKQueryOperation (not records(matching:)) — the newer API
-        // requires a recordName index even for predicate-only queries, which
-        // CloudKit cannot provision for the system field. CKQueryOperation
-        // with a plain predicate needs no indexes at all. Sort client-side.
-        let query = CKQuery(recordType: RemoteConversation.recordType, predicate: NSPredicate(value: true))
-        var items: [RemoteConversation] = []
         do {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                let op = CKQueryOperation(query: query)
-                op.resultsLimit = 50
-                op.recordMatchedBlock = { _, result in
-                    if case .success(let record) = result,
-                       let conv = Self.conversation(from: record) { items.append(conv) }
+            let records = try await fetchZoneChanges()
+            let convs = records
+                .filter { $0.recordType == RemoteConversation.recordType }
+                .compactMap { Self.conversation(from: $0) }
+
+            // Merge: first fetch (conversations empty) → just add all;
+            // subsequent fetches → update existing, add new.
+            var merged = conversations
+            for conv in convs {
+                if let idx = merged.firstIndex(where: { $0.id == conv.id }) {
+                    merged[idx] = conv
+                } else {
+                    merged.append(conv)
                 }
-                op.queryCompletionBlock = { _, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume(returning: ())
-                    }
-                }
-                db.add(op)
             }
-            conversations = items.sorted { $0.updatedAt > $1.updatedAt }
+            conversations = merged.sorted { $0.updatedAt > $1.updatedAt }
+            errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = Self.friendlyError(error)
+        }
+    }
+
+    // MARK: - Zone Changes (no query indexes needed)
+
+    /// Fetch all record changes in the default zone since the last token.
+    /// Uses CKFetchRecordZoneChangesOperation — Apple's recommended sync
+    /// API that requires ZERO query indexes.  This completely sidesteps the
+    /// "Field recordName is not marked queryable" error that plagues
+    /// CKQueryOperation and CKQuery in the development environment.
+    private func fetchZoneChanges() async throws -> [CKRecord] {
+        let zoneID = CKRecordZone.default().zoneID
+        let tokenKey = "RemoteConv.zoneToken"
+
+        var currentToken: CKServerChangeToken? = {
+            guard let data = UserDefaults.standard.data(forKey: tokenKey) else { return nil }
+            return try? NSKeyedUnarchiver.unarchivedObject(ofClass: CKServerChangeToken.self, from: data)
+        }()
+
+        var allRecords: [CKRecord] = []
+        var hasMore = true
+
+        while hasMore {
+            let (records, newToken, more) = try await fetchZoneChangesPage(
+                zoneID: zoneID, token: currentToken)
+            allRecords.append(contentsOf: records)
+            if let newToken {
+                currentToken = newToken
+                if let data = try? NSKeyedArchiver.archivedData(
+                    withRootObject: newToken, requiringSecureCoding: true) {
+                    UserDefaults.standard.set(data, forKey: tokenKey)
+                }
+            }
+            hasMore = more
+        }
+
+        return allRecords
+    }
+
+    private func fetchZoneChangesPage(
+        zoneID: CKRecordZone.ID, token: CKServerChangeToken?
+    ) async throws -> (records: [CKRecord],
+                        newToken: CKServerChangeToken?, moreComing: Bool) {
+        try await withCheckedThrowingContinuation { (continuation:
+            CheckedContinuation<(records: [CKRecord],
+                newToken: CKServerChangeToken?, moreComing: Bool), Error>) in
+            var records: [CKRecord] = []
+            var newToken: CKServerChangeToken?
+            var moreComing = false
+
+            let op = CKFetchRecordZoneChangesOperation(recordZoneIDs: [zoneID])
+            let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
+            config.previousServerChangeToken = token
+            op.configurationsByRecordZoneID = [zoneID: config]
+
+            op.recordWasChangedBlock = { _, result in
+                if case .success(let record) = result {
+                    records.append(record)
+                }
+            }
+            op.recordZoneFetchResultBlock = { _, result in
+                if case .success(let zoneResult) = result {
+                    newToken = zoneResult.serverChangeToken
+                    moreComing = zoneResult.moreComing
+                }
+            }
+            op.fetchRecordZoneChangesResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume(returning: (records, newToken, moreComing))
+                case .failure(let error):
+                    if let ckError = error as? CKError,
+                       ckError.code == .changeTokenExpired {
+                        UserDefaults.standard.removeObject(forKey: "RemoteConv.zoneToken")
+                    }
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            db.add(op)
         }
     }
 
