@@ -253,8 +253,10 @@ final class RemoteAgentSessionManager {
         Self.diag("execute: process started pid=\(process.processIdentifier)")
 
         // Hard timeout: a hung agent (e.g. claude waiting for OAuth login)
-        // must never wedge the serial queue forever.
-        let timeout: TimeInterval = 45
+        // must never wedge the serial queue forever. 20s covers a normal
+        // headless single-turn reply; queued stale pending turns then drain
+        // quickly instead of blocking new messages.
+        let timeout: TimeInterval = 20
         let deadline = Date().addingTimeInterval(timeout)
         while process.isRunning && Date() < deadline {
             try? await Task.sleep(nanoseconds: 200_000_000) // 200ms
