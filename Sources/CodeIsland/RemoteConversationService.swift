@@ -263,17 +263,25 @@ final class RemoteConversationService: ObservableObject {
         updated.updatedAt = Date()
         do {
             try await db.save(Self.record(from: updated))
+            Self.diag("appendMessage OK: id=\(conversation.id), status=\(updated.status.rawValue)")
         } catch {
-            log.error("appendMessage failed: \(error.localizedDescription)")
+            Self.diag("appendMessage FAILED: id=\(conversation.id), err=\(error.localizedDescription)")
         }
     }
 
     func updateStatus(_ conversation: RemoteConversation) {
+        // Always update the in-memory model first — the poll loop re-enqueues
+        // anything still .pending every 5s, so a slow/failed CloudKit write
+        // would otherwise retrigger the same turn forever.
+        if let idx = conversations.firstIndex(where: { $0.id == conversation.id }) {
+            conversations[idx] = conversation
+        }
         Task {
             do {
                 try await db.save(Self.record(from: conversation))
+                Self.diag("updateStatus OK: id=\(conversation.id), status=\(conversation.status.rawValue)")
             } catch {
-                log.error("updateStatus failed: \(error.localizedDescription)")
+                Self.diag("updateStatus FAILED: id=\(conversation.id), err=\(error.localizedDescription)")
             }
         }
     }
