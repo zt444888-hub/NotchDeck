@@ -5,7 +5,10 @@ import UIKit
 /// Drive the Mac's AI from your iPhone while away.
 struct RemoteConversationView: View {
     @EnvironmentObject private var connection: CompanionConnection
-    @StateObject private var viewModel = RemoteConversationViewModel()
+    // App-level instance: the main screen and this sheet share ONE CloudKit
+    // poll loop and zone token (two instances would fight over the token and
+    // silently drop changes from each other).
+    @EnvironmentObject private var viewModel: RemoteConversationViewModel
     @State private var draft = ""
     @State private var selectedID: String?
     @State private var renameTarget: RemoteConversation?
@@ -15,6 +18,69 @@ struct RemoteConversationView: View {
     // Observing the preference re-renders the window when the language
     // changes (L10n.t is evaluated at render time).
     @AppStorage("AppLanguage") private var appLanguage = "system"
+
+    /// Mac reachability/activity row backed by the CloudKit RemoteStatus
+    /// beacon. TimelineView re-evaluates every 10s so the online/offline dot
+    /// flips on its own after the 90s staleness window.
+    private var macStatusRow: some View {
+        TimelineView(.periodic(from: .now, by: 10)) { _ in
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(viewModel.macOnline ? Color.green : Color.gray)
+                    .frame(width: 8, height: 8)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(viewModel.latestRemoteStatus?.deviceName
+                         ?? L10n.t(zh: "未检测到 Mac", en: "No Mac detected"))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    statusDetailText
+                }
+                Spacer()
+                if viewModel.macOnline {
+                    Text(L10n.t(zh: "在线", en: "Online"))
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.green.opacity(0.15))
+                        .foregroundStyle(.green)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    @ViewBuilder
+    private var statusDetailText: some View {
+        if let status = viewModel.latestRemoteStatus {
+            if viewModel.macOnline {
+                if let text = status.activityText, !text.isEmpty {
+                    Text(text)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                } else if status.activeCount > 0 {
+                    Text(L10n.t(zh: "在线 · \(status.activeCount) 个会话进行中",
+                                en: "Online · \(status.activeCount) active"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(L10n.t(zh: "在线 · 空闲", en: "Online · idle"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Text(L10n.t(zh: "离线(需 Mac 运行 NotchDeck 并开启 Remote AI)",
+                            en: "Offline — run NotchDeck with Remote AI on"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            Text(L10n.t(zh: "正在检测 Mac 状态…", en: "Detecting Mac status…"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
 
     var body: some View {
         // Imported Mac codex tasks (recordName == codex session id) are
@@ -26,6 +92,19 @@ struct RemoteConversationView: View {
         let filteredTasks = filter(localTasks)
         NavigationSplitView {
             List(selection: $selectedID) {
+                // Remote status beacon: shows whether any Mac on this iCloud
+                // account is reachable and what it's doing — works over any
+                // network (no MPC/local Wi-Fi needed).
+                Section {
+                    macStatusRow
+                    if let feedback = viewModel.remoteCommandFeedback, !feedback.isEmpty {
+                        Label(feedback, systemImage: "paperplane.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text(L10n.t(zh: "Mac 状态", en: "Mac status"))
+                }
                 Section {
                     ForEach(filteredPhone) { conv in
                         conversationLink(conv)
@@ -70,13 +149,20 @@ struct RemoteConversationView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        // send() surfaces a "not connected" hint when needed.
-                        connection.send(.focus)
+                        if connection.connectedPeer != nil {
+                            // MPC path: low latency, same network.
+                            connection.send(.focus)
+                        } else if viewModel.macOnline {
+                            // Remote path: CloudKit command (Mac must have
+                            // "允许远程指令" enabled).
+                            let source = connection.latestState?.source
+                            Task { await viewModel.sendCommand(type: "focus", source: source) }
+                        }
                     } label: {
                         Label(L10n.t(zh: "打开 Mac 会话", en: "Open Mac Session"),
                               systemImage: "arrow.up.forward.app.fill")
                     }
-                    .disabled(connection.connectedPeer == nil)
+                    .disabled(connection.connectedPeer == nil && !viewModel.macOnline)
                     .accessibilityIdentifier("macSession.focus")
                 }
             }

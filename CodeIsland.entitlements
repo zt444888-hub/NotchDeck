@@ -17,7 +17,16 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<!--
+	  NOTE: `codesign` does NOT expand build variables ($(TeamIdentifierPrefix)
+	  etc.) — only the Xcode build system does. build.sh signs with codesign
+	  directly, so the kvstore identifier is hardcoded to the actual Team ID
+	  (2VBHV3VJ8N). Without expansion, CKContainer(identifier:) asserts
+	  (SIGTRAP) at launch. Do NOT add com.apple.application-identifier here:
+	  it is a provisioning-profile entitlement and AMFI kills Developer-ID
+	  signed apps that carry it (SIGKILL at spawn).
+	-->
 	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
-	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
+	<string>2VBHV3VJ8N.com.notchdeck.mac</string>
 </dict>
 </plist>

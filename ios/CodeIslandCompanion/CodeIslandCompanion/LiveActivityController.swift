@@ -139,7 +139,7 @@ final class LiveActivityController: ObservableObject {
             let attributes = CodeIslandActivityAttributes(sessionId: payload.sessionId)
             let content = ActivityContent(
                 state: contentState,
-                staleDate: Date().addingTimeInterval(90),
+                staleDate: Date().addingTimeInterval(300),
                 relevanceScore: relevanceScore(for: payload.status)
             )
             let existing = try Activity.request(attributes: attributes, content: content)
@@ -161,7 +161,7 @@ final class LiveActivityController: ObservableObject {
     ) async {
         await activity.update(ActivityContent(
             state: contentState,
-            staleDate: Date().addingTimeInterval(90),
+            staleDate: Date().addingTimeInterval(300),
             relevanceScore: relevanceScore(for: status)
         ))
     }
@@ -194,7 +194,10 @@ final class LiveActivityController: ObservableObject {
         case .processing, .running:
             return 0.7
         case .idle:
-            return 0.25
+            // Kept above the "background noise" threshold so the Dynamic
+            // Island doesn't get collapsed/aged out by the system between
+            // agent activities (was 0.25 → island blinked away quickly).
+            return 0.5
         }
     }
 }

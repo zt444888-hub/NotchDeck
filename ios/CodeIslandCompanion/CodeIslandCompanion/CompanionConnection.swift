@@ -3,6 +3,25 @@ import Foundation
 import MultipeerConnectivity
 import UIKit
 
+/// One persisted entry of the Mac's activity stream shown in the
+/// "活动记录" list. `id`/`sequence` are stable so the UI can diff and
+/// render reliably across reloads.
+struct ActivityEntry: Codable, Identifiable, Equatable {
+    let id: UUID
+    let sequence: Int64
+    let time: Date
+    let role: CompanionMessageRole
+    let text: String
+
+    init(sequence: Int64, time: Date = Date(), role: CompanionMessageRole, text: String) {
+        self.id = UUID()
+        self.sequence = sequence
+        self.time = time
+        self.role = role
+        self.text = text
+    }
+}
+
 @MainActor
 final class CompanionConnection: NSObject, ObservableObject {
     @Published private(set) var discoveredPeers: [MCPeerID] = []
@@ -17,10 +36,15 @@ final class CompanionConnection: NSObject, ObservableObject {
     @Published private(set) var bluetoothConnectedPeripheralName: String?
     @Published private(set) var lastStateReceivedAt: Date?
     @Published private(set) var isDemoMode = false
+    /// Persisted history of Mac activity (appended incrementally from each
+    /// payload's rolling message window; survives relaunches).
+    @Published private(set) var activityLog: [ActivityEntry] = []
 
     private static let serviceType = "codeisland"
     private static let refreshAfterSeconds: TimeInterval = 8
     private static let reconnectAfterSeconds: TimeInterval = 24
+    private static let activityLogKey = "CompanionActivityLog"
+    private static let activityLogLimit = 300
 
     private let watchBridge = WatchBridge()
     private let bluetoothBridge = CompanionBluetoothCentral()
@@ -48,6 +72,7 @@ final class CompanionConnection: NSObject, ObservableObject {
 
     override init() {
         super.init()
+        loadActivityLog()
         session.delegate = self
         browser.delegate = self
         watchBridge.commandHandler = { [weak self] command in
@@ -200,7 +225,53 @@ final class CompanionConnection: NSObject, ObservableObject {
     private func receiveState(_ state: CompanionStatePayload) {
         lastStateReceivedAt = Date()
         latestState = state
+        appendActivity(from: state.messages)
         onStateReceived?(state)
+    }
+
+    // MARK: - Activity log (persisted history)
+
+    /// Incrementally append new messages from the rolling payload window.
+    /// The Mac only sends the most recent few messages per heartbeat, so we
+    /// walk backwards from the tail of our log, skip everything we already
+    /// have (including messages that scrolled out of the Mac's window), and
+    /// append only the genuinely new prefix.
+    private func appendActivity(from messages: [CompanionMessagePreview]) {
+        guard !messages.isEmpty else { return }
+        var msgIdx = messages.count - 1
+        var logIdx = activityLog.count - 1
+        while msgIdx >= 0, logIdx >= 0,
+              activityLog[logIdx].role == messages[msgIdx].role,
+              activityLog[logIdx].text == messages[msgIdx].text {
+            msgIdx -= 1
+            logIdx -= 1
+        }
+        guard msgIdx >= 0 else { return }
+        var nextSequence = (activityLog.last?.sequence ?? 0) + 1
+        var appended: [ActivityEntry] = []
+        appended.reserveCapacity(msgIdx + 1)
+        for i in 0...msgIdx {
+            appended.append(ActivityEntry(sequence: nextSequence,
+                                          role: messages[i].role,
+                                          text: messages[i].text))
+            nextSequence += 1
+        }
+        activityLog.append(contentsOf: appended)
+        if activityLog.count > Self.activityLogLimit {
+            activityLog = Array(activityLog.suffix(Self.activityLogLimit))
+        }
+        persistActivityLog()
+    }
+
+    private func loadActivityLog() {
+        guard let data = UserDefaults.standard.data(forKey: Self.activityLogKey),
+              let log = try? JSONDecoder().decode([ActivityEntry].self, from: data) else { return }
+        activityLog = log
+    }
+
+    private func persistActivityLog() {
+        guard let data = try? JSONEncoder().encode(activityLog) else { return }
+        UserDefaults.standard.set(data, forKey: Self.activityLogKey)
     }
 
     private func startStateWatchdog() {

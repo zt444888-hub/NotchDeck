@@ -117,6 +117,12 @@ enum SettingsKey {
     // Default OFF: executing commands sent from the phone is an explicit opt-in.
     static let remoteConversationEnabled = "remoteConversationEnabled"
 
+    // Remote commands (v1.3.0, P1) — execute control commands (focus, answer,
+    // approve...) sent from the phone over CloudKit. Separate, independent
+    // opt-in from the conversation switch: even with Remote AI on, remote
+    // COMMANDS stay disabled unless this is enabled too.
+    static let remoteCommandsEnabled = "remoteCommandsEnabled"
+
     // Remote diagnostics file (/tmp/notchdeck-remote-diag.log). Default OFF:
     // every poll writes to disk otherwise. Turn on in Settings → Remote AI
     // when debugging CloudKit/agent issues.
@@ -204,6 +210,9 @@ struct SettingsDefaults {
     static let appleCompanionHeartbeatSeconds = 5.0
 
     static let remoteConversationEnabled = false
+
+    // Remote commands OFF by default — a deliberate security gate.
+    static let remoteCommandsEnabled = false
 
     // Diagnostics off by default (file I/O on every poll otherwise).
     static let remoteDiagEnabled = false

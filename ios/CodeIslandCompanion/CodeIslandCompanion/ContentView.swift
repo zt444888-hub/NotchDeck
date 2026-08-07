@@ -12,8 +12,10 @@ private enum CodeIslandMotion {
 struct ContentView: View {
     @EnvironmentObject private var connection: CompanionConnection
     @EnvironmentObject private var liveActivity: LiveActivityController
+    @EnvironmentObject private var remoteAI: RemoteConversationViewModel
     @AppStorage(appAppearanceStorageKey) private var appearanceRaw = AppAppearance.system.rawValue
     @State private var showRemoteConversation = false
+    @State private var showActivityLog = false
     // Re-renders the main island UI when the in-app language changes.
     @AppStorage("AppLanguage") private var appLanguage = "system"
 
@@ -31,9 +33,12 @@ struct ContentView: View {
                         .environmentObject(connection)
                         .environmentObject(liveActivity)
                 } else {
-                    PortraitIslandView(topPadding: 40)
+                    PortraitIslandView(topPadding: 40,
+                                       showActivityLog: $showActivityLog,
+                                       showRemoteConversation: $showRemoteConversation)
                         .environmentObject(connection)
                         .environmentObject(liveActivity)
+                        .environmentObject(remoteAI)
                         .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
                 }
             }
@@ -70,6 +75,9 @@ struct ContentView: View {
         .sheet(isPresented: $showRemoteConversation) {
             RemoteConversationView()
         }
+        .sheet(isPresented: $showActivityLog) {
+            ActivityLogView(connection: connection)
+        }
         .background(Color.ciBackground.ignoresSafeArea())
         .preferredColorScheme(appearance.colorScheme)
         .accessibilityIdentifier("companion.root")
@@ -78,8 +86,11 @@ struct ContentView: View {
 
 private struct PortraitIslandView: View {
     let topPadding: CGFloat
+    @Binding var showActivityLog: Bool
+    @Binding var showRemoteConversation: Bool
     @EnvironmentObject private var connection: CompanionConnection
     @EnvironmentObject private var liveActivity: LiveActivityController
+    @EnvironmentObject private var remoteAI: RemoteConversationViewModel
 
     private static let pendingAnchor = "companion.pendingCard"
 
@@ -91,6 +102,13 @@ private struct PortraitIslandView: View {
                     CompactIslandBar()
                         .environmentObject(connection)
 
+                    // CloudKit-backed remote Mac status (works over any
+                    // network). Tap opens the Mac-session window.
+                    RemoteStatusBar()
+                        .environmentObject(remoteAI)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showRemoteConversation = true }
+
                     if let state = connection.latestState {
                         LiveIslandCard(state: state)
                             .environmentObject(connection)
@@ -98,7 +116,7 @@ private struct PortraitIslandView: View {
                             .id(Self.pendingAnchor)
                             .transition(.blurFade.combined(with: .scale(scale: 0.96, anchor: .top)))
 
-                        MessageStrip(messages: state.messages)
+                        MessageStrip(messages: state.messages, onShowAll: { showActivityLog = true })
                     } else {
                         DiscoveryIsland()
                             .environmentObject(connection)
@@ -777,8 +795,50 @@ private struct LiveActivityInlineButton: View {
     }
 }
 
+/// CloudKit-backed remote Mac reachability row — unlike the MPC island it
+/// works over any network (4G/5G/remote Wi-Fi). Shows the newest Mac beacon:
+/// device name, online dot, and a one-line activity summary. Tap opens the
+/// Mac-session window.
+private struct RemoteStatusBar: View {
+    @EnvironmentObject private var remoteAI: RemoteConversationViewModel
+
+    var body: some View {
+        // TimelineView re-evaluates every 10s so the online dot flips on its
+        // own after the 90s staleness window.
+        TimelineView(.periodic(from: .now, by: 10)) { _ in
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(remoteAI.macOnline ? Color.green : Color.gray)
+                    .frame(width: 8, height: 8)
+                Text(remoteAI.latestRemoteStatus?.deviceName
+                     ?? L10n.t(zh: "远程 Mac 未在线", en: "Remote Mac offline"))
+                    .font(.footnote)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                if remoteAI.macOnline,
+                   let text = remoteAI.latestRemoteStatus?.activityText,
+                   !text.isEmpty {
+                    Text(text)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial,
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+}
+
 private struct MessageStrip: View {
     let messages: [CompanionMessagePreview]
+    var onShowAll: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -790,6 +850,17 @@ private struct MessageStrip: View {
                 Rectangle()
                     .fill(.ciForeground.opacity(0.10))
                     .frame(height: 0.5)
+                if !messages.isEmpty {
+                    Spacer(minLength: 0)
+                    Button(action: onShowAll) {
+                        Label(L10n.t(zh: "查看全部", en: "View All"),
+                              systemImage: "clock.arrow.circlepath")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.ciForeground.opacity(0.55))
+                    .accessibilityIdentifier("companion.messages.viewAll")
+                }
             }
 
             if messages.isEmpty {
@@ -832,8 +903,57 @@ private struct MessageStrip: View {
     }
 }
 
-// 横屏 hero 的主会话多轮转写，对齐 notch ChatMessageRow（$ 助手 / > 用户）。
-// iPhone（横向紧凑）显示最近 1 条，iPad 显示最近 3 条。
+/// 完整活动记录(持久化历史):从"最近动态 → 查看全部"进入。
+private struct ActivityLogView: View {
+    @ObservedObject var connection: CompanionConnection
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if connection.activityLog.isEmpty {
+                    ContentUnavailableView(
+                        L10n.t(zh: "暂无活动记录", en: "No activity yet"),
+                        systemImage: "clock.arrow.circlepath",
+                        description: Text(L10n.t(zh: "连接 Mac 后,这里的记录会自动累积。",
+                                                 en: "Connect your Mac and activity will accumulate here.")))
+                } else {
+                    List {
+                        ForEach(connection.activityLog.reversed()) { entry in
+                            HStack(alignment: .top, spacing: 10) {
+                                Text(entry.role.label)
+                                    .font(.caption2.weight(.bold))
+                                    .frame(width: 36, height: 22)
+                                    .background(entry.role == .user
+                                                ? Color.accentColor.opacity(0.85)
+                                                : Color(.systemGray5),
+                                                in: Capsule())
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(CompanionDisplayText.message(entry.text) ?? entry.text)
+                                        .font(.subheadline)
+                                        .textSelection(.enabled)
+                                    Text(entry.time, style: .time)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                    .listStyle(.plain)
+                }
+            }
+            .navigationTitle(L10n.t(zh: "活动记录", en: "Activity Log"))
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(L10n.t(zh: "完成", en: "Done")) { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+// 横屏 hero 的主会话多轮转写，对齐 notch ChatMessageRow（$ 助手 / > 用户）。// iPhone（横向紧凑）显示最近 1 条，iPad 显示最近 3 条。
 private struct HeroTranscript: View {
     let messages: [CompanionMessagePreview]
     @Environment(\.horizontalSizeClass) private var sizeClass

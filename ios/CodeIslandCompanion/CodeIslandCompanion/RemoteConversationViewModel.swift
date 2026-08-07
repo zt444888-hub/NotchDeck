@@ -10,12 +10,34 @@ import UserNotifications
 final class RemoteConversationViewModel: ObservableObject {
 
     @Published private(set) var conversations: [RemoteConversation] = []
+    /// Beacons published by every Mac on this iCloud account (RemoteStatus
+    /// records in the same zone). Sorted by recency; first = newest.
+    @Published private(set) var remoteStatuses: [RemoteStatus] = []
+    /// Remote commands sent from this phone (and their Mac-side outcomes).
+    @Published private(set) var commands: [RemoteCommand] = []
+    /// One-line feedback for the last sent command (nil once done).
+    @Published var remoteCommandFeedback: String?
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
+
+    /// The most recent beacon — the Mac the user most likely cares about.
+    var latestRemoteStatus: RemoteStatus? { remoteStatuses.first }
+
+    /// Whether that Mac is currently reachable. The Mac heartbeats every
+    /// ~30s and refreshes content on change; anything older than 90s means
+    /// the Mac slept, quit, or lost iCloud connectivity.
+    var macOnline: Bool {
+        guard let status = latestRemoteStatus else { return false }
+        return Date().timeIntervalSince(status.updatedAt) < 90
+    }
 
     private let container = CKContainer(identifier: "iCloud.com.notchdeck")
     private var db: CKDatabase { container.privateCloudDatabase }
     private var pollTimer: Timer?
+    private var pushObserver: NSObjectProtocol?
+    /// CloudKit database-subscription ID for silent-push wakeups. The Mac
+    /// uses the same subscription name pattern on its side.
+    private static let pushSubscriptionID = "notchdeck-remote-conv-ios"
 
     /// Custom zone required by CKFetchRecordZoneChangesOperation —
     /// the DEFAULT zone does NOT support zone-change sync semantics
@@ -24,13 +46,43 @@ final class RemoteConversationViewModel: ObservableObject {
     static let recordZoneID = CKRecordZone.ID(zoneName: "RemoteConversations")
 
     init() {
+        // 10s poll: always-on fallback (CloudKit silent pushes can be
+        // delayed/dropped, and aren't available at all until the App ID
+        // enables Push Notifications + the aps-environment entitlement).
         pollTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
         }
+        // CloudKit database-subscription push: refresh immediately on any
+        // record change instead of waiting up to 10s for the poll.
+        pushObserver = NotificationCenter.default.addObserver(
+            forName: .remoteConversationSilentPush, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in await self?.refresh() }
+        }
+        Task { await registerPushSubscription() }
     }
 
     deinit {
         pollTimer?.invalidate()
+        if let pushObserver {
+            NotificationCenter.default.removeObserver(pushObserver)
+        }
+    }
+
+    /// Register a database-level subscription so CloudKit silent-pushes the
+    /// app on ANY record change in the private database — no query indexes
+    /// needed (same mechanism the Mac uses; unlike the Mac, iOS App Store
+    /// builds CAN receive APNs pushes). Saving an existing subscription
+    /// throws — harmless, the poll covers that case.
+    private func registerPushSubscription() async {
+        do {
+            let sub = CKDatabaseSubscription(subscriptionID: Self.pushSubscriptionID)
+            sub.notificationInfo = CKSubscription.NotificationInfo()
+            sub.notificationInfo?.shouldSendContentAvailable = true
+            try await db.save(sub)
+        } catch {
+            // Already exists / container rejects — 10s poll is the fallback.
+        }
     }
 
     /// Create the custom zone if it doesn't exist yet. CloudKit does NOT
@@ -68,6 +120,29 @@ final class RemoteConversationViewModel: ObservableObject {
             let convs = records
                 .filter { $0.recordType == RemoteConversation.recordType }
                 .compactMap { Self.conversation(from: $0) }
+            // RemoteStatus beacons ride the same zone-changes stream — parse
+            // and sort so `latestRemoteStatus` is the newest Mac heartbeat.
+            let statuses = records
+                .filter { $0.recordType == RemoteStatus.recordType }
+                .compactMap { Self.status(from: $0) }
+                .sorted { $0.updatedAt > $1.updatedAt }
+            if !statuses.isEmpty { remoteStatuses = statuses }
+            // Remote commands: merge so we can reflect Mac-side outcomes.
+            let cmds = records
+                .filter { $0.recordType == RemoteCommand.recordType }
+                .compactMap { Self.command(from: $0) }
+            if !cmds.isEmpty {
+                var merged = commands
+                for cmd in cmds {
+                    if let idx = merged.firstIndex(where: { $0.id == cmd.id }) {
+                        merged[idx] = cmd
+                    } else {
+                        merged.append(cmd)
+                    }
+                }
+                commands = merged.sorted { $0.createdAt > $1.createdAt }
+            }
+            updateCommandFeedback()
 
             // Merge: first fetch (conversations empty) → just add all;
             // subsequent fetches → update existing, add new, drop deleted
@@ -222,6 +297,52 @@ final class RemoteConversationViewModel: ObservableObject {
             errorMessage = nil
         } catch {
             errorMessage = Self.friendlyError(error)
+        }
+    }
+
+    // MARK: - Remote commands (P1: drive the Mac over CloudKit)
+
+    /// Send a control command through CloudKit so it reaches the Mac even
+    /// without MPC (remote use). The Mac executes it only if its
+    /// "允许远程指令" switch is on. `type` matches CompanionCommandType raw.
+    func sendCommand(type: String,
+                     sessionId: String? = nil,
+                     source: String? = nil,
+                     answer: String? = nil) async {
+        guard await accountIsReady() else { return }
+        await ensureZone()
+        let command = RemoteCommand(type: type,
+                                    sessionId: sessionId,
+                                    source: source,
+                                    answer: answer)
+        do {
+            try await db.save(Self.commandRecord(from: command))
+            commands.insert(command, at: 0)
+            commands.sort { $0.createdAt > $1.createdAt }
+            updateCommandFeedback()
+            errorMessage = nil
+        } catch {
+            errorMessage = Self.friendlyError(error)
+        }
+    }
+
+    /// Reflect the newest command's outcome in the one-line feedback shown
+    /// under the Mac status row (error → message; pending → waiting; done →
+    /// clear).
+    private func updateCommandFeedback() {
+        guard let last = commands.first else {
+            remoteCommandFeedback = nil
+            return
+        }
+        switch last.status {
+        case .pending, .consumed:
+            remoteCommandFeedback = L10n.t(zh: "指令已发送,等待 Mac 执行…",
+                                           en: "Command sent — waiting for the Mac…")
+        case .error:
+            remoteCommandFeedback = last.result
+                ?? L10n.t(zh: "指令执行失败", en: "Command failed on the Mac")
+        case .done:
+            remoteCommandFeedback = nil
         }
     }
 
@@ -476,5 +597,53 @@ final class RemoteConversationViewModel: ObservableObject {
             updatedAt: updatedAt,
             errorMessage: record["errorMessage"] as? String
         )
+    }
+
+    /// Parse a RemoteStatus beacon record (kept in sync with the Mac service).
+    private static func status(from record: CKRecord) -> RemoteStatus? {
+        guard let deviceName = record["deviceName"] as? String,
+              let updatedAt = record["updatedAt"] as? Date else { return nil }
+        return RemoteStatus(id: record.recordID.recordName,
+                            deviceName: deviceName,
+                            isRunning: (record["isRunning"] as? Bool) ?? false,
+                            activeCount: (record["activeCount"] as? Int) ?? 0,
+                            activityText: record["activityText"] as? String,
+                            updatedAt: updatedAt,
+                            version: (record["version"] as? Int) ?? 1)
+    }
+
+    // MARK: - Command record mapping (kept in sync with the Mac service)
+
+    private static func commandRecord(from command: RemoteCommand) -> CKRecord {
+        let record = CKRecord(recordType: RemoteCommand.recordType,
+                              recordID: CKRecord.ID(recordName: command.id,
+                                                    zoneID: RemoteConversationViewModel.recordZoneID))
+        record["type"] = command.type as CKRecordValue
+        if let sessionId = command.sessionId { record["sessionId"] = sessionId as CKRecordValue }
+        if let source = command.source { record["source"] = source as CKRecordValue }
+        if let answer = command.answer { record["answer"] = answer as CKRecordValue }
+        record["status"] = command.status.rawValue as CKRecordValue
+        record["createdAt"] = command.createdAt as CKRecordValue
+        if let consumedAt = command.consumedAt { record["consumedAt"] = consumedAt as CKRecordValue }
+        if let executor = command.executor { record["executor"] = executor as CKRecordValue }
+        if let result = command.result { record["result"] = result as CKRecordValue }
+        return record
+    }
+
+    private static func command(from record: CKRecord) -> RemoteCommand? {
+        guard let type = record["type"] as? String,
+              let statusRaw = record["status"] as? String,
+              let status = RemoteCommandStatus(rawValue: statusRaw),
+              let createdAt = record["createdAt"] as? Date else { return nil }
+        return RemoteCommand(id: record.recordID.recordName,
+                             type: type,
+                             sessionId: record["sessionId"] as? String,
+                             source: record["source"] as? String,
+                             answer: record["answer"] as? String,
+                             status: status,
+                             createdAt: createdAt,
+                             consumedAt: record["consumedAt"] as? Date,
+                             executor: record["executor"] as? String,
+                             result: record["result"] as? String)
     }
 }

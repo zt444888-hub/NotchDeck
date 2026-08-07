@@ -96,6 +96,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let appState else { return }
             appState.answerCompanionQuestion(answer)
         }
+        // Remote commands (P1): the phone drives the Mac over CloudKit when
+        // MPC isn't reachable. Route through the exact same handlers as the
+        // MPC path above; gated by the separate "允许远程指令" switch.
+        RemoteConversationService.shared.onRemoteCommandExecution = { [weak appState] command in
+            guard let appState else { return }
+            switch command.type {
+            case "focus":
+                ESP32FocusCoordinator.handle(
+                    mascot: MascotID(sourceName: command.source) ?? .claude,
+                    appState: appState
+                )
+                RemoteConversationService.shared.finishCommand(command)
+            case "answerQuestion":
+                if let answer = command.answer?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   !answer.isEmpty {
+                    appState.answerCompanionQuestion(answer)
+                }
+                RemoteConversationService.shared.finishCommand(command)
+            case "approveCurrentPermission":
+                appState.handleBuddyControlCommand(.approveCurrentPermission)
+                RemoteConversationService.shared.finishCommand(command)
+            case "denyCurrentPermission":
+                appState.handleBuddyControlCommand(.denyCurrentPermission)
+                RemoteConversationService.shared.finishCommand(command)
+            case "skipCurrentQuestion":
+                appState.handleBuddyControlCommand(.skipCurrentQuestion)
+                RemoteConversationService.shared.finishCommand(command)
+            default:
+                RemoteConversationService.shared.finishCommand(
+                    command, error: "unsupported command type: \(command.type)")
+            }
+        }
         let buddyEnabled = UserDefaults.standard.bool(forKey: SettingsKey.esp32BridgeEnabled)
         let buddySyncInterval = UserDefaults.standard.double(forKey: SettingsKey.esp32HeartbeatSeconds)
         let buddyBrightness = UserDefaults.standard.double(forKey: SettingsKey.buddyScreenBrightnessPercent)
