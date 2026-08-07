@@ -19,16 +19,20 @@ struct RemoteAgentAdapter {
     let displayName: String
     let installCommand: String
     let isDemo: Bool
+    let timeout: TimeInterval   // per-agent hard timeout for one headless turn
 
     /// Process arguments for one headless turn.
     ///
     /// NOTE: session-resume flags (--resume / --session) are deliberately
-    /// omitted. The sessionId stored in CloudKit is the iPhone conversation
+    /// scoped. The sessionId stored in CloudKit is the iPhone conversation
     /// UUID, which is NOT a Claude/Codex session ID — those CLIs validate
     /// the resume ID strictly and exit immediately with an error for unknown
-    /// IDs. Each turn starts a fresh agent session instead; conversation
-    /// continuity is tracked by CloudKit, not by the CLI.
-    func arguments(message: String, sessionId: String) -> [String] {
+    /// IDs. Codex turns resume either the REAL imported task this
+    /// conversation maps to, or the codex session this conversation owns
+    /// (per-conversation binding, see RemoteAgentSessionManager); everything
+    /// else starts fresh. Conversation continuity is tracked by CloudKit,
+    /// not by the CLI.
+    func arguments(message: String, sessionId: String, conversationId: String) -> [String] {
         switch tool {
         case "claude":
             return ["-p", message, "--output-format", "stream-json", "--verbose"]
@@ -36,15 +40,8 @@ struct RemoteAgentAdapter {
             // --skip-git-repo-check: the app's cwd isn't a git repo and
             // codex would refuse to run without it.
             var args = ["exec", "--skip-git-repo-check"]
-            let sid = sessionId
-            if !sid.isEmpty, CodexSessionImporter.isCodexSessionId(sid) {
-                // Resume the REAL codex task this conversation maps to —
-                // the phone drives an existing agent task with full context.
+            if let sid = Self.codexResumeSessionId(sessionId: sessionId, conversationId: conversationId) {
                 args += ["--session", sid]
-            } else if let last = UserDefaults.standard.string(forKey: "RemoteConv.codexSessionId"),
-                      !last.isEmpty {
-                // Fallback: the persisted default codex session.
-                args += ["--session", last]
             }
             args.append(message)
             return args
@@ -55,6 +52,16 @@ struct RemoteAgentAdapter {
         default:
             return []
         }
+    }
+
+    /// Decide which codex session to resume for this turn, if any:
+    /// 1. The conversation maps to a real imported codex task → resume it.
+    /// 2. The conversation owns a codex session (created on its first turn)
+    ///    → resume it for continuity.
+    /// Otherwise nil → fresh exec (new session, bound on success).
+    private static func codexResumeSessionId(sessionId: String, conversationId: String) -> String? {
+        if CodexSessionImporter.isCodexSessionId(sessionId) { return sessionId }
+        return RemoteAgentSessionManager.boundCodexSession(for: conversationId)
     }
 
     /// Extract the assistant reply from the process stdout.
@@ -125,19 +132,53 @@ final class RemoteAgentSessionManager {
 
     static let adapters: [RemoteAgentAdapter] = [
         RemoteAgentAdapter(tool: "claude", binaryName: "claude", displayName: "Claude Code",
-                           installCommand: "npm install -g @anthropic-ai/claude-code", isDemo: false),
+                           installCommand: "npm install -g @anthropic-ai/claude-code", isDemo: false,
+                           timeout: 20),
         RemoteAgentAdapter(tool: "codex", binaryName: "codex", displayName: "Codex",
-                           installCommand: "npm install -g @openai/codex", isDemo: false),
+                           installCommand: "npm install -g @openai/codex", isDemo: false,
+                           timeout: 60),
         RemoteAgentAdapter(tool: "opencode", binaryName: "opencode", displayName: "OpenCode",
-                           installCommand: "npm install -g opencode-ai", isDemo: false),
+                           installCommand: "npm install -g opencode-ai", isDemo: false,
+                           timeout: 60),
         RemoteAgentAdapter(tool: "gemini", binaryName: "gemini", displayName: "Gemini CLI",
-                           installCommand: "npm install -g @google/gemini-cli", isDemo: false),
+                           installCommand: "npm install -g @google/gemini-cli", isDemo: false,
+                           timeout: 30),
         RemoteAgentAdapter(tool: "demo", binaryName: nil, displayName: "Demo (local)",
-                           installCommand: "", isDemo: true),
+                           installCommand: "", isDemo: true,
+                           timeout: 5),
     ]
 
     static func adapter(for tool: String) -> RemoteAgentAdapter? {
         adapters.first { $0.tool == tool }
+    }
+
+    // MARK: - Per-conversation codex session binding
+    //
+    // Each iPhone conversation owns ONE codex session, created on its first
+    // turn and resumed on later turns. This isolates contexts: two phone
+    // conversations never share a codex task, so one can't pollute the
+    // other's context. (Replaces the old single global RemoteConv.codexSessionId.)
+
+    private static let codexSessionIdsKey = "RemoteConv.codexSessionIds"
+
+    /// The codex session owned by this conversation, if any.
+    static func boundCodexSession(for conversationId: String) -> String? {
+        let map = UserDefaults.standard.dictionary(forKey: codexSessionIdsKey) as? [String: String]
+        return map?[conversationId]
+    }
+
+    /// Bind a codex session to this conversation (idempotent; called on every
+    /// successful codex turn so resume failures that fall back to fresh exec
+    /// automatically rebind to the new session).
+    static func bindCodexSession(_ sessionId: String, to conversationId: String) {
+        var map = UserDefaults.standard.dictionary(forKey: codexSessionIdsKey) as? [String: String] ?? [:]
+        map[conversationId] = sessionId
+        UserDefaults.standard.set(map, forKey: codexSessionIdsKey)
+    }
+
+    /// Remove the legacy single-session key; superseded by the mapping above.
+    static func migrateLegacyCodexSession() {
+        UserDefaults.standard.removeObject(forKey: "RemoteConv.codexSessionId")
     }
 
     /// Non-demo adapters only — shown in the settings readiness panel.
@@ -300,7 +341,20 @@ final class RemoteAgentSessionManager {
             return failed
         }
 
-        let tool = conversation.tool == "auto" ? Self.preferredTool() : conversation.tool
+        var tool = conversation.tool == "auto" ? Self.preferredTool() : conversation.tool
+        // Legacy conversations (created before "auto" existed) carry an
+        // explicit tool — "claude" was the default then, and it's not
+        // logged in on most Macs. If the requested CLI is missing or not
+        // authenticated, degrade gracefully to auto instead of failing the
+        // turn; the user's intent is "use the Mac's agent", not "claude or
+        // nothing".
+        if tool != "auto", let requested = Self.adapter(for: tool), !requested.isDemo {
+            let binaryOk = requested.binaryName.map { Self.agentBinaryPath(for: $0) != nil } ?? true
+            if !binaryOk || !Self.agentIsUsable(tool) {
+                Self.diag("execute: requested tool '\(tool)' unavailable, degrading to auto")
+                tool = Self.preferredTool()
+            }
+        }
         guard let adapter = Self.adapter(for: tool) else {
             var failed = conversation
             failed.status = .error
@@ -313,6 +367,7 @@ final class RemoteAgentSessionManager {
         if adapter.isDemo {
             var updated = conversation
             updated.status = .done
+            updated.errorMessage = nil
             let reply = """
             [Demo] Mac 收到: "\(userMessage.text)"
 
@@ -351,9 +406,18 @@ final class RemoteAgentSessionManager {
         }
 
         // Normal path (adapter args; codex = fresh exec, claude = -p, ...).
+        // If this conversation maps to a real codex session whose resume
+        // just failed above, never retry the same dead session — the adapter
+        // args would happily re-add `--session` and fail identically. Force a
+        // truly fresh exec instead.
+        var args = adapter.arguments(message: userMessage.text,
+                                     sessionId: conversation.sessionId,
+                                     conversationId: conversation.id)
+        if tool == "codex", CodexSessionImporter.isCodexSessionId(conversation.sessionId) {
+            args = ["exec", "--skip-git-repo-check", userMessage.text]
+        }
         let (result, reason) = await runAgentProcess(
-            agentPath: agentPath,
-            args: adapter.arguments(message: userMessage.text, sessionId: conversation.sessionId),
+            agentPath: agentPath, args: args,
             tool: tool, conversation: conversation, userMessage: userMessage)
         if let result { return result }
         return Self.demoFallback(conversation: conversation, tool: tool,
@@ -391,10 +455,10 @@ final class RemoteAgentSessionManager {
         Self.diag("execute: process started pid=\(process.processIdentifier)")
 
         // Hard timeout: a hung agent (e.g. claude waiting for OAuth login)
-        // must never wedge the serial queue forever. 20s covers a normal
-        // headless single-turn reply; queued stale pending turns then drain
-        // quickly instead of blocking new messages.
-        let timeout: TimeInterval = 20
+        // must never wedge the serial queue forever. Per-adapter default
+        // (codex 60s for slow provider turns; claude 20s; ...) so complex
+        // tasks aren't killed mid-flight.
+        let timeout: TimeInterval = Self.adapter(for: tool)?.timeout ?? 20
         let deadline = Date().addingTimeInterval(timeout)
         while process.isRunning && Date() < deadline {
             try? await Task.sleep(nanoseconds: 200_000_000) // 200ms
@@ -424,15 +488,6 @@ final class RemoteAgentSessionManager {
 
         process.waitUntilExit()
 
-        // Persist the codex session id (printed on every exec) so the next
-        // turn resumes the same agent task with full context.
-        if tool == "codex", let range = output.range(of: "session id: ") {
-            let sid = output[range.upperBound...].prefix { !$0.isNewline }
-            if !sid.isEmpty {
-                UserDefaults.standard.set(String(sid), forKey: "RemoteConv.codexSessionId")
-            }
-        }
-
         guard process.terminationStatus == 0,
               let adapter = Self.adapter(for: tool),
               let reply = adapter.extractReply(from: output), !reply.isEmpty else {
@@ -441,8 +496,20 @@ final class RemoteAgentSessionManager {
             return (nil, reason.isEmpty ? "exit code \(process.terminationStatus)" : reason)
         }
 
+        // Success: bind the codex session (printed on every exec) to THIS
+        // conversation so later turns resume it. Only bind on success — a
+        // failed exec must never claim a session id.
+        if tool == "codex", let range = output.range(of: "session id: ") {
+            let sid = String(output[range.upperBound...].prefix { !$0.isNewline })
+            if !sid.isEmpty {
+                Self.bindCodexSession(sid, to: conversation.id)
+                Self.diag("execute: bound codex session \(sid) → conversation \(conversation.id)")
+            }
+        }
+
         var updated = conversation
         updated.status = .done
+        updated.errorMessage = nil
         updated.messages.append(RemoteConversationMessage(role: "assistant", text: reply))
         updated.updatedAt = Date()
         Self.diag("execute: done, reply=\(reply.prefix(60))")
@@ -485,6 +552,33 @@ final class RemoteAgentSessionManager {
             AgentInstallation(tool: adapter.tool,
                               path: adapter.binaryName.flatMap { agentBinaryPath(for: $0) },
                               installCommand: adapter.installCommand)
+        }
+    }
+
+    // MARK: - Readiness detail (settings panel)
+
+    enum AgentReadiness: Equatable {
+        case notApplicable      // demo adapter
+        case notInstalled       // binary missing
+        case needsLogin         // installed but not authenticated
+        case proxyDown          // codex: auth ok but local proxy not listening
+        case ready
+    }
+
+    /// Granular readiness for the settings panel, so it can distinguish
+    /// "not installed" from "installed but not logged in" / "proxy down".
+    static func agentReadiness(_ tool: String) -> AgentReadiness {
+        guard let adapter = adapter(for: tool), !adapter.isDemo,
+              let binary = adapter.binaryName else { return .notApplicable }
+        guard agentBinaryPath(for: binary) != nil else { return .notInstalled }
+        switch tool {
+        case "codex":
+            guard FileManager.default.fileExists(atPath: "\(NSHomeDirectory())/.codex/auth.json") else {
+                return .needsLogin
+            }
+            return Self.codexProxyReachable() ? .ready : .proxyDown
+        default:
+            return Self.agentIsUsable(tool) ? .ready : .needsLogin
         }
     }
 

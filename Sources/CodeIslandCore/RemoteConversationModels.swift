@@ -41,6 +41,11 @@ public struct RemoteConversation: Codable, Equatable, Identifiable, Sendable {
     public var status: RemoteConversationStatus
     public var updatedAt: Date
     public var errorMessage: String?
+    /// Which Mac claimed this pending turn (multi-Mac execution lock).
+    /// nil = unclaimed; set while a Mac executes, cleared on completion.
+    public var executor: String?
+    /// When the executor claimed it; used for stale-lock takeover (TTL).
+    public var executorAt: Date?
 
     public init(id: String = UUID().uuidString,
                 sessionId: String = UUID().uuidString,
@@ -49,7 +54,9 @@ public struct RemoteConversation: Codable, Equatable, Identifiable, Sendable {
                 messages: [RemoteConversationMessage] = [],
                 status: RemoteConversationStatus = .pending,
                 updatedAt: Date = Date(),
-                errorMessage: String? = nil) {
+                errorMessage: String? = nil,
+                executor: String? = nil,
+                executorAt: Date? = nil) {
         self.id = id
         self.sessionId = sessionId
         self.tool = tool
@@ -58,6 +65,8 @@ public struct RemoteConversation: Codable, Equatable, Identifiable, Sendable {
         self.status = status
         self.updatedAt = updatedAt
         self.errorMessage = errorMessage
+        self.executor = executor
+        self.executorAt = executorAt
     }
 
     /// CloudKit record type name.

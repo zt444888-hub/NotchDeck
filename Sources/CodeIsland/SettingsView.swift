@@ -1578,6 +1578,7 @@ private struct BuddyPage: View {
     @State private var refreshTick = 0
     @State private var remoteAccountStatus: CKAccountStatus = .couldNotDetermine
     @State private var remoteAgents: [RemoteAgentSessionManager.AgentInstallation] = []
+    @State private var remoteAgentReadiness: [String: RemoteAgentSessionManager.AgentReadiness] = [:]
 
     private var bridge: ESP32BridgeManager { ESP32BridgeManager.shared }
 
@@ -1892,9 +1893,14 @@ private struct BuddyPage: View {
                     Text(remoteAccountStatusText)
                         .foregroundStyle(remoteAccountStatusColor)
                 }
-                // Agent readiness: at least one agent CLI must be installed.
+                // Agent readiness: at least one agent CLI must be installed
+                // AND usable (signed in / proxy reachable). The panel now
+                // distinguishes "not installed" from "installed but not
+                // logged in" / "codex proxy not running".
                 ForEach(remoteAgents, id: \.tool) { agent in
-                    if agent.isInstalled {
+                    let readiness = remoteAgentReadiness[agent.tool] ?? .notInstalled
+                    switch readiness {
+                    case .ready:
                         HStack(spacing: 6) {
                             Text(agentToolLabel(agent.tool))
                             Spacer()
@@ -1906,7 +1912,7 @@ private struct BuddyPage: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(.green)
                         }
-                    } else {
+                    case .notInstalled:
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text(agentToolLabel(agent.tool))
@@ -1920,6 +1926,36 @@ private struct BuddyPage: View {
                                 .textSelection(.enabled)
                                 .foregroundStyle(.secondary)
                         }
+                    case .needsLogin:
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(agentToolLabel(agent.tool))
+                                Spacer()
+                                Text(l10n["remote_conversation_agent_needs_login"])
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                            Text(agent.path ?? "")
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    case .proxyDown:
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(agentToolLabel(agent.tool))
+                                Spacer()
+                                Text(l10n["remote_conversation_agent_proxy_down"])
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                            Text(l10n["remote_conversation_agent_proxy_down_desc"])
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    case .notApplicable:
+                        EmptyView()
                     }
                 }
                 Button {
@@ -1927,7 +1963,7 @@ private struct BuddyPage: View {
                 } label: {
                     Label(l10n["remote_conversation_refresh"], systemImage: "arrow.clockwise")
                 }
-                if !remoteAgents.contains(where: { $0.isInstalled }) {
+                if !remoteAgentReadiness.values.contains(.ready) {
                     Text(l10n["remote_conversation_demo_hint"])
                         .font(.caption)
                         .foregroundStyle(.orange)
@@ -1989,6 +2025,14 @@ private struct BuddyPage: View {
 
     private func refreshRemoteReadiness() {
         remoteAgents = RemoteAgentSessionManager.detectAgents()
+        // Readiness is computed once per refresh (not in body — codex's
+        // proxy probe has a 1s TCP timeout and must not run on every view
+        // update).
+        var readiness: [String: RemoteAgentSessionManager.AgentReadiness] = [:]
+        for agent in remoteAgents {
+            readiness[agent.tool] = RemoteAgentSessionManager.agentReadiness(agent.tool)
+        }
+        remoteAgentReadiness = readiness
         Task { @MainActor in
             await RemoteConversationService.shared.refreshAccountStatus()
             remoteAccountStatus = RemoteConversationService.shared.accountStatus

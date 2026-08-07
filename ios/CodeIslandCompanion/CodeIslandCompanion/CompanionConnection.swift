@@ -174,7 +174,14 @@ final class CompanionConnection: NSObject, ObservableObject {
     }
 
     private func send(_ type: CompanionCommandType, answer: String?) {
-        guard !session.connectedPeers.isEmpty else { return }
+        // Surface the "not connected" case instead of silently dropping the
+        // command — otherwise buttons like "Open Mac Session" look dead while
+        // showing stale state from a previous connection.
+        guard !session.connectedPeers.isEmpty else {
+            lastError = L10n.t(zh: "未连接 Mac,指令未发送。请先连接 Mac 再试。",
+                               en: "Not connected to a Mac — command not sent. Connect first.")
+            return
+        }
         let command = CompanionCommandPayload(
             type: type,
             sessionId: latestState?.sessionId,

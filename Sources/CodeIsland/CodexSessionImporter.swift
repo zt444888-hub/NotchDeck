@@ -9,6 +9,7 @@ import CodeIslandCore
 enum CodexSessionImporter {
 
     static let validSessionsKey = "RemoteConv.validCodexSessions"
+    static let deletedSessionsKey = "RemoteConv.deletedImportedSessions"
 
     private static let maxSessions = 50
     private static let maxMessagesPerSession = 20
@@ -22,13 +23,24 @@ enum CodexSessionImporter {
             .contains(sessionId) ?? false
     }
 
+    /// Record that the user deleted this imported codex task on the phone.
+    /// Without this, the next syncImportedSessions() would resurrect it
+    /// (the local rollout file still exists), making the delete feel broken.
+    static func markDeleted(_ sessionId: String) {
+        var deleted = Set(UserDefaults.standard.stringArray(forKey: deletedSessionsKey) ?? [])
+        deleted.insert(sessionId)
+        UserDefaults.standard.set(Array(deleted), forKey: deletedSessionsKey)
+    }
+
     /// Scan local codex sessions and upsert their RemoteConversation records
     /// into the private database. Idempotent (same recordName → update).
+    /// Sessions the user deleted from the phone are skipped (blacklist).
     static func syncImportedSessions(db: CKDatabase) async {
         let sessions = scanSessions()
         guard !sessions.isEmpty else { return }
+        let deleted = Set(UserDefaults.standard.stringArray(forKey: deletedSessionsKey) ?? [])
         var valid = Set(UserDefaults.standard.stringArray(forKey: validSessionsKey) ?? [])
-        for session in sessions {
+        for session in sessions where !deleted.contains(session.sessionId) {
             valid.insert(session.sessionId)
             let record = makeRecord(from: session)
             do {

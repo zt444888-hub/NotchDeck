@@ -78,6 +78,10 @@ final class RemoteConversationService: ObservableObject {
     func start() {
         guard !isRunning else { return }
         isRunning = true
+        // The old single-global codex session key is superseded by the
+        // per-conversation binding map; drop it so no phone conversation
+        // accidentally resumes a shared session.
+        RemoteAgentSessionManager.migrateLegacyCodexSession()
         Self.diag("start() called, remoteConversationEnabled=1, container=\(Self.containerIdentifier)")
         sessionManager.onTurnFinished = { [weak self] conversation in
             Task { @MainActor in
@@ -137,18 +141,30 @@ final class RemoteConversationService: ObservableObject {
     /// CKQueryOperation and CKQuery in the development environment.
     private func syncZoneChanges() async {
         do {
-            let records = try await fetchZoneChanges()
+            let (records, deletedIDs) = try await fetchZoneChanges()
             let convs = records
                 .filter { $0.recordType == RemoteConversation.recordType }
                 .compactMap { Self.conversation(from: $0) }
-            Self.diag("syncZoneChanges OK, raw=\(records.count), parsed=\(convs.count)")
-            if !records.isEmpty {
+            // Only log when something actually changed — the 5s poll would
+            // otherwise flood the diag file with identical "raw=0" lines.
+            if !records.isEmpty || !deletedIDs.isEmpty {
+                Self.diag("syncZoneChanges: raw=\(records.count), parsed=\(convs.count), deleted=\(deletedIDs.joined(separator: ","))")
                 for r in records {
                     Self.diag("  record \(r.recordID.recordName): type=\(r.recordType), keys=\(r.allKeys().sorted().joined(separator: ",")), status=\(String(describing: r["status"])), updatedAt=\(String(describing: r["updatedAt"]))")
                 }
             }
 
             var merged = conversations
+            // Phone-side deletes land here as zone-change deletions — drop
+            // them so a deleted conversation doesn't linger in memory (and
+            // never gets re-enqueued). Imported codex tasks are blacklisted
+            // so the next CodexSessionImporter run doesn't resurrect them.
+            for id in deletedIDs {
+                if CodexSessionImporter.isCodexSessionId(id) {
+                    CodexSessionImporter.markDeleted(id)
+                }
+            }
+            merged.removeAll { deletedIDs.contains($0.id) }
             for conv in convs {
                 if let idx = merged.firstIndex(where: { $0.id == conv.id }) {
                     merged[idx] = conv
@@ -165,7 +181,7 @@ final class RemoteConversationService: ObservableObject {
 
     private static let zoneTokenKey = "RemoteConv.zoneToken"
 
-    private func fetchZoneChanges() async throws -> [CKRecord] {
+    private func fetchZoneChanges() async throws -> (records: [CKRecord], deletedIDs: [String]) {
         let zoneID = Self.recordZoneID
         let tokenKey = Self.zoneTokenKey
 
@@ -175,12 +191,14 @@ final class RemoteConversationService: ObservableObject {
         }()
 
         var allRecords: [CKRecord] = []
+        var allDeletedIDs: [String] = []
         var hasMore = true
 
         while hasMore {
-            let (records, newToken, more) = try await fetchZoneChangesPage(
+            let (records, deletedIDs, newToken, more) = try await fetchZoneChangesPage(
                 zoneID: zoneID, token: currentToken)
             allRecords.append(contentsOf: records)
+            allDeletedIDs.append(contentsOf: deletedIDs)
             if let newToken {
                 currentToken = newToken
                 if let data = try? NSKeyedArchiver.archivedData(
@@ -191,17 +209,20 @@ final class RemoteConversationService: ObservableObject {
             hasMore = more
         }
 
-        return allRecords
+        return (allRecords, allDeletedIDs)
     }
 
     private func fetchZoneChangesPage(
         zoneID: CKRecordZone.ID, token: CKServerChangeToken?
     ) async throws -> (records: [CKRecord],
+                        deletedIDs: [String],
                         newToken: CKServerChangeToken?, moreComing: Bool) {
         try await withCheckedThrowingContinuation { (continuation:
             CheckedContinuation<(records: [CKRecord],
+                deletedIDs: [String],
                 newToken: CKServerChangeToken?, moreComing: Bool), Error>) in
             var records: [CKRecord] = []
+            var deletedIDs: [String] = []
             var newToken: CKServerChangeToken?
             var moreComing = false
 
@@ -215,6 +236,9 @@ final class RemoteConversationService: ObservableObject {
                     records.append(record)
                 }
             }
+            op.recordWithIDWasDeletedBlock = { recordID, _ in
+                deletedIDs.append(recordID.recordName)
+            }
             op.recordZoneFetchResultBlock = { _, result in
                 if case .success(let zoneResult) = result {
                     newToken = zoneResult.serverChangeToken
@@ -224,7 +248,7 @@ final class RemoteConversationService: ObservableObject {
             op.fetchRecordZoneChangesResultBlock = { result in
                 switch result {
                 case .success:
-                    continuation.resume(returning: (records, newToken, moreComing))
+                    continuation.resume(returning: (records, deletedIDs, newToken, moreComing))
                 case .failure(let error):
                     if let ckError = error as? CKError,
                        ckError.code == .changeTokenExpired {
@@ -248,8 +272,93 @@ final class RemoteConversationService: ObservableObject {
         Task { @MainActor in
             await syncZoneChanges()
             let pending = conversations.filter { $0.status == .pending }
-            Self.diag("poll: total=\(conversations.count), pending=\(pending.count)")
-            for conv in pending { enqueueExecution(conv) }
+            // Log only when there's actual work — keeps the 5s heartbeat quiet.
+            if !pending.isEmpty {
+                Self.diag("poll: total=\(conversations.count), pending=\(pending.count)")
+            }
+            for conv in pending {
+                // Multi-Mac execution lock: only the claiming Mac executes a
+                // pending turn, so several Macs on the same iCloud account
+                // never run (and reply to) the same conversation twice.
+                if await tryClaimExecution(for: conv) {
+                    enqueueExecution(conv)
+                }
+            }
+        }
+    }
+
+    // MARK: - Multi-Mac execution lock
+
+    /// How long a claimed pending turn stays locked before another Mac may
+    /// take it over (stale-lock takeover, e.g. the claiming Mac crashed).
+    static let executionLockTTL: TimeInterval = 300 // 5 min
+
+    /// This Mac's identity used as the lock owner.
+    static var deviceName: String {
+        Host.current().localizedName ?? ProcessInfo.processInfo.hostName
+    }
+
+    /// Claim a pending turn for THIS Mac. Returns true when this Mac should
+    /// execute it.
+    ///
+    /// Locking is optimistic: write `executor = self` with .changedKeys,
+    /// then RE-READ the record and verify we're still the owner. Two Macs
+    /// claiming simultaneously may both write, but only the one whose write
+    /// lands last (and verifies) proceeds — the loser sees another owner and
+    /// skips, so a turn is never executed twice.
+    private func tryClaimExecution(for conversation: RemoteConversation) async -> Bool {
+        let now = Date()
+        // Already claimed by this Mac → proceed.
+        if conversation.executor == Self.deviceName { return true }
+        // Claimed by another Mac with a fresh lock → skip this poll round.
+        if let executorAt = conversation.executorAt,
+           now.timeIntervalSince(executorAt) < Self.executionLockTTL {
+            return false
+        }
+        // Unclaimed or stale → write our claim.
+        var claim = conversation
+        claim.executor = Self.deviceName
+        claim.executorAt = now
+        do {
+            try await db.modifyRecords(saving: [Self.record(from: claim)],
+                                       deleting: [],
+                                       savePolicy: .changedKeys)
+        } catch {
+            Self.diag("claim write FAILED \(conversation.id): \(error.localizedDescription)")
+            return false
+        }
+        // Verify we won the race — re-read and check ownership.
+        let recordID = CKRecord.ID(recordName: conversation.id, zoneID: Self.recordZoneID)
+        guard let fresh = try? await fetchRecord(recordID),
+              let reRead = Self.conversation(from: fresh),
+              reRead.executor == Self.deviceName else {
+            Self.diag("claim LOST for \(conversation.id) (another Mac won)")
+            return false
+        }
+        Self.diag("claim OK: \(conversation.id) → '\(Self.deviceName)'")
+        return true
+    }
+
+    private func fetchRecord(_ recordID: CKRecord.ID) async throws -> CKRecord? {
+        try await withCheckedThrowingContinuation { continuation in
+            let op = CKFetchRecordsOperation(recordIDs: [recordID])
+            var found: CKRecord?
+            // New SDK: per-record results arrive here; the operation-level
+            // block only reports overall success/failure (Result<Void>).
+            op.perRecordResultBlock = { _, recordResult in
+                if case .success(let record) = recordResult {
+                    found = record
+                }
+            }
+            op.fetchRecordsResultBlock = { operationResult in
+                switch operationResult {
+                case .success:
+                    continuation.resume(returning: found)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            db.add(op)
         }
     }
 
@@ -282,15 +391,22 @@ final class RemoteConversationService: ObservableObject {
         // Always update the in-memory model first — the poll loop re-enqueues
         // anything still .pending every 5s, so a slow/failed CloudKit write
         // would otherwise retrigger the same turn forever.
+        var final = conversation
+        if !conversation.status.isActive {
+            // Turn finished (done/error) — release the execution lock so the
+            // next pending message can be claimed again.
+            final.executor = nil
+            final.executorAt = nil
+        }
         if let idx = conversations.firstIndex(where: { $0.id == conversation.id }) {
-            conversations[idx] = conversation
+            conversations[idx] = final
         }
         Task {
             do {
                 // CKDatabase.save() on an EXISTING recordName tries an insert
                 // and fails with "record to insert already exists". Use
                 // modifyRecords with .changedKeys for a true update.
-                try await db.modifyRecords(saving: [Self.record(from: conversation)],
+                try await db.modifyRecords(saving: [Self.record(from: final)],
                                            deleting: [],
                                            savePolicy: .changedKeys)
                 Self.diag("updateStatus OK: id=\(conversation.id), status=\(conversation.status.rawValue)")
@@ -349,6 +465,12 @@ final class RemoteConversationService: ObservableObject {
         if let errorMessage = conversation.errorMessage {
             record["errorMessage"] = errorMessage as CKRecordValue
         }
+        if let executor = conversation.executor {
+            record["executor"] = executor as CKRecordValue
+        }
+        if let executorAt = conversation.executorAt {
+            record["executorAt"] = executorAt as CKRecordValue
+        }
         return record
     }
 
@@ -368,7 +490,9 @@ final class RemoteConversationService: ObservableObject {
             messages: messages,
             status: status,
             updatedAt: updatedAt,
-            errorMessage: record["errorMessage"] as? String
+            errorMessage: record["errorMessage"] as? String,
+            executor: record["executor"] as? String,
+            executorAt: record["executorAt"] as? Date
         )
     }
 }

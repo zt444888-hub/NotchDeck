@@ -10,10 +10,24 @@ import Foundation
 /// language: Chinese systems keep seeing Chinese, every other language now sees
 /// natural English instead of hardcoded Chinese.
 enum L10n {
-    /// True when the user's preferred language is Chinese (any script/region).
+    /// User-overridable language preference shared with the UI:
+    /// "system" (default, follow the device language), "zh", "en".
+    static var preferred: String {
+        get { UserDefaults.standard.string(forKey: "AppLanguage") ?? "system" }
+        set { UserDefaults.standard.set(newValue, forKey: "AppLanguage") }
+    }
+
+    /// True when the effective language is Chinese (any script/region).
+    /// Honors the in-app override first, then falls back to the system
+    /// language.
     static var isChinese: Bool {
-        let preferred = Locale.preferredLanguages.first ?? Locale.current.identifier
-        return preferred.lowercased().hasPrefix("zh")
+        switch preferred {
+        case "zh": return true
+        case "en": return false
+        default:
+            let sys = Locale.preferredLanguages.first ?? Locale.current.identifier
+            return sys.lowercased().hasPrefix("zh")
+        }
     }
 
     /// Returns `zh` on a Chinese system, `en` everywhere else.

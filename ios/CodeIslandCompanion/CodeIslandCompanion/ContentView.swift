@@ -14,6 +14,8 @@ struct ContentView: View {
     @EnvironmentObject private var liveActivity: LiveActivityController
     @AppStorage(appAppearanceStorageKey) private var appearanceRaw = AppAppearance.system.rawValue
     @State private var showRemoteConversation = false
+    // Re-renders the main island UI when the in-app language changes.
+    @AppStorage("AppLanguage") private var appLanguage = "system"
 
     private var appearance: AppAppearance {
         AppAppearance(rawValue: appearanceRaw) ?? .system
@@ -39,25 +41,31 @@ struct ContentView: View {
                 connection.start()
             }
             .onChange(of: connection.latestState?.sequence) { _, _ in
-                guard liveActivity.isRunning, let state = connection.latestState else { return }
+                // NOTE: no isRunning guard here — on the FIRST state change
+                // no activity exists yet, and startOrUpdate() is what
+                // creates it. Guarding on isRunning made the Dynamic Island
+                // never appear for a fresh connection.
+                guard let state = connection.latestState else { return }
                 liveActivity.startOrUpdate(with: state)
-            }
-            .animation(CodeIslandMotion.open, value: connection.connectedPeer)
+            }            .animation(CodeIslandMotion.open, value: connection.connectedPeer)
             .animation(CodeIslandMotion.pop, value: connection.latestState?.status)
             .animation(CodeIslandMotion.micro, value: connection.browsing)
         }
-        // Remote AI conversation entry (v1.2.0) — drive your Mac's AI from here.
+        // Right-bottom bubble opens the "Mac 会话" window: Remote AI list is
+        // the body, and the toolbar inside it carries the "打开 Mac 会话"
+        // (focus) action — so Remote AI lives on the Mac-session window.
         .overlay(alignment: .bottomTrailing) {
             Button {
                 showRemoteConversation = true
             } label: {
-                Image(systemName: "bubble.left.and.bubble.right.fill")
+                Image(systemName: "arrow.up.forward.app.fill")
                     .font(.title3)
+                    .foregroundStyle(Color(red: 0.35, green: 0.85, blue: 0.45))
                     .padding(12)
                     .background(.ultraThinMaterial, in: Circle())
             }
             .padding(20)
-            .accessibilityLabel("Remote AI conversation")
+            .accessibilityLabel(L10n.t(zh: "Mac 会话", en: "Mac Session"))
         }
         .sheet(isPresented: $showRemoteConversation) {
             RemoteConversationView()
@@ -708,6 +716,7 @@ private struct CommandRow: View {
                         title: L10n.t(zh: "打开 Mac 会话", en: "Open Mac Session"),
                         icon: "arrow.up.forward.app.fill",
                         tint: Color(red: 0.35, green: 0.85, blue: 0.45),
+                        enabled: connection.connectedPeer != nil,
                         accessibilityIdentifier: "companion.command.focus"
                     ) {
                         connection.send(.focus)
@@ -927,7 +936,7 @@ private struct StandByIsland: View {
                     .padding(20)
             } else {
                 VStack(spacing: 10) {
-                    IconIslandButton(icon: "arrow.up.forward.app.fill", tint: Color(red: 0.35, green: 0.85, blue: 0.45)) {
+                    IconIslandButton(icon: "arrow.up.forward.app.fill", tint: Color(red: 0.35, green: 0.85, blue: 0.45), enabled: connection.connectedPeer != nil) {
                         connection.send(.focus)
                     }
                     IconIslandButton(icon: liveActivity.isRunning ? "arrow.clockwise" : "bolt.horizontal.fill", tint: Color(red: 0.25, green: 0.76, blue: 1.0)) {
@@ -1475,6 +1484,7 @@ private struct IslandButton: View {
     let title: String
     let icon: String
     let tint: Color
+    var enabled: Bool = true
     var accessibilityIdentifier: String? = nil
     let action: () -> Void
 
@@ -1484,17 +1494,31 @@ private struct IslandButton: View {
                 .font(.system(size: 13, weight: .bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
-                .foregroundStyle(tint == .orange ? .black : tint)
+                .foregroundStyle(foregroundColor)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(buttonBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(tint.opacity(0.42)))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(borderColor))
         }
         .buttonStyle(.plain)
+        .disabled(!enabled)
         .optionalAccessibilityIdentifier(accessibilityIdentifier)
     }
 
+    // Disabled state is drawn explicitly (dimmed, neutral) so a
+    // not-connected button reads as intentionally unavailable, not broken.
+    private var foregroundColor: Color {
+        guard enabled else { return Color.secondary.opacity(0.7) }
+        return tint == .orange ? .black : tint
+    }
+
     private var buttonBackground: Color {
-        tint == .orange ? .orange : tint.opacity(0.20)
+        guard enabled else { return Color.ciForeground.opacity(0.05) }
+        return tint == .orange ? .orange : tint.opacity(0.20)
+    }
+
+    private var borderColor: Color {
+        guard enabled else { return Color.ciForeground.opacity(0.10) }
+        return tint.opacity(0.42)
     }
 }
 
@@ -1512,6 +1536,7 @@ private extension View {
 private struct IconIslandButton: View {
     let icon: String
     let tint: Color
+    var enabled: Bool = true
     let action: () -> Void
 
     var body: some View {
@@ -1519,11 +1544,13 @@ private struct IconIslandButton: View {
             Image(systemName: icon)
                 .font(.title3.weight(.bold))
                 .foregroundStyle(tint == .orange ? .black : tint)
+                .opacity(enabled ? 1 : 0.4)
                 .frame(width: 52, height: 52)
                 .background(tint == .orange ? .orange : tint.opacity(0.22), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(tint.opacity(0.45)))
         }
         .buttonStyle(.plain)
+        .disabled(!enabled)
     }
 }
 

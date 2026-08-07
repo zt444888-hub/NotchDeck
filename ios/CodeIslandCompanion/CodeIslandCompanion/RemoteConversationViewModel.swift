@@ -1,6 +1,7 @@
 import Foundation
 import CloudKit
 import Combine
+import UserNotifications
 
 /// Drives the remote AI conversation from the iPhone side (v1.2.0).
 /// Conversations live in the user's CloudKit private database; the Mac
@@ -48,6 +49,10 @@ final class RemoteConversationViewModel: ObservableObject {
     // MARK: - Read
 
     func refresh() async {
+        // Guard against overlapping fetches: the 10s poll timer can fire
+        // while a slow CloudKit fetch (or a burst of deletes) is still in
+        // flight. Without this, requests pile up and the UI appears frozen.
+        guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         await ensureZone()
@@ -59,14 +64,17 @@ final class RemoteConversationViewModel: ObservableObject {
             if conversations.isEmpty {
                 UserDefaults.standard.removeObject(forKey: "RemoteConv.zoneToken")
             }
-            let records = try await fetchZoneChanges()
+            let (records, deletedIDs) = try await fetchZoneChanges()
             let convs = records
                 .filter { $0.recordType == RemoteConversation.recordType }
                 .compactMap { Self.conversation(from: $0) }
 
             // Merge: first fetch (conversations empty) → just add all;
-            // subsequent fetches → update existing, add new.
+            // subsequent fetches → update existing, add new, drop deleted
+            // (deletes made on another device arrive as zone deletions).
+            let wasActive = Set(conversations.filter { $0.status.isActive }.map(\.id))
             var merged = conversations
+            merged.removeAll { deletedIDs.contains($0.id) }
             for conv in convs {
                 if let idx = merged.firstIndex(where: { $0.id == conv.id }) {
                     merged[idx] = conv
@@ -75,6 +83,142 @@ final class RemoteConversationViewModel: ObservableObject {
                 }
             }
             conversations = merged.sorted { $0.updatedAt > $1.updatedAt }
+            errorMessage = nil
+            // Notify on active → done transitions (skipped on the first
+            // load, so history doesn't spam a notification per conversation).
+            if hasLoadedOnce {
+                notifyReplyIfNeeded(wasActive: wasActive, in: conversations)
+            }
+            hasLoadedOnce = true
+        } catch {
+            errorMessage = Self.friendlyError(error)
+        }
+    }
+
+    // MARK: - Reply notifications
+
+    private var hasLoadedOnce = false
+
+    /// Post a local notification when a conversation the user sent a message
+    /// to transitions from pending/running to done (Mac finished replying).
+    private func notifyReplyIfNeeded(wasActive: Set<String>, in current: [RemoteConversation]) {
+        for conv in current where conv.status == .done && conv.errorMessage == nil && !wasActive.contains(conv.id) {
+            postLocalNotification(title: L10n.t(zh: "Mac 已回复", en: "Mac replied"),
+                                  body: conv.title)
+        }
+    }
+
+    private func postLocalNotification(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: UUID().uuidString,
+                                            content: content,
+                                            trigger: nil)
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func requestNotificationPermissionIfNeeded() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+    }
+
+    // MARK: - Delete
+
+    /// Delete a conversation from CloudKit and drop it from local state.
+    /// The Mac picks the deletion up via zone-change sync and stops showing
+    /// it too.
+    func delete(_ conversation: RemoteConversation) async {
+        let recordID = CKRecord.ID(recordName: conversation.id, zoneID: Self.recordZoneID)
+        do {
+            // CKDatabase has no async delete(withRecordID:) overload — route
+            // through modifyRecords(deleting:), which is async (iOS 15+).
+            _ = try await db.modifyRecords(saving: [], deleting: [recordID])
+            conversations.removeAll { $0.id == conversation.id }
+            errorMessage = nil
+        } catch {
+            errorMessage = Self.friendlyError(error)
+        }
+    }
+
+    /// Delete every conversation (batch, single CloudKit round-trip).
+    func deleteAll() async {
+        let ids = conversations.map {
+            CKRecord.ID(recordName: $0.id, zoneID: Self.recordZoneID)
+        }
+        guard !ids.isEmpty else { return }
+        do {
+            _ = try await db.modifyRecords(saving: [], deleting: ids)
+            conversations.removeAll()
+            // Drop the zone token so the next refresh does a clean full fetch
+            // (no lingering change-token pointing at now-deleted records).
+            UserDefaults.standard.removeObject(forKey: "RemoteConv.zoneToken")
+            errorMessage = nil
+        } catch {
+            errorMessage = Self.friendlyError(error)
+        }
+    }
+
+    // MARK: - Actions (rename / cancel / retry)
+
+    /// Rename a conversation (title is user-facing only; safe to edit).
+    func rename(_ conversation: RemoteConversation, to newTitle: String) async {
+        let trimmed = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != conversation.title else { return }
+        var updated = conversation
+        updated.title = String(trimmed.prefix(60))
+        updated.updatedAt = Date()
+        do {
+            try await db.modifyRecords(saving: [Self.record(from: updated)],
+                                       deleting: [],
+                                       savePolicy: .changedKeys)
+            if let idx = conversations.firstIndex(where: { $0.id == updated.id }) {
+                conversations[idx] = updated
+            }
+            errorMessage = nil
+        } catch {
+            errorMessage = Self.friendlyError(error)
+        }
+    }
+
+    /// Cancel a turn the user no longer wants executed: mark done with a
+    /// "cancelled" note. Effective for turns the Mac hasn't started yet;
+    /// one already executing keeps running (a hard kill would need an
+    /// out-of-band cancel channel).
+    func cancel(_ conversation: RemoteConversation) async {
+        guard conversation.status.isActive else { return }
+        var updated = conversation
+        updated.status = .done
+        updated.errorMessage = "cancelled by user"
+        updated.updatedAt = Date()
+        do {
+            try await db.modifyRecords(saving: [Self.record(from: updated)],
+                                       deleting: [],
+                                       savePolicy: .changedKeys)
+            if let idx = conversations.firstIndex(where: { $0.id == updated.id }) {
+                conversations[idx] = updated
+            }
+            errorMessage = nil
+        } catch {
+            errorMessage = Self.friendlyError(error)
+        }
+    }
+
+    /// Retry a failed turn: flip back to pending so the Mac picks it up
+    /// again (the last user message is already in `messages`).
+    func retry(_ conversation: RemoteConversation) async {
+        guard conversation.status == .error else { return }
+        var updated = conversation
+        updated.status = .pending
+        updated.errorMessage = nil
+        updated.updatedAt = Date()
+        do {
+            try await db.modifyRecords(saving: [Self.record(from: updated)],
+                                       deleting: [],
+                                       savePolicy: .changedKeys)
+            if let idx = conversations.firstIndex(where: { $0.id == updated.id }) {
+                conversations[idx] = updated
+            }
             errorMessage = nil
         } catch {
             errorMessage = Self.friendlyError(error)
@@ -88,7 +232,7 @@ final class RemoteConversationViewModel: ObservableObject {
     /// API that requires ZERO query indexes.  This completely sidesteps the
     /// "Field recordName is not marked queryable" error that plagues
     /// CKQueryOperation and CKQuery in the development environment.
-    private func fetchZoneChanges() async throws -> [CKRecord] {
+    private func fetchZoneChanges() async throws -> (records: [CKRecord], deletedIDs: [String]) {
         let zoneID = Self.recordZoneID
         let tokenKey = "RemoteConv.zoneToken"
 
@@ -98,12 +242,14 @@ final class RemoteConversationViewModel: ObservableObject {
         }()
 
         var allRecords: [CKRecord] = []
+        var allDeletedIDs: [String] = []
         var hasMore = true
 
         while hasMore {
-            let (records, newToken, more) = try await fetchZoneChangesPage(
+            let (records, deletedIDs, newToken, more) = try await fetchZoneChangesPage(
                 zoneID: zoneID, token: currentToken)
             allRecords.append(contentsOf: records)
+            allDeletedIDs.append(contentsOf: deletedIDs)
             if let newToken {
                 currentToken = newToken
                 if let data = try? NSKeyedArchiver.archivedData(
@@ -114,17 +260,20 @@ final class RemoteConversationViewModel: ObservableObject {
             hasMore = more
         }
 
-        return allRecords
+        return (allRecords, allDeletedIDs)
     }
 
     private func fetchZoneChangesPage(
         zoneID: CKRecordZone.ID, token: CKServerChangeToken?
     ) async throws -> (records: [CKRecord],
+                        deletedIDs: [String],
                         newToken: CKServerChangeToken?, moreComing: Bool) {
         try await withCheckedThrowingContinuation { (continuation:
             CheckedContinuation<(records: [CKRecord],
+                deletedIDs: [String],
                 newToken: CKServerChangeToken?, moreComing: Bool), Error>) in
             var records: [CKRecord] = []
+            var deletedIDs: [String] = []
             var newToken: CKServerChangeToken?
             var moreComing = false
 
@@ -138,6 +287,9 @@ final class RemoteConversationViewModel: ObservableObject {
                     records.append(record)
                 }
             }
+            op.recordWithIDWasDeletedBlock = { recordID, _ in
+                deletedIDs.append(recordID.recordName)
+            }
             op.recordZoneFetchResultBlock = { _, result in
                 if case .success(let zoneResult) = result {
                     newToken = zoneResult.serverChangeToken
@@ -147,7 +299,7 @@ final class RemoteConversationViewModel: ObservableObject {
             op.fetchRecordZoneChangesResultBlock = { result in
                 switch result {
                 case .success:
-                    continuation.resume(returning: (records, newToken, moreComing))
+                    continuation.resume(returning: (records, deletedIDs, newToken, moreComing))
                 case .failure(let error):
                     if let ckError = error as? CKError,
                        ckError.code == .changeTokenExpired {
@@ -167,6 +319,10 @@ final class RemoteConversationViewModel: ObservableObject {
     func send(_ text: String, in conversation: RemoteConversation? = nil) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+
+        // Ask for notification permission on the first send, so the user
+        // gets a "Mac replied" banner instead of polling manually.
+        requestNotificationPermissionIfNeeded()
 
         // Fail fast with a clear, actionable message instead of a silent save.
         guard await accountIsReady() else { return }
@@ -268,6 +424,18 @@ final class RemoteConversationViewModel: ObservableObject {
         if lowered.contains("sign in") || lowered.contains("authentication") || lowered.contains("logged in") {
             return L10n.t(zh: "Mac 上的 AI 执行器未登录。请先在 Mac 的终端里登录对应账号（claude / codex 的登录流程）。",
                           en: "The AI agent on the Mac isn't signed in. Sign in from a Mac terminal first (claude / codex login).")
+        }
+        if lowered.contains("timed out") || lowered.contains("timeout") {
+            return L10n.t(zh: "Mac 端执行超时。可能是 cc-switch（DeepSeek 代理）未运行或响应较慢，请稍后重试。",
+                          en: "The Mac agent timed out. The cc-switch (DeepSeek proxy) may not be running or may be slow — try again later.")
+        }
+        if lowered.contains("connection refused") || lowered.contains("proxy") || lowered.contains("ecode") {
+            return L10n.t(zh: "Mac 无法连接 AI 代理。请在 Mac 上确认 cc-switch（DeepSeek 代理）已启动。",
+                          en: "The Mac can't reach the AI proxy. Make sure cc-switch (DeepSeek proxy) is running on the Mac.")
+        }
+        if lowered.contains("unavailable") {
+            return L10n.t(zh: "Mac 上的 AI 执行器暂不可用，请确认对应 CLI 已登录、代理已启动后重试。",
+                          en: "The Mac's AI agent is unavailable — check the CLI is signed in and the proxy is running, then retry.")
         }
         return raw
     }

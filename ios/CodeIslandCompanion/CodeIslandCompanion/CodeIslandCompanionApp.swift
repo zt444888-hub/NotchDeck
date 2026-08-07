@@ -11,7 +11,11 @@ struct CodeIslandCompanionApp: App {
         let liveActivity = LiveActivityController()
         connection.onStateReceived = { [weak liveActivity] state in
             Task { @MainActor in
-                liveActivity?.updateIfRunning(with: state)
+                // startOrUpdate (not updateIfRunning): the very first state
+                // must CREATE the activity — updateIfRunning only refreshes
+                // an existing one, so the Dynamic Island never appeared for
+                // a fresh connection.
+                liveActivity?.startOrUpdate(with: state)
             }
         }
 #if DEBUG
