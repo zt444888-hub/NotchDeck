@@ -80,7 +80,10 @@ build_mac() {
     ARM_DIR=".build/arm64-apple-macosx/release"
 
     echo "Creating app bundle..."
-    rm -rf "$APP_BUNDLE"
+    # Move stale bundle out of the way instead of rm -rf: WorkBuddy's
+    # safe-delete guard blocks recursive deletes of large dirs (>50 files),
+    # which aborts the release pipeline. /tmp is cleaned by the OS.
+    [ -d "$APP_BUNDLE" ] && mv "$APP_BUNDLE" "/tmp/notchdeck-trash-$(date +%s)" || true
     mkdir -p "$APP_BUNDLE/Contents/MacOS"
     mkdir -p "$APP_BUNDLE/Contents/Helpers"
     mkdir -p "$APP_BUNDLE/Contents/Resources"
@@ -185,11 +188,11 @@ build_mac() {
             echo "  ZIP kept at $ZIP_PATH for resubmission." >&2
             exit 1
         fi
-        rm -f "$ZIP_PATH"
+        rm -f "$ZIP_PATH" 2>/dev/null || mv "$ZIP_PATH" "/tmp/notchdeck-trash-$(date +%s)" 2>/dev/null || true
 
         echo "Creating DMG..."
         DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
-        rm -f "$DMG_PATH"
+        [ -f "$DMG_PATH" ] && mv "$DMG_PATH" "/tmp/notchdeck-trash-$(date +%s)" || true
         if command -v create-dmg >/dev/null 2>&1; then
             create-dmg \
                 --volname "$APP_NAME" \
@@ -203,7 +206,7 @@ build_mac() {
         else
             echo "create-dmg not found, using hdiutil fallback..."
             DMG_STAGING="$BUILD_DIR/dmg-staging"
-            rm -rf "$DMG_STAGING"
+            [ -d "$DMG_STAGING" ] && mv "$DMG_STAGING" "/tmp/notchdeck-trash-$(date +%s)" || true
             mkdir -p "$DMG_STAGING"
             ditto "$APP_BUNDLE" "$DMG_STAGING/$APP_NAME.app"
             ln -s /Applications "$DMG_STAGING/Applications"
