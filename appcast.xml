@@ -7,20 +7,7 @@
     <link>https://raw.githubusercontent.com/zt444888-hub/NotchDeck/main/appcast.xml</link>
     <description>Most recent NotchDeck updates</description>
     <language>en</language>
-    <item>
-      <title>Version 1.2.0</title>
-      <link>https://github.com/zt444888-hub/NotchDeck/releases/tag/v1.2.0</link>
-      <sparkle:version>1.2.0</sparkle:version>
-      <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <pubDate>Fri, 07 Aug 2026 06:58:11 +0000</pubDate>
-      <enclosure
-        url="https://github.com/zt444888-hub/NotchDeck/releases/download/v1.2.0/NotchDeck.dmg"
-        sparkle:edSignature="QLuw00Dt290hPq29pofSfUN0LtGJt32fY4//W1y+O9zm69g2yb6JaL+MViJyr1pwaqFT5qTrQT8LVPqu7I/9AQ=="
-        length="12807727"
-        type="application/octet-stream" />
-    </item>
-    <item>
+        <item>
       <title>Version 1.1.9</title>
       <link>https://github.com/zt444888-hub/NotchDeck/releases/tag/v1.1.9</link>
       <sparkle:version>1.1.9</sparkle:version>
