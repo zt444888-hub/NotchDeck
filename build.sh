@@ -83,7 +83,7 @@ build_mac() {
     # Move stale bundle out of the way instead of rm -rf: WorkBuddy's
     # safe-delete guard blocks recursive deletes of large dirs (>50 files),
     # which aborts the release pipeline. /tmp is cleaned by the OS.
-    [ -d "$APP_BUNDLE" ] && mv "$APP_BUNDLE" "/tmp/notchdeck-trash-$(date +%s)" || true
+    [ -d "$APP_BUNDLE" ] && mv "$APP_BUNDLE" "$(mktemp -d /tmp/notchdeck-trash.XXXXXX)" || true
     mkdir -p "$APP_BUNDLE/Contents/MacOS"
     mkdir -p "$APP_BUNDLE/Contents/Helpers"
     mkdir -p "$APP_BUNDLE/Contents/Resources"
@@ -188,11 +188,11 @@ build_mac() {
             echo "  ZIP kept at $ZIP_PATH for resubmission." >&2
             exit 1
         fi
-        rm -f "$ZIP_PATH" 2>/dev/null || mv "$ZIP_PATH" "/tmp/notchdeck-trash-$(date +%s)" 2>/dev/null || true
+        rm -f "$ZIP_PATH" 2>/dev/null || mv "$ZIP_PATH" "$(mktemp -d /tmp/notchdeck-trash.XXXXXX)" 2>/dev/null || true
 
         echo "Creating DMG..."
         DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
-        [ -f "$DMG_PATH" ] && mv "$DMG_PATH" "/tmp/notchdeck-trash-$(date +%s)" || true
+        [ -f "$DMG_PATH" ] && mv "$DMG_PATH" "$(mktemp -d /tmp/notchdeck-trash.XXXXXX)" || true
         if command -v create-dmg >/dev/null 2>&1; then
             create-dmg \
                 --volname "$APP_NAME" \
@@ -204,12 +204,12 @@ build_mac() {
                 --no-internet-enable \
                 "$DMG_PATH" "$APP_BUNDLE"
         else
-            echo "create-dmg not found, using hdiutil fallback..."
+            echo "create-dmg not supported here; using hdiutil fallback..."
             DMG_STAGING="$BUILD_DIR/dmg-staging"
-            [ -d "$DMG_STAGING" ] && mv "$DMG_STAGING" "/tmp/notchdeck-trash-$(date +%s)" || true
+            rm -rf "$DMG_STAGING"
             mkdir -p "$DMG_STAGING"
             ditto "$APP_BUNDLE" "$DMG_STAGING/$APP_NAME.app"
-            ln -s /Applications "$DMG_STAGING/Applications"
+            ln -sf /Applications "$DMG_STAGING/Applications"
             hdiutil create \
                 -volname "$APP_NAME" \
                 -srcfolder "$DMG_STAGING" \
