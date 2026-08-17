@@ -97,6 +97,7 @@ targets:
       - path: Shared/SharedMascotView.swift
       - path: Shared/WatchStateStore.swift
       - path: Shared/L10n.swift
+      - path: Shared/PrivacyInfo.xcprivacy
       - path: ../../Sources/CodeIsland/AntiGravityView.swift
       - path: ../../Sources/CodeIsland/BuddyView.swift
       - path: ../../Sources/CodeIsland/ClineView.swift
@@ -138,6 +139,7 @@ targets:
       - path: Shared/SharedMascotView.swift
       - path: Shared/WatchStateStore.swift
       - path: Shared/L10n.swift
+      - path: Shared/PrivacyInfo.xcprivacy
       - path: ../../Sources/CodeIsland/AntiGravityView.swift
       - path: ../../Sources/CodeIsland/BuddyView.swift
       - path: ../../Sources/CodeIsland/ClineView.swift
