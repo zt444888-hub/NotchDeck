@@ -1,10 +1,10 @@
-# Code Island Buddy 真机测试流程
+# NotchDeck Buddy 真机测试流程
 
-这份流程用于验证 Code Island 的 iPhone、Live Activity / Dynamic Island / StandBy、Apple Watch app 和 watchOS widget 在真实设备上的表现。
+这份流程用于验证 NotchDeck 的 iPhone、Live Activity / Dynamic Island / StandBy、Apple Watch app 和 watchOS widget 在真实设备上的表现。
 
 ## 测试目标
 
-- Mac 端 Code Island 能被 iPhone 发现并连接。
+- Mac 端 NotchDeck 能被 iPhone 发现并连接。
 - Mac 当前 agent 状态能同步到 iPhone app。
 - iPhone 开启实时活动后，锁屏、灵动岛、StandBy 能显示当前状态。
 - iPhone 进入后台后一段时间，仍能通过轻量蓝牙摘要刷新实时活动。
@@ -15,7 +15,7 @@
 
 | 项目 | 要求 |
 | --- | --- |
-| Mac | 已安装当前分支构建出的 CodeIsland Mac app |
+| Mac | 已安装当前分支构建出的 NotchDeck Mac app |
 | iPhone | 已通过 USB 连接到 Mac，并在 Xcode 中信任/配对 |
 | Apple Watch | 已与这台 iPhone 配对，调试时已信任 Mac |
 | 网络 | Mac 和 iPhone 在同一个 Wi-Fi；蓝牙开启 |
@@ -88,20 +88,20 @@ xcodebuild -project ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj \
 
 通过标准：
 
-- iPhone 桌面出现 `Code Island`。
+- iPhone 桌面出现 `NotchDeck`。
 - app 可以打开，不弹出开发者证书未信任错误。
 - app 首屏能看到发现 Mac 或等待连接状态。
 
 失败排查：
 
 - 证书未信任：iPhone 进入 `设置 -> 通用 -> VPN 与设备管理`，信任 `Apple Development: ...`。
-- 安装失败：删除 iPhone 上旧版 `Code Island` 后重新 Run。
+- 安装失败：删除 iPhone 上旧版 `NotchDeck` 后重新 Run。
 - 找不到设备：拔插 USB，解锁 iPhone，确认 Xcode `Window -> Devices and Simulators` 中 iPhone 是 connected。
 
 ## 2. Mac 端广播
 
-1. 启动当前分支构建出的 CodeIsland Mac app。
-2. 打开 CodeIsland 设置。
+1. 启动当前分支构建出的 NotchDeck Mac app。
+2. 打开 NotchDeck 设置。
 3. 进入 `Buddy`。
 4. 打开 iPhone Buddy 广播。
 5. 确认状态显示为等待或已连接。
@@ -115,11 +115,11 @@ xcodebuild -project ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj \
 
 - iPhone 和 Mac 不在同一 Wi-Fi 时，Multipeer 发现可能失败。
 - macOS 防火墙或网络权限异常时，先关闭再打开 iPhone Buddy 广播。
-- iPhone 端本地网络权限被拒绝时，进入 iPhone `设置 -> Code Island -> 本地网络` 打开。
+- iPhone 端本地网络权限被拒绝时，进入 iPhone `设置 -> NotchDeck -> 本地网络` 打开。
 
 ## 3. iPhone 前台同步
 
-1. iPhone 打开 `Code Island`，选择发现到的 Mac。
+1. iPhone 打开 `NotchDeck`，选择发现到的 Mac。
 2. Mac 上打开一个 Codex / Claude / Gemini 等会话。
 3. 在会话里发送一句测试消息，例如：`真机同步测试`。
 4. 观察 iPhone app 首页。
@@ -202,11 +202,11 @@ xcodebuild -project ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj \
 
 ### 方式 A：随 iPhone app 安装
 
-1. iPhone 已安装 `Code Island`。
+1. iPhone 已安装 `NotchDeck`。
 2. 打开 iPhone 自带 `Watch` app。
-3. 在 `我的手表 -> 可用 App` 中找到 `Code Island`。
+3. 在 `我的手表 -> 可用 App` 中找到 `NotchDeck`。
 4. 点击安装。
-5. 在 Apple Watch 上打开 `Code Island`。
+5. 在 Apple Watch 上打开 `NotchDeck`。
 
 ### 方式 B：Xcode 直接调试
 
@@ -231,7 +231,7 @@ xcodebuild -project ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj \
 ## 7. Watch 后台与通知
 
 1. iPhone app 前台连接 Mac，并开启实时活动。
-2. Watch 打开 `Code Island`，确认已同步。
+2. Watch 打开 `NotchDeck`，确认已同步。
 3. 按数码表冠回表盘。
 4. 在 Mac 上触发新状态：
    - 普通消息
@@ -257,7 +257,7 @@ xcodebuild -project ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj \
 ### iPhone 断开 Mac
 
 1. iPhone 已连接 Mac。
-2. 在 Mac CodeIsland 设置里关闭 iPhone Buddy 广播。
+2. 在 Mac NotchDeck 设置里关闭 iPhone Buddy 广播。
 3. 等 10 秒。
 4. 重新打开广播。
 

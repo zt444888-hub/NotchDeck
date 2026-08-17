@@ -1,6 +1,6 @@
-# Code Island App Store Release Checklist
+# NotchDeck Buddy App Store Release Checklist
 
-This checklist covers the iPhone, Live Activity, Dynamic Island, StandBy, Apple Watch app, and watchOS widget Buddy for Code Island.
+This checklist covers the iPhone, Live Activity, Dynamic Island, StandBy, Apple Watch app, and watchOS widget Buddy for NotchDeck.
 
 Current public submission target:
 
@@ -24,8 +24,8 @@ Current public submission target:
    - Open the Apple Watch app and confirm it receives the demo state.
 
 3. Confirm the real Mac path still works:
-   - Run the matching Code Island Mac build from this branch.
-   - Open Code Island Settings -> Buddy.
+   - Run the matching NotchDeck Mac build from this branch.
+   - Open NotchDeck Settings -> Buddy.
    - Enable iPhone Buddy broadcasting.
    - Connect from iPhone and verify state updates.
 
@@ -76,7 +76,7 @@ Current intended privacy posture:
 - Tracking: no tracking.
 - Third-party advertising: none.
 - Account creation: none.
-- Local network: used only to discover and communicate with the user's own Mac running Code Island.
+- Local network: used only to discover and communicate with the user's own Mac running NotchDeck.
 - Bluetooth: used only as a lightweight local Buddy signal between the user's own devices.
 
 If new analytics, crash reporting, cloud sync, or third-party SDKs are added later, update these answers before submission.

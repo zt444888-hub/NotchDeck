@@ -1,11 +1,11 @@
-# Code Island Buddy
+# NotchDeck Buddy
 
-Code Island Buddy 是 Code Island 的 Apple 设备端，包括 iPhone、Dynamic Island / StandBy、Apple Watch app 和 watchOS widget。
+NotchDeck Buddy 是 NotchDeck 的 Apple 设备端，包括 iPhone、Dynamic Island / StandBy、Apple Watch app 和 watchOS widget。
 
-它的目标不是做一个新的聊天客户端，而是把 Mac 上 CodeIsland 当前看到的 agent 状态同步到随身设备：你可以在 iPhone 灵动岛和 Apple Watch 上看当前会话、工具调用、最近动态，并在需要时回到 Mac 继续处理。
+它的目标不是做一个新的聊天客户端，而是把 Mac 上 NotchDeck 当前看到的 agent 状态同步到随身设备：你可以在 iPhone 灵动岛和 Apple Watch 上看当前会话、工具调用、最近动态，并在需要时回到 Mac 继续处理。
 
 > [!NOTE]
-> 当前代码仍然放在 `ios/CodeIslandCompanion/` Xcode 工程里。这个目录是 Code Island Buddy 的产品说明与截图目录，方便像 `android-watch/` 一样单独阅读和展示。
+> 当前代码仍然放在 `ios/CodeIslandCompanion/` Xcode 工程里。这个目录是 NotchDeck Buddy 的产品说明与截图目录，方便像 `android-watch/` 一样单独阅读和展示。
 
 ## 代码位置
 
@@ -35,7 +35,7 @@ Code Island Buddy 是 Code Island 的 Apple 设备端，包括 iPhone、Dynamic 
 
 ## 当前能力
 
-- iPhone 通过本地网络发现 Mac 上的 CodeIsland。
+- iPhone 通过本地网络发现 Mac 上的 NotchDeck。
 - iPhone 通过 MultipeerConnectivity 接收完整状态并发送操作命令。
 - iPhone 通过 CoreBluetooth 接收轻量状态摘要，辅助后台 Live Activity 更新。
 - Live Activity 展示 Dynamic Island、锁屏、StandBy 形态。
@@ -47,11 +47,11 @@ Code Island Buddy 是 Code Island 的 Apple 设备端，包括 iPhone、Dynamic 
 当前方案刻意保持轻量，不依赖 APNs，也不需要部署后端。
 
 ```text
-Mac CodeIsland
+Mac NotchDeck
   ├─ MultipeerConnectivity：前台完整状态、最近动态、操作命令
   └─ CoreBluetooth BLE：后台轻量状态摘要
 
-iPhone Code Island
+iPhone NotchDeck
   ├─ Live Activity / Dynamic Island / StandBy：展示当前状态
   └─ WatchConnectivity：把 iPhone 当前状态同步到 Apple Watch
 
@@ -72,8 +72,8 @@ Live Activity、Dynamic Island 和 StandBy 只负责展示状态。它们不会�
 
 ## 使用方式
 
-1. 在 Mac 上运行这个 fork 里的 CodeIsland。
-2. 打开 CodeIsland 设置，进入 `Buddy`，开启 iPhone Buddy 广播。
+1. 在 Mac 上运行这个 fork 里的 NotchDeck。
+2. 打开 NotchDeck 设置，进入 `Buddy`，开启 iPhone Buddy 广播。
 3. 在 Xcode 打开 `ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj`。
 4. 在 `Signing & Capabilities` 里给 iPhone app、Widget、Watch app、Watch Widget 都选择你的 Apple Developer Team。
 5. 选择 `CodeIslandCompanion` scheme 和你的 iPhone，点击 Run。
