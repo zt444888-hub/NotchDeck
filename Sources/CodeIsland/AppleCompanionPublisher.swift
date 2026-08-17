@@ -50,7 +50,7 @@ final class AppleCompanionPublisher: NSObject, ObservableObject {
 
     private override init() {
         let hostName = Host.current().localizedName ?? "Mac"
-        let displayName = "CodeIsland \(hostName)"
+        let displayName = "NotchDeck Buddy \(hostName)"
         self.peerID = MCPeerID(displayName: String(displayName.prefix(63)))
         super.init()
         self.session.delegate = self

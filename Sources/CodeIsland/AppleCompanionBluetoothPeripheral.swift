@@ -92,7 +92,7 @@ final class AppleCompanionBluetoothPeripheral: NSObject, ObservableObject {
 
         peripheralManager.startAdvertising([
             CBAdvertisementDataServiceUUIDsKey: [Self.serviceUUID],
-            CBAdvertisementDataLocalNameKey: "CodeIsland"
+            CBAdvertisementDataLocalNameKey: "NotchDeck Buddy"
         ])
         advertising = true
     }
