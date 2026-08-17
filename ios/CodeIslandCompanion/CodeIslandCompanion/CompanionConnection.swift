@@ -157,7 +157,7 @@ final class CompanionConnection: NSObject, ObservableObject {
         browsing = false
         discoveredPeers = []
         connectedAt = Date()
-        connectedPeer = MCPeerID(displayName: "Code Island Demo")
+        connectedPeer = MCPeerID(displayName: "NotchDeck Buddy Demo")
         isDemoMode = true
         receiveState(Self.mockState(named: "question", sequence: nextDemoSequence()))
     }

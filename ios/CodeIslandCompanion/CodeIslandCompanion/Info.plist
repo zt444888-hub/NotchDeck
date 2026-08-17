@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Code Island</string>
+	<string>NotchDeck Buddy</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -23,9 +23,9 @@
 		<string>_codeisland._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>CodeIsland discovers your Mac on the local network to sync the current session status.</string>
+	<string>NotchDeck Buddy discovers your Mac on the local network to sync the current session status.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Code Island uses Bluetooth in the background to receive lightweight status updates from your Mac, used to refresh Live Activities and keep your Apple Watch in sync.</string>
+	<string>NotchDeck Buddy uses Bluetooth in the background to receive lightweight status updates from your Mac, used to refresh Live Activities and keep your Apple Watch in sync.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIBackgroundModes</key>

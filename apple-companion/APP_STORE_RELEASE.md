@@ -38,10 +38,27 @@ scripts/smoke-companion-watch-ui.sh
 swift test --filter AppleCompanionPayloadTests
 ```
 
-5. Archive from Xcode:
+5. Archive and upload:
+
+   **Option A — Xcode (recommended):**
    - Select `Any iOS Device (arm64)` or a connected iPhone.
    - Choose `Product -> Archive`.
    - In Organizer, choose `Distribute App -> App Store Connect -> Upload`.
+   - Archiving the iOS scheme also builds the embedded watchOS app slice, so the
+     upload contains both iPhone and Apple Watch binaries.
+
+   **Option B — command line (`ios/archive-companion.sh`):**
+   ```bash
+   cd ios/CodeIslandCompanion
+   chmod +x archive-companion.sh
+   # archive + export a signed .ipa (then upload via Organizer / Transporter):
+   ./archive-companion.sh
+   # or upload directly with an App-Specific Password:
+   APPLE_ID=you@x.com APP_SPECIFIC_PASSWORD=xxxx ./archive-companion.sh upload
+   ```
+   The script runs `xcodebuild archive` (scheme `CodeIslandCompanion`, destination
+   `generic/platform=iOS`) then `xcodebuild -exportArchive` using
+   `ios/ExportOptions.plist` (`method=app-store`, team `2VBHV3VJ8N`).
 
 ## App Store Connect Metadata
 

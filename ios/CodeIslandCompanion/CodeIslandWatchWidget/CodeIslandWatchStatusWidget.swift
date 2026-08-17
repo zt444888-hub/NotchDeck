@@ -6,7 +6,7 @@ struct CodeIslandWatchStatusWidget: Widget {
         StaticConfiguration(kind: "CodeIslandWatchStatusWidget", provider: CodeIslandWatchTimelineProvider()) { entry in
             CodeIslandWatchWidgetView(entry: entry)
         }
-        .configurationDisplayName("Code Island")
+        .configurationDisplayName("NotchDeck Buddy")
         .description(L10n.t(zh: "显示当前 Mac 会话状态。", en: "Shows the current Mac session status."))
         .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
     }

@@ -1,6 +1,6 @@
-# Code Island Buddy
+# NotchDeck Buddy
 
-This is the Xcode project for the Code Island iPhone, Live Activity, and Apple Watch Buddy.
+This is the Xcode project for the NotchDeck Buddy iPhone, Live Activity, and Apple Watch companion.
 
 For the product overview, setup guide, protocol notes, and screenshots, see:
 

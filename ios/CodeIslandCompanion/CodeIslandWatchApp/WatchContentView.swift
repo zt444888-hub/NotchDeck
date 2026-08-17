@@ -454,7 +454,7 @@ private struct WatchEmptyView: View {
                 VStack(alignment: .center, spacing: isCompact ? 8 : 11) {
                     HStack(spacing: 7) {
                         SharedMascotView(source: "codex", status: .idle, size: isCompact ? 26 : 30)
-                        Text("Code Island")
+                        Text("NotchDeck Buddy")
                             .font(.system(size: isCompact ? 14 : 15, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
                             .lineLimit(1)
@@ -476,7 +476,7 @@ private struct WatchEmptyView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
 
-                    Text(error ?? L10n.t(zh: "打开 iPhone 上的 Code Island，并连接 Mac", en: "Open Code Island on your iPhone and connect to a Mac"))
+                    Text(error ?? L10n.t(zh: "打开 iPhone 上的 NotchDeck Buddy，并连接 Mac", en: "Open NotchDeck Buddy on your iPhone and connect to a Mac"))
                         .font(.system(size: isCompact ? 10 : 11, weight: .medium, design: .rounded))
                         .foregroundStyle(.white.opacity(0.58))
                         .multilineTextAlignment(.center)
