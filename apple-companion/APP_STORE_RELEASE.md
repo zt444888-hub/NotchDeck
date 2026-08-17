@@ -4,9 +4,9 @@ This checklist covers the iPhone, Live Activity, Dynamic Island, StandBy, Apple 
 
 Current public submission target:
 
-- Version: `1.0.0`
+- Version: `1.2.0`
 - Build: `4`
-- Primary working directory: `/Users/fengye/workspace/CodeIsland`
+- Primary working directory: `/Users/taozhang/WorkBuddy/Claw/NotchDeck`
 - Xcode project: `ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj`
 
 ## Before Uploading a Build

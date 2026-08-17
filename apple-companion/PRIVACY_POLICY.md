@@ -1,8 +1,8 @@
-# Code Island Privacy Policy
+# NotchDeck Buddy Privacy Policy
 
-Effective date: 2026-05-30
+Effective date: 2026-08-17
 
-Code Island is designed as a local Buddy for the Code Island Mac app. It mirrors the current session status from your Mac to your iPhone, Live Activity, Dynamic Island, StandBy, and Apple Watch.
+NotchDeck Buddy is designed as a local Buddy for the NotchDeck Mac app. It mirrors the current session status from your Mac to your iPhone, Live Activity, Dynamic Island, StandBy, and Apple Watch.
 
 ## Data Collection
 
@@ -12,9 +12,9 @@ The app does not use third-party analytics, advertising SDKs, tracking SDKs, or 
 
 ## Local Device Communication
 
-Code Island uses local network and Bluetooth capabilities to communicate between devices you own:
+NotchDeck Buddy uses local network and Bluetooth capabilities to communicate between devices you own:
 
-- Local network discovery is used to find your Mac running Code Island.
+- Local network discovery is used to find your Mac running NotchDeck.
 - MultipeerConnectivity is used to exchange session status and control commands between your iPhone and Mac.
 - Bluetooth may be used as a lightweight local signal for Buddy status updates.
 - WatchConnectivity is used to sync the latest state from your iPhone to your Apple Watch.
@@ -23,7 +23,7 @@ This communication happens locally between your devices. The developer does not 
 
 ## Data Shown in the App
 
-The app may display local session information from Code Island, such as:
+The app may display local session information from NotchDeck, such as:
 
 - Current agent name and status
 - Workspace or session label
@@ -39,11 +39,11 @@ If you enable notifications or Live Activities, the app may show current session
 
 ## No Tracking
 
-Code Island does not track you across apps or websites.
+NotchDeck Buddy does not track you across apps or websites.
 
 ## Children
 
-Code Island is a developer productivity Buddy and is not directed to children.
+NotchDeck Buddy is a developer productivity Buddy and is not directed to children.
 
 ## Changes
 
@@ -53,4 +53,4 @@ This policy may be updated as the app changes. Material changes should be reflec
 
 For questions, open an issue at:
 
-https://github.com/fengye404/CodeIsland/issues
+https://github.com/zt444888-hub/NotchDeck/issues

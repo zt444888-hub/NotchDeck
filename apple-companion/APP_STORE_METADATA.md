@@ -11,10 +11,10 @@ Use this file as the source text when preparing the first public App Store submi
 
 ## Version
 
-- Version: `1.0.0`
+- Version: `1.2.0`
 - Build: `4`
 - Platforms: iPhone, Apple Watch
-- Bundle ID: `com.notchdeck.buddy`  <!-- TODO: must exactly match the Bundle ID you register in App Store Connect for the companion target and the value set in the Xcode companion target. Suggested prefix mirrors the Mac app (`com.notchdeck.mac`). -->
+- Bundle ID: `com.notchdeck.CodeIslandCompanion`  <!-- MUST match the bundle id already set in the Xcode companion target (ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj -> com.notchdeck.CodeIslandCompanion). Register this exact id in App Store Connect as a new app. The template's suggested `com.notchdeck.buddy` does NOT match the actual project. -->
 - Category: Developer Tools
 - Secondary category: Productivity
 
@@ -139,7 +139,7 @@ https://github.com/zt444888-hub/NotchDeck
 Privacy Policy URL:
 
 ```text
-https://YOUR_DOMAIN/notchdeck-buddy/privacy/  <!-- TODO: replace with your own published privacy policy URL before submission. -->
+https://raw.githubusercontent.com/zt444888-hub/NotchDeck/main/apple-companion/PRIVACY_POLICY.md  <!-- Rebranded NotchDeck Buddy privacy policy, published in-repo. For a cleaner long-term URL enable GitHub Pages on the repo (https://zt444888-hub.github.io/NotchDeck/apple-companion/PRIVACY_POLICY.md). -->
 ```
 
 If the privacy policy is published somewhere else, update this URL before submission.
@@ -149,7 +149,7 @@ If the privacy policy is published somewhere else, update this URL before submis
 Copyright:
 
 ```text
-© 2026 <Your Name / Entity>  <!-- TODO: replace with the publisher name/entity that owns this App Store Connect record. -->
+© 2026 Shenzhen Yuanbei Technology Co., Ltd.  <!-- Matches the Mac app's Developer ID team (2VBHV3VJ8N). -->
 ```
 
 Content Rights:

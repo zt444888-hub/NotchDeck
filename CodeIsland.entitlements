@@ -18,6 +18,18 @@
 		<string>CloudKit</string>
 	</array>
 	<!--
+	  aps-environment is REQUIRED for CloudKit silent push (CKDatabaseSubscription /
+	  CKQuerySubscription with shouldSendContentAvailable) to be delivered to this
+	  Developer-ID signed app. Xcode only injects it automatically for App Store /
+	  Ad-Hoc provisioning profiles; a manual `codesign` (build.sh) does NOT, so it
+	  must be declared here or Remote Status push never arrives on the Mac.
+	  Must match the CloudKit container environment the app actually uses:
+	  `production` for the shipped default container, `development` only while
+	  testing against the Dev CKContainer.
+	-->
+	<key>aps-environment</key>
+	<string>production</string>
+	<!--
 	  NOTE: `codesign` does NOT expand build variables ($(TeamIdentifierPrefix)
 	  etc.) — only the Xcode build system does. build.sh signs with codesign
 	  directly, so the kvstore identifier is hardcoded to the actual Team ID
