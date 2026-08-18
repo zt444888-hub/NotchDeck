@@ -119,7 +119,7 @@ private struct MultiSessionLockScreenActivityView: View {
                 MultiSessionOverviewBadge(state: state)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("CODE ISLAND")
+                    Text("NOTCHDECK BUDDY")
                         .font(.system(size: 12, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                         .lineLimit(1)

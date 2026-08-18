@@ -1007,7 +1007,7 @@ private struct StandByIsland: View {
 
                     VStack(alignment: .leading, spacing: 5) {
                         MorphText(
-                            text: sessions.count > 1 ? "CODE ISLAND" : (state.source.isEmpty ? "CODEISLAND" : state.source.uppercased()),
+                            text: sessions.count > 1 ? "NOTCHDECK BUDDY" : (state.source.isEmpty ? "NOTCHDECKBUDDY" : state.source.uppercased()),
                             font: .system(size: 32, weight: .black, design: .rounded),
                             color: .ciForeground
                         )
