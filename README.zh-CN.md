@@ -68,8 +68,8 @@ brew install --cask notchdeck
 ### 手动下载
 
 1. 前往 [Releases](https://github.com/zt444888-hub/NotchDeck/releases) 页面
-2. 下载 `CodeIsland.dmg`
-3. 打开 DMG，将 `CodeIsland.app` 拖入「应用程序」文件夹
+2. 下载 `NotchDeck.dmg`
+3. 打开 DMG，将 `NotchDeck.app` 拖入「应用程序」文件夹
 4. 启动 NotchDeck — 会自动为所有检测到的 AI 工具安装 hooks
 
 > **提示：** 首次启动时 macOS 可能弹出安全提示，前往 **系统设置 → 隐私与安全性** 点击 **仍要打开** 即可。
@@ -82,7 +82,7 @@ NotchDeck Buddy 已在 App Store 上架：
 
 iPhone App 可以把 Mac 上的会话状态同步到灵动岛、锁屏、StandBy 和 Apple Watch。它的工作方式很轻量：iPhone App 前台打开时，Mac 端通过本地网络发送会话快照；需要后台刷新实时活动和手表状态时，则通过蓝牙发送压缩后的状态摘要。
 
-NotchDeck Buddy 完全免费，并且开源。它不需要账号，也不依赖外部服务器；伴随端源码就在本仓库的 `ios/NotchDeckCompanion` 和 `apple-companion` 目录中。
+NotchDeck Buddy 完全免费，并且开源。它不需要账号，也不依赖外部服务器；伴随端源码就在本仓库的 `ios/CodeIslandCompanion` 和 `apple-companion` 目录中。
 
 ### 从源码构建
 
@@ -97,7 +97,7 @@ swift build && ./.build/debug/NotchDeck
 
 # 发布模式（通用二进制：Apple Silicon + Intel）
 ./build.sh
-open .build/release/CodeIsland.app
+open .build/release/NotchDeck.app
 ```
 
 ## 工作原理
