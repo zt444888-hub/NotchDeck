@@ -24,13 +24,14 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
 SCHEME="CodeIslandCompanion"
+XCODEPROJ="$PROJECT_DIR/CodeIslandCompanion/CodeIslandCompanion.xcodeproj"
 ARCHIVE_PATH="$PROJECT_DIR/build/NotchDeckBuddy.xcarchive"
 IPA_DIR="$PROJECT_DIR/build/ipa"
 EXPORT_PLIST="$PROJECT_DIR/ExportOptions.plist"
 
 echo "▸ Archiving scheme '$SCHEME'…"
 xcodebuild archive \
-  -project CodeIslandCompanion.xcodeproj \
+  -project "$XCODEPROJ" \
   -scheme "$SCHEME" \
   -configuration Release \
   -destination 'generic/platform=iOS' \
