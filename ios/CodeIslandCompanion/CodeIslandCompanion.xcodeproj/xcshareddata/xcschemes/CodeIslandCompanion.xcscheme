@@ -29,6 +29,20 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "69D8BEE53F6283C107728C74"
+               BuildableName = "CodeIslandCompanionTests.xctest"
+               BlueprintName = "CodeIslandCompanionTests"
+               ReferencedContainer = "container:CodeIslandCompanion.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "B4BEC668A900808C83219452"
                BuildableName = "CodeIslandCompanionUITests.xctest"
                BlueprintName = "CodeIslandCompanionUITests"
@@ -103,6 +117,17 @@
                BlueprintIdentifier = "B4BEC668A900808C83219452"
                BuildableName = "CodeIslandCompanionUITests.xctest"
                BlueprintName = "CodeIslandCompanionUITests"
+               ReferencedContainer = "container:CodeIslandCompanion.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "69D8BEE53F6283C107728C74"
+               BuildableName = "CodeIslandCompanionTests.xctest"
+               BlueprintName = "CodeIslandCompanionTests"
                ReferencedContainer = "container:CodeIslandCompanion.xcodeproj">
             </BuildableReference>
          </TestableReference>

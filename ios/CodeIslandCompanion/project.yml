@@ -46,6 +46,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+        ENABLE_TESTABILITY: YES
     dependencies:
       - target: CodeIslandCompanionWidget
         embed: true
@@ -181,6 +182,20 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
     dependencies:
       - target: CodeIslandCompanion
+  CodeIslandCompanionTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: CodeIslandCompanionTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.notchdeck.CodeIslandCompanion.Tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: CodeIslandCompanion
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - target: CodeIslandCompanion
 schemes:
   CodeIslandCompanion:
     build:
@@ -190,9 +205,11 @@ schemes:
         CodeIslandWatchApp: all
         CodeIslandWatchWidget: all
         CodeIslandCompanionUITests: [test]
+        CodeIslandCompanionTests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
         - CodeIslandCompanionUITests
+        - CodeIslandCompanionTests

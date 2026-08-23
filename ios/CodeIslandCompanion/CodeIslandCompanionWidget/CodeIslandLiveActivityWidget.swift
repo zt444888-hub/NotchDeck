@@ -323,17 +323,27 @@ private struct ExpandedSessionOverview: View {
     }
 }
 
+private func isExecutionActive(_ status: String) -> Bool {
+    status == "running" || status == "processing"
+}
+
 private struct CompactAgentView: View {
     let state: CodeIslandActivityAttributes.ContentState
 
     var body: some View {
-        HStack(spacing: 4) {
-            SharedMascotView(source: state.source, status: MascotAgentStatus(state.status), size: 20)
-            Text(displaySessions(state).count > 1 ? "\(displaySessions(state).count)" : state.sourceLabel)
-                .font(.system(size: 10, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
+        let count = displaySessions(state).count
+        if isExecutionActive(state.status), count <= 1 {
+            // 执行中紧凑态极致收窄：仅保留 mascot 图标，省略文字
+            SharedMascotView(source: state.source, status: MascotAgentStatus(state.status), size: 15)
+        } else {
+            HStack(spacing: 3) {
+                SharedMascotView(source: state.source, status: MascotAgentStatus(state.status), size: 15)
+                Text(count > 1 ? "\(count)" : state.sourceLabel)
+                    .font(.system(size: 9, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
         }
     }
 }
@@ -365,13 +375,18 @@ private struct CompactStatusView: View {
     let state: CodeIslandActivityAttributes.ContentState
 
     var body: some View {
-        HStack(spacing: 3) {
-            StatusDot(status: state.status, size: 6)
-            Text(displaySessions(state).count > 1 ? L10n.t(zh: "会话", en: "Sessions") : state.compactStatusLabel)
-                .font(.system(size: 9, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.74)
+        if isExecutionActive(state.status) {
+            // 执行中紧凑态极致收窄：仅保留状态点，省略文字
+            StatusDot(status: state.status, size: 5)
+        } else {
+            HStack(spacing: 2) {
+                StatusDot(status: state.status, size: 5)
+                Text(displaySessions(state).count > 1 ? L10n.t(zh: "会话", en: "Sessions") : state.compactStatusLabel)
+                    .font(.system(size: 8, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
         }
     }
 }

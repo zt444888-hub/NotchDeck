@@ -1,0 +1,120 @@
+name: Build & Test iOS Companion
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - 'Sources/CodeIsland/**'
+      - '.github/workflows/ios.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - 'Sources/CodeIsland/**'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test (simulator, unsigned)
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE_APP="$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' -type d | sort | tail -n 1)"
+          if [ -z "$XCODE_APP" ]; then
+            echo "Xcode 26 is required to generate the iOS project from project.yml"
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+
+      - name: Show build environment
+        run: |
+          sw_vers
+          xcodebuild -version
+          uname -m
+
+      - name: Regenerate Xcode project from project.yml
+        run: |
+          cd ios/CodeIslandCompanion
+          xcodegen generate
+          cd ../..
+
+      - name: Build & run unit tests
+        run: |
+          xcodebuild test \
+            -project ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj \
+            -scheme CodeIslandCompanion \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY=""
+
+  # Archive + upload to App Store Connect. Requires signing secrets and a paid
+  # membership. Disabled by default — enable manually (or on a release tag) once
+  # the following repo secrets exist:
+  #   IOS_DIST_CERT_P12_BASE64, IOS_DIST_CERT_PASSWORD,
+  #   IOS_APPSTORE_CONNECT_KEY_P8, IOS_APPSTORE_CONNECT_KEY_ID,
+  #   IOS_APPSTORE_CONNECT_ISSUER_ID
+  archive-upload:
+    name: Archive & Upload to App Store Connect
+    runs-on: macos-15
+    if: false  # flip to: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE_APP="$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' -type d | sort | tail -n 1)"
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+
+      - name: Regenerate Xcode project
+        run: |
+          cd ios/CodeIslandCompanion
+          xcodegen generate
+          cd ../..
+
+      - name: Import distribution certificate
+        env:
+          P12: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          P12_PWD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/ios-signing.keychain-db"
+          security create-keychain -p "" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security import "$RUNNER_TEMP/dist.p12" -P "$P12_PWD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security default-keychain -s "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN"
+
+      - name: Install App Store Connect API key
+        env:
+          KEY_P8: ${{ secrets.IOS_APPSTORE_CONNECT_KEY_P8 }}
+          KEY_ID: ${{ secrets.IOS_APPSTORE_CONNECT_KEY_ID }}
+          ISSUER: ${{ secrets.IOS_APPSTORE_CONNECT_ISSUER_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$KEY_P8" > ~/private_keys/AuthKey_${KEY_ID}.p8
+          echo "APPSTORE_KEY_ID=$KEY_ID" >> "$GITHUB_ENV"
+          echo "APPSTORE_ISSUER=$ISSUER" >> "$GITHUB_ENV"
+
+      - name: Archive & upload
+        run: |
+          xcodebuild archive \
+            -project ios/CodeIslandCompanion/CodeIslandCompanion.xcodeproj \
+            -scheme CodeIslandCompanion \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/NotchDeckBuddy.xcarchive" \
+            -allowProvisioningUpdates
+          xcodebuild -archivePath "$RUNNER_TEMP/NotchDeckBuddy.xcarchive" \
+            -exportArchive -exportOptionsPlist ios/ExportOptions.plist \
+            -exportPath "$RUNNER_TEMP/export"
+          xcrun altool --upload-app -f "$RUNNER_TEMP/export/CodeIslandCompanion.ipa" \
+            --apiKey "$APPSTORE_KEY_ID" --apiIssuer "$APPSTORE_ISSUER"

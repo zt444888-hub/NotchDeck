@@ -2,7 +2,7 @@ import Foundation
 
 enum CompanionDisplayText {
     static func source(_ text: String?) -> String {
-        guard let trimmed = cleaned(text) else { return "CodeIsland" }
+        guard let trimmed = cleaned(text) else { return "NotchDeck Buddy" }
 
         switch trimmed.lowercased() {
         case "claude", "claudecode", "clawd":
