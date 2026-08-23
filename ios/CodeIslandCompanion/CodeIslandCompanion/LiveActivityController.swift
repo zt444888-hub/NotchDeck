@@ -10,6 +10,17 @@ final class LiveActivityController: ObservableObject {
     @Published private(set) var lastError: String?
     @Published private(set) var existingActivityCount = 0
 
+    /// Set once the user explicitly stops the Live Activity. Persisted to
+    /// UserDefaults (see `userStoppedKey`) so the intent survives app
+    /// termination — without this, a killed/relaunched app would forget the
+    /// stop and the next Mac heartbeat would resurrect the Dynamic Island.
+    /// While set, automatic drivers (Mac state push, scene-phase resume)
+    /// must NOT recreate it.
+    private static let userStoppedKey = "CodeIslandLiveActivityUserStopped"
+    private var userStopped: Bool {
+        didSet { UserDefaults.standard.set(userStopped, forKey: Self.userStoppedKey) }
+    }
+
     private var activity: Activity<CodeIslandActivityAttributes>?
     private var lastContentState: CodeIslandActivityAttributes.ContentState?
     private var activityStateTask: Task<Void, Never>?
@@ -23,14 +34,27 @@ final class LiveActivityController: ObservableObject {
     }
 
     init() {
+        // Restore the persisted stop intent so a relaunch can't resurrect an
+        // island the user already dismissed in a previous session.
+        userStopped = UserDefaults.standard.bool(forKey: Self.userStoppedKey)
         Task {
             await migrateLiveActivityLayoutIfNeeded()
-            recoverExistingActivity()
+            if userStopped {
+                // Belt-and-suspenders: end any activity that survived the
+                // previous session so the island can't reappear on launch.
+                for activity in Activity<CodeIslandActivityAttributes>.activities {
+                    await activity.end(nil, dismissalPolicy: .immediate)
+                }
+                clearActivity(id: activityID)
+            } else {
+                recoverExistingActivity()
+            }
         }
     }
 
     func updateIfRunning(with payload: CompanionStatePayload) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard !userStopped else { return }
 
         Task {
             let shouldRecreate = await migrateLiveActivityLayoutIfNeeded()
@@ -40,11 +64,19 @@ final class LiveActivityController: ObservableObject {
         }
     }
 
+    /// User-initiated start (the "Start" / "Sync" buttons). Clears any prior
+    /// explicit stop so the activity is allowed to appear again.
+    func userStart(with payload: CompanionStatePayload) {
+        userStopped = false
+        startOrUpdate(with: payload)
+    }
+
     func startOrUpdate(with payload: CompanionStatePayload) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             lastError = L10n.t(zh: "这台 iPhone 没有开启实时活动。", en: "Live Activities are turned off on this iPhone.")
             return
         }
+        guard !userStopped else { return }
 
         Task {
             await migrateLiveActivityLayoutIfNeeded()
@@ -58,6 +90,7 @@ final class LiveActivityController: ObservableObject {
     }
 
     func stopAll() {
+        userStopped = true
         Task {
             for activity in Activity<CodeIslandActivityAttributes>.activities {
                 await activity.end(nil, dismissalPolicy: .immediate)

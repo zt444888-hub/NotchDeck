@@ -65,7 +65,7 @@ struct ContentView: View {
             } label: {
                 Image(systemName: "arrow.up.forward.app.fill")
                     .font(.title3)
-                    .foregroundStyle(Color(red: 0.35, green: 0.85, blue: 0.45))
+                    .foregroundStyle(.ciAccent)
                     .padding(12)
                     .background(.ultraThinMaterial, in: Circle())
             }
@@ -212,7 +212,7 @@ private struct QuestionOptionsView: View {
     @State private var showOther = false
     @State private var textInput = ""
 
-    private let accent = Color(red: 0.38, green: 0.68, blue: 1.0)
+    private let accent: Color = .ciAccent
 
     var body: some View {
         if question.options.isEmpty {
@@ -314,8 +314,8 @@ private struct QuestionOptionsView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.ciForeground.opacity(0.055), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(isSelected ? accent.opacity(0.5) : Color.ciForeground.opacity(0.07)))
+            .background(Color.ciForeground.opacity(0.055), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(isSelected ? accent.opacity(0.5) : Color.ciForeground.opacity(0.07)))
         }
         .buttonStyle(.plain)
     }
@@ -337,7 +337,7 @@ private struct QuestionOptionsView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.ciForeground.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(Color.ciForeground.opacity(0.04), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -350,8 +350,8 @@ private struct QuestionOptionsView: View {
             .lineLimit(1...4)
             .padding(.horizontal, 10)
             .padding(.vertical, 9)
-            .background(Color.ciForeground.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.ciForeground.opacity(0.1)))
+            .background(Color.ciForeground.opacity(0.06), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(Color.ciForeground.opacity(0.1)))
             .accessibilityIdentifier("companion.question.textField")
     }
 
@@ -361,7 +361,7 @@ private struct QuestionOptionsView: View {
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(enabled ? .black : .ciForeground.opacity(0.4))
                 .frame(maxWidth: .infinity, minHeight: 40)
-                .background(enabled ? accent : Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(enabled ? accent : Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
@@ -389,7 +389,7 @@ private struct DiscoveryFill: View {
             IslandButton(
                 title: L10n.t(zh: "进入演示模式", en: "Enter Demo Mode"),
                 icon: "play.rectangle.fill",
-                tint: Color(red: 0.25, green: 0.76, blue: 1.0),
+                tint: .ciAccent,
                 accessibilityIdentifier: "companion.enterDemoMode"
             ) {
                 connection.enterDemoMode()
@@ -434,7 +434,7 @@ private struct CompactIslandBar: View {
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(.ciForeground.opacity(0.86))
                     .frame(width: 38, height: 38)
-                    .background(Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(connection.browsing ? L10n.t(zh: "停止搜索 Mac", en: "Stop Searching for Mac") : L10n.t(zh: "搜索 Mac", en: "Search for Mac"))
@@ -539,8 +539,8 @@ private struct LiveIslandCard: View {
     // 待处理时给卡片描边与光晕：审批=橙、提问=蓝。
     private var pendingTint: Color? {
         switch state.pendingAction {
-        case .approval: return .orange
-        case .question: return Color(red: 0.38, green: 0.68, blue: 1.0)
+        case .approval: return .ciWarning
+        case .question: return .ciAccent
         case nil: return nil
         }
     }
@@ -555,14 +555,14 @@ private struct QuestionPromptCard: View {
             HStack(spacing: 8) {
                 Text("?")
                     .font(.system(size: 13, weight: .black, design: .monospaced))
-                    .foregroundStyle(Color(red: 0.38, green: 0.68, blue: 1.0))
+                    .foregroundStyle(.ciAccent)
                 if let header = question.header, !header.isEmpty {
                     Text(header)
                         .font(.caption2.weight(.black))
-                        .foregroundStyle(Color(red: 0.38, green: 0.68, blue: 1.0))
+                        .foregroundStyle(.ciAccent)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(Color(red: 0.38, green: 0.68, blue: 1.0).opacity(0.14), in: Capsule())
+                        .background(.ciAccent.opacity(0.14), in: Capsule())
                 }
                 Spacer()
                 if question.total > 1 {
@@ -585,8 +585,8 @@ private struct QuestionPromptCard: View {
                 .id("\(question.index)/\(question.total)·\(question.question)")
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.ciForeground.opacity(0.05)))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.orange.opacity(0.24)))
+        .background(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).fill(Color.ciForeground.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(Color.ciWarning.opacity(0.24)))
         .accessibilityIdentifier("companion.questionCard")
     }
 }
@@ -626,7 +626,7 @@ private struct DiscoveryIsland: View {
                 if connection.discoveredPeers.isEmpty {
                     HStack(spacing: 10) {
                         ProgressView()
-                            .tint(.green)
+                            .tint(.ciSuccess)
                         Text(connection.browsing ? L10n.t(zh: "正在搜索附近的 CodeIsland", en: "Searching for nearby CodeIsland") : L10n.t(zh: "搜索已停止", en: "Search stopped"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(.ciForeground.opacity(0.72))
@@ -641,9 +641,9 @@ private struct DiscoveryIsland: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "macbook")
                                     .font(.headline)
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(.ciSuccess)
                                     .frame(width: 32, height: 32)
-                                    .background(Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    .background(Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
 
                                 Text(peer.displayName)
                                     .font(.system(size: 15, weight: .semibold))
@@ -690,7 +690,7 @@ private struct CommandRow: View {
                     IslandButton(
                         title: L10n.t(zh: "切换演示状态", en: "Cycle Demo State"),
                         icon: "arrow.triangle.2.circlepath",
-                        tint: Color(red: 0.25, green: 0.76, blue: 1.0),
+                        tint: .ciAccent,
                         accessibilityIdentifier: "companion.demo.nextState"
                     ) {
                         connection.cycleDemoState()
@@ -698,7 +698,7 @@ private struct CommandRow: View {
                     IslandButton(
                         title: L10n.t(zh: "退出演示", en: "Exit Demo"),
                         icon: "xmark",
-                        tint: .red,
+                        tint: .ciError,
                         accessibilityIdentifier: "companion.demo.exit"
                     ) {
                         connection.exitDemoMode()
@@ -711,7 +711,7 @@ private struct CommandRow: View {
                     IslandButton(
                         title: L10n.t(zh: "在 Mac 回答", en: "Answer on Mac"),
                         icon: "arrow.up.forward.app.fill",
-                        tint: Color(red: 0.35, green: 0.85, blue: 0.45),
+                        tint: .ciAccent,
                         accessibilityIdentifier: "companion.command.focus"
                     ) {
                         connection.send(.focus)
@@ -719,7 +719,7 @@ private struct CommandRow: View {
                     IslandButton(
                         title: L10n.t(zh: "跳过", en: "Skip"),
                         icon: "forward.fill",
-                        tint: .orange,
+                        tint: .ciWarning,
                         accessibilityIdentifier: "companion.command.skip"
                     ) {
                         connection.send(.skipCurrentQuestion)
@@ -733,7 +733,7 @@ private struct CommandRow: View {
                     IslandButton(
                         title: L10n.t(zh: "打开 Mac 会话", en: "Open Mac Session"),
                         icon: "arrow.up.forward.app.fill",
-                        tint: Color(red: 0.35, green: 0.85, blue: 0.45),
+                        tint: .ciAccent,
                         enabled: connection.connectedPeer != nil,
                         accessibilityIdentifier: "companion.command.focus"
                     ) {
@@ -743,19 +743,19 @@ private struct CommandRow: View {
                     IslandButton(
                         title: liveActivity.isRunning ? L10n.t(zh: "更新实时活动", en: "Update Live Activity") : L10n.t(zh: "开启实时活动", en: "Start Live Activity"),
                         icon: liveActivity.isRunning ? "arrow.clockwise" : "bolt.horizontal.fill",
-                        tint: Color(red: 0.25, green: 0.76, blue: 1.0),
+                        tint: .ciAccent,
                         accessibilityIdentifier: "companion.liveActivity.primaryButton"
                     ) {
-                        liveActivity.startOrUpdate(with: state)
+                        liveActivity.userStart(with: state)
                     }
                 }
 
                 if state.pendingAction == .approval {
                     HStack(spacing: 8) {
-                        IslandButton(title: L10n.t(zh: "批准", en: "Approve"), icon: "checkmark", tint: .orange, accessibilityIdentifier: "companion.command.approve") {
+                        IslandButton(title: L10n.t(zh: "批准", en: "Approve"), icon: "checkmark", tint: .ciWarning, accessibilityIdentifier: "companion.command.approve") {
                             connection.send(.approveCurrentPermission)
                         }
-                        IslandButton(title: L10n.t(zh: "拒绝", en: "Deny"), icon: "xmark", tint: .red, accessibilityIdentifier: "companion.command.deny") {
+                        IslandButton(title: L10n.t(zh: "拒绝", en: "Deny"), icon: "xmark", tint: .ciError, accessibilityIdentifier: "companion.command.deny") {
                             connection.send(.denyCurrentPermission)
                         }
                     }
@@ -779,7 +779,7 @@ private struct LiveActivityInlineButton: View {
             if liveActivity.isRunning {
                 liveActivity.stop()
             } else {
-                liveActivity.startOrUpdate(with: state)
+                liveActivity.userStart(with: state)
             }
         } label: {
             Label(
@@ -787,7 +787,7 @@ private struct LiveActivityInlineButton: View {
                 systemImage: liveActivity.isRunning ? "stop.circle.fill" : "bolt.horizontal.fill"
             )
             .font(.caption.weight(.semibold))
-            .foregroundStyle(liveActivity.isRunning ? .ciForeground.opacity(0.62) : Color(red: 0.25, green: 0.76, blue: 1.0).opacity(0.86))
+            .foregroundStyle(liveActivity.isRunning ? .ciForeground.opacity(0.62) : .ciAccent.opacity(0.86))
             .frame(maxWidth: .infinity, minHeight: 34)
         }
         .buttonStyle(.plain)
@@ -808,7 +808,7 @@ private struct RemoteStatusBar: View {
         TimelineView(.periodic(from: .now, by: 10)) { _ in
             HStack(spacing: 8) {
                 Circle()
-                    .fill(remoteAI.macOnline ? Color.green : Color.gray)
+                    .fill(remoteAI.macOnline ? Color.ciSuccess : .ciForegroundTertiary)
                     .frame(width: 8, height: 8)
                 Text(remoteAI.latestRemoteStatus?.deviceName
                      ?? L10n.t(zh: "远程 Mac 未在线", en: "Remote Mac offline"))
@@ -897,8 +897,8 @@ private struct MessageStrip: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.ciForeground.opacity(0.045)))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.ciForeground.opacity(0.06)))
+        .background(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).fill(Color.ciForeground.opacity(0.045)))
+        .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(Color.ciForeground.opacity(0.06)))
         .accessibilityIdentifier("companion.messages")
     }
 }
@@ -967,8 +967,8 @@ private struct HeroTranscript: View {
                     Text(message.role == .user ? ">" : "$")
                         .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundStyle(message.role == .user
-                            ? Color(red: 0.3, green: 0.85, blue: 0.4)
-                            : Color(red: 0.85, green: 0.47, blue: 0.34))
+                            ? .ciSuccess
+                            : .ciAccent)
                     Text(CompanionDisplayText.messageMarkdown(
                         CompanionDisplayText.message(message.text) ?? message.text,
                         isUser: message.role == .user
@@ -1014,7 +1014,7 @@ private struct StandByIsland: View {
                         MorphText(
                             text: sessions.count > 1 ? L10n.t(zh: "\(sessions.count) 个会话 · \(activeCount) 个活跃", en: "\(sessions.count) sessions · \(activeCount) active") : state.status.label,
                             font: .system(size: 22, weight: .semibold, design: .rounded),
-                            color: activeCount > 0 ? .green : statusColor(state.status)
+                            color: activeCount > 0 ? .ciSuccess : statusColor(state.status)
                         )
                     }
 
@@ -1056,17 +1056,17 @@ private struct StandByIsland: View {
                     .padding(20)
             } else {
                 VStack(spacing: 10) {
-                    IconIslandButton(icon: "arrow.up.forward.app.fill", tint: Color(red: 0.35, green: 0.85, blue: 0.45), enabled: connection.connectedPeer != nil) {
+                    IconIslandButton(icon: "arrow.up.forward.app.fill", tint: .ciAccent, enabled: connection.connectedPeer != nil) {
                         connection.send(.focus)
                     }
-                    IconIslandButton(icon: liveActivity.isRunning ? "arrow.clockwise" : "bolt.horizontal.fill", tint: Color(red: 0.25, green: 0.76, blue: 1.0)) {
-                        liveActivity.startOrUpdate(with: state)
+                    IconIslandButton(icon: liveActivity.isRunning ? "arrow.clockwise" : "bolt.horizontal.fill", tint: .ciAccent) {
+                        liveActivity.userStart(with: state)
                     }
                     if state.pendingAction != nil {
-                        IconIslandButton(icon: "checkmark", tint: .orange) {
+                        IconIslandButton(icon: "checkmark", tint: .ciWarning) {
                             connection.send(.approveCurrentPermission)
                         }
-                        IconIslandButton(icon: "xmark", tint: .red) {
+                        IconIslandButton(icon: "xmark", tint: .ciError) {
                             connection.send(.denyCurrentPermission)
                         }
                     }
@@ -1194,8 +1194,8 @@ private struct SessionTranscript: View {
                     Text(message.role == .user ? ">" : "$")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundStyle(message.role == .user
-                            ? Color(red: 0.3, green: 0.85, blue: 0.4)
-                            : Color(red: 0.85, green: 0.47, blue: 0.34))
+                            ? .ciSuccess
+                            : .ciAccent)
                     Text(CompanionDisplayText.messageMarkdown(
                         CompanionDisplayText.message(message.text) ?? message.text,
                         isUser: message.role == .user
@@ -1264,7 +1264,7 @@ private struct StandBySessionRow: View {
                     HStack(spacing: 4) {
                         Text("$")
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundStyle(Color(red: 0.85, green: 0.47, blue: 0.34))
+                            .foregroundStyle(.ciAccent)
                         if let tool = CompanionDisplayText.tool(session.toolName) {
                             Text(tool)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
@@ -1288,8 +1288,8 @@ private struct StandBySessionRow: View {
     // 名称按状态着色，对齐 notch SessionCard：运行/处理=绿，待办=橙，空闲=白。
     private var statusNameColor: Color {
         switch session.status {
-        case .processing, .running: return Color(red: 0.3, green: 0.85, blue: 0.4)
-        case .waitingApproval, .waitingQuestion: return Color(red: 1.0, green: 0.6, blue: 0.2)
+        case .processing, .running: return .ciSuccess
+        case .waitingApproval, .waitingQuestion: return .ciWarning
         case .idle: return .ciForeground
         }
     }
@@ -1310,8 +1310,8 @@ private struct StandBySessionRow: View {
     // 待处理状态高亮：审批=橙、提问=蓝；其余不高亮。
     private var highlightTint: Color? {
         switch session.status {
-        case .waitingApproval: return .orange
-        case .waitingQuestion: return Color(red: 0.38, green: 0.68, blue: 1.0)
+        case .waitingApproval: return .ciWarning
+        case .waitingQuestion: return .ciAccent
         default: return nil
         }
     }
@@ -1386,10 +1386,10 @@ private struct StandByCountBadge: View {
     var body: some View {
         Text(activeCount > 0 ? L10n.t(zh: "\(activeCount) 活跃", en: "\(activeCount) active") : L10n.t(zh: "\(count) 总计", en: "\(count) total"))
             .font(.system(size: 12, weight: .black, design: .rounded))
-            .foregroundStyle(activeCount > 0 ? .green : .ciForeground.opacity(0.64))
+            .foregroundStyle(activeCount > 0 ? .ciSuccess : .ciForeground.opacity(0.64))
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background((activeCount > 0 ? Color.green : Color.ciForeground).opacity(0.12), in: Capsule())
+            .background((activeCount > 0 ? Color.ciSuccess : Color.ciForeground).opacity(0.12), in: Capsule())
     }
 }
 
@@ -1432,7 +1432,7 @@ private struct AppearanceMenu: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.ciForeground.opacity(0.86))
                 .frame(width: 38, height: 38)
-                .background(Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L10n.t(zh: "外观", en: "Appearance"))
@@ -1616,8 +1616,8 @@ private struct IslandButton: View {
                 .minimumScaleFactor(0.82)
                 .foregroundStyle(foregroundColor)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(buttonBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(borderColor))
+                .background(buttonBackground, in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(borderColor))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
@@ -1628,12 +1628,12 @@ private struct IslandButton: View {
     // not-connected button reads as intentionally unavailable, not broken.
     private var foregroundColor: Color {
         guard enabled else { return Color.secondary.opacity(0.7) }
-        return tint == .orange ? .black : tint
+        return tint == .ciWarning ? .black : tint
     }
 
     private var buttonBackground: Color {
         guard enabled else { return Color.ciForeground.opacity(0.05) }
-        return tint == .orange ? .orange : tint.opacity(0.20)
+        return tint == .ciWarning ? .ciWarning : tint.opacity(0.20)
     }
 
     private var borderColor: Color {
@@ -1663,11 +1663,11 @@ private struct IconIslandButton: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.title3.weight(.bold))
-                .foregroundStyle(tint == .orange ? .black : tint)
+                .foregroundStyle(tint == .ciWarning ? .black : tint)
                 .opacity(enabled ? 1 : 0.4)
                 .frame(width: 52, height: 52)
-                .background(tint == .orange ? .orange : tint.opacity(0.22), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(tint.opacity(0.45)))
+                .background(tint == .ciWarning ? .ciWarning : tint.opacity(0.22), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(tint.opacity(0.45)))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
@@ -1680,10 +1680,10 @@ private struct DiagnosticStrip: View {
     var body: some View {
         Label(message, systemImage: "exclamationmark.triangle.fill")
             .font(.footnote.weight(.medium))
-            .foregroundStyle(.orange)
+            .foregroundStyle(.ciWarning)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.orange.opacity(0.12)))
+            .background(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).fill(Color.ciWarning.opacity(0.12)))
     }
 }
 
@@ -1695,7 +1695,7 @@ private struct LiveActivityDiagnosticStrip: View {
         VStack(alignment: .leading, spacing: 10) {
             Label(message, systemImage: "bolt.horizontal.circle.fill")
                 .font(.footnote.weight(.medium))
-                .foregroundStyle(Color(red: 0.35, green: 0.75, blue: 1.0))
+                .foregroundStyle(.ciAccent)
 
             Button {
                 liveActivity.stopAll()
@@ -1705,13 +1705,13 @@ private struct LiveActivityDiagnosticStrip: View {
                     // 这张通知卡固定为深蓝底（两个主题一致），内部文字保持浅色以保证对比。
                     .foregroundStyle(.white.opacity(0.82))
                     .frame(maxWidth: .infinity, minHeight: 34)
-                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
             }
             .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(red: 0.10, green: 0.18, blue: 0.24)))
+        .background(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).fill(.ciSurfaceRaised))
     }
 }
 
@@ -1737,11 +1737,11 @@ private extension AnyTransition {
 private func statusColor(_ status: CompanionStatus) -> Color {
     switch status {
     case .idle:
-        return Color(red: 0.55, green: 0.60, blue: 0.68)
+        return .ciForegroundSecondary
     case .processing, .running:
-        return Color(red: 0.30, green: 0.85, blue: 0.40)
+        return .ciSuccess
     case .waitingApproval, .waitingQuestion:
-        return Color(red: 1.0, green: 0.55, blue: 0.0)
+        return .ciWarning
     }
 }
 
@@ -1791,32 +1791,5 @@ let appAppearanceStorageKey = "appAppearance"
 // 定义在 `ShapeStyle where Self == Color` 上：点语法在 `.foregroundStyle(.ciX)`
 // / `.fill(.ciX)` 等 ShapeStyle 位置以及纯 `Color` 位置（`color: .ciX`）都能解析。
 
-private enum CITheme {
-    /// 应用背景：深色近黑 / 浅色暖米白。
-    static let background = UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.015, green: 0.016, blue: 0.018, alpha: 1)
-            : UIColor(red: 0.945, green: 0.925, blue: 0.880, alpha: 1)
-    }
-
-    /// 卡片 / 胶囊表面：深色纯黑 / 浅色暖白（略亮于背景，使卡片浮起）。
-    static let surface = UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0, green: 0, blue: 0, alpha: 1)
-            : UIColor(red: 0.995, green: 0.985, blue: 0.960, alpha: 1)
-    }
-
-    /// 主前景（文字 / 图标 / 描边与浅填充的基色）：深色白 / 浅色暖深棕。
-    static let foreground = UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor(white: 1, alpha: 1)
-            : UIColor(red: 0.16, green: 0.13, blue: 0.10, alpha: 1)
-    }
-}
-
-extension ShapeStyle where Self == Color {
-    static var ciBackground: Color { Color(CITheme.background) }
-    static var ciSurface: Color { Color(CITheme.surface) }
-    /// 替换原先的 `.white` 与 `.white.opacity(x)`，透明度沿用不变。
-    static var ciForeground: Color { Color(CITheme.foreground) }
-}
+// NOTE: Color palette migrated to DesignTokens.swift (CITheme + ShapeStyle
+// extensions). ciBackground / ciSurface / ciForeground now resolve there.
