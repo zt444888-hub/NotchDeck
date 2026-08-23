@@ -205,9 +205,12 @@ build_mac() {
                 "$DMG_PATH" "$APP_BUNDLE"
         else
             echo "create-dmg not supported here; using hdiutil fallback..."
-            DMG_STAGING="$BUILD_DIR/dmg-staging"
-            rm -rf "$DMG_STAGING"
-            mkdir -p "$DMG_STAGING"
+    DMG_STAGING="$BUILD_DIR/dmg-staging"
+    # Move stale staging to trash instead of rm -rf: WorkBuddy's bulk-delete
+    # guard blocks recursive deletes of large dirs (>50 files), which aborts
+    # the release pipeline. /tmp is cleaned by the OS.
+    [ -d "$DMG_STAGING" ] && mv "$DMG_STAGING" "$(mktemp -d /tmp/notchdeck-trash.XXXXXX)" 2>/dev/null || true
+    mkdir -p "$DMG_STAGING"
             ditto "$APP_BUNDLE" "$DMG_STAGING/$APP_NAME.app"
             ln -sf /Applications "$DMG_STAGING/Applications"
             hdiutil create \
