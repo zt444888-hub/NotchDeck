@@ -308,6 +308,6 @@ if [ "${SKIP_SIGN:-0}" != "1" ] && [ "${SKIP_NOTARIZE:-0}" != "1" ]; then
     echo ""
     echo "==> Release checklist:"
     echo "    1. gh release create v${VERSION} --notes '…' \"$OUTPUT_DMG\""
-    echo "    2. ./scripts/update-appcast.sh ${VERSION} \"$OUTPUT_DMG\""
+    echo "    2. ./release.sh ${VERSION} 'release notes'  (writes appcast.xml + creates GitHub release)"
     echo "    3. git add appcast.xml && git commit -m 'release: v${VERSION}' && git push"
 fi

@@ -26,6 +26,9 @@ android-watch/.gradle/
 android-watch/local.properties
 android-watch/**/build/
 
+# iOS build artifacts (xcodebuild / Xcode derived)
+ios/**/build/
+
 # Code agents config files
 .adal/
 .aider-desk/
