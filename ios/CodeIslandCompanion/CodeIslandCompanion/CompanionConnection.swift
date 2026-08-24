@@ -45,6 +45,11 @@ final class CompanionConnection: NSObject, ObservableObject {
     private static let reconnectAfterSeconds: TimeInterval = 24
     private static let activityLogKey = "CompanionActivityLog"
     private static let activityLogLimit = 300
+    /// Last Mac state payload, persisted so the Live Activity can be rebuilt
+    /// immediately on launch without waiting for the next heartbeat (a
+    /// manually-dismissed island otherwise stays gone until the Mac is
+    /// rediscovered and pushes again).
+    private static let latestStateKey = "CompanionLatestState"
 
     private let watchBridge = WatchBridge()
     /// Lazily created: instantiating the BLE central (and its CBCentralManager)
@@ -76,6 +81,7 @@ final class CompanionConnection: NSObject, ObservableObject {
     override init() {
         super.init()
         loadActivityLog()
+        loadLatestState()
         session.delegate = self
         browser.delegate = self
         watchBridge.commandHandler = { [weak self] command in
@@ -233,8 +239,20 @@ final class CompanionConnection: NSObject, ObservableObject {
     private func receiveState(_ state: CompanionStatePayload) {
         lastStateReceivedAt = Date()
         latestState = state
+        persistLatestState(state)
         appendActivity(from: state.messages)
         onStateReceived?(state)
+    }
+
+    private func loadLatestState() {
+        guard let data = UserDefaults.standard.data(forKey: Self.latestStateKey),
+              let state = try? JSONDecoder().decode(CompanionStatePayload.self, from: data) else { return }
+        latestState = state
+    }
+
+    private func persistLatestState(_ state: CompanionStatePayload) {
+        guard let data = try? JSONEncoder().encode(state) else { return }
+        UserDefaults.standard.set(data, forKey: Self.latestStateKey)
     }
 
     // MARK: - Activity log (persisted history)

@@ -62,6 +62,14 @@ struct ContentView: View {
             }
             .onAppear {
                 connection.start()
+                // Rebuild the island immediately from the last persisted Mac
+                // state. A manually-dismissed (swipe) island otherwise stays
+                // gone until the Mac is rediscovered and pushes the next
+                // heartbeat — which can be seconds later, or never if the
+                // user swipes up before the rediscovery completes.
+                if let state = connection.latestState {
+                    liveActivity.startOrUpdate(with: state)
+                }
             }
             .onChange(of: connection.latestState?.sequence) { _, _ in
                 // NOTE: no isRunning guard here — on the FIRST state change
