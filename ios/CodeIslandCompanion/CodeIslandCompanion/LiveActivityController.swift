@@ -1,6 +1,5 @@
 import ActivityKit
 import Foundation
-import UIKit
 
 @MainActor
 final class LiveActivityController: ObservableObject {
@@ -25,18 +24,14 @@ final class LiveActivityController: ObservableObject {
     private var activity: Activity<CodeIslandActivityAttributes>?
     private var lastContentState: CodeIslandActivityAttributes.ContentState?
     private var activityStateTask: Task<Void, Never>?
-    /// Tracks whether the app is in the foreground. When false, automatic
-    /// drivers (Mac state push, CloudKit/BLE summary) must NOT create or
-    /// update the activity — otherwise the island gets ENDED on exit and then
-    /// REBUILT a second later by the next background state push, which reads
-    /// as "it never goes away". Unlike `userStopped`, this is NOT persisted:
-    /// returning to the foreground resumes the activity from `latestState`.
+    /// Tracks whether the app is in the foreground. Gates CREATION of new
+    /// activities (startOrUpdate only creates when foregrounded), so a
+    /// background state push can't rebuild an island the user stopped — but
+    /// it does NOT gate updates: an existing activity keeps refreshing in the
+    /// background, which is the whole point of a Live Activity. Unlike
+    /// `userStopped`, this is NOT persisted: returning to the foreground
+    /// resumes the activity from `latestState`.
     private var isAppActive = true
-    /// UIKit fallback for swipe-to-kill: scenePhase isn't guaranteed to fire
-    /// when the user kills the app from the App Switcher, but
-    /// `didEnterBackground` is delivered while the process is still alive —
-    /// enough time to submit the `Activity.end` request before termination.
-    private var backgroundObserver: NSObjectProtocol?
 
     var isRunning: Bool {
         activity != nil
@@ -44,24 +39,12 @@ final class LiveActivityController: ObservableObject {
 
     deinit {
         activityStateTask?.cancel()
-        if let backgroundObserver {
-            NotificationCenter.default.removeObserver(backgroundObserver)
-        }
     }
 
     init() {
         // Restore the persisted stop intent so a relaunch can't resurrect an
         // island the user already dismissed in a previous session.
         userStopped = UserDefaults.standard.bool(forKey: Self.userStoppedKey)
-        backgroundObserver = NotificationCenter.default.addObserver(
-            forName: UIApplication.didEnterBackgroundNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.setAppActive(false)
-            }
-        }
         Task {
             await migrateLiveActivityLayoutIfNeeded()
             if userStopped {
@@ -79,7 +62,7 @@ final class LiveActivityController: ObservableObject {
 
     func updateIfRunning(with payload: CompanionStatePayload) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        guard !userStopped, isAppActive else { return }
+        guard !userStopped else { return }
 
         Task {
             let shouldRecreate = await migrateLiveActivityLayoutIfNeeded()
@@ -101,12 +84,16 @@ final class LiveActivityController: ObservableObject {
             lastError = L10n.t(zh: "这台 iPhone 没有开启实时活动。", en: "Live Activities are turned off on this iPhone.")
             return
         }
-        guard !userStopped, isAppActive else { return }
+        guard !userStopped else { return }
 
         Task {
             await migrateLiveActivityLayoutIfNeeded()
             await recoverExistingActivity(endingDuplicates: true)
-            await apply(payload, createIfNeeded: true)
+            // Foreground: create if none exists. Background: update an
+            // existing activity only — never create one, so the island can't
+            // be resurrected by a background state push after a stop.
+            guard activity != nil || isAppActive else { return }
+            await apply(payload, createIfNeeded: isAppActive)
         }
     }
 
@@ -126,40 +113,17 @@ final class LiveActivityController: ObservableObject {
         }
     }
 
-    /// Driven by the app scene when it enters/leaves the foreground (and by
-    /// the `didEnterBackground` UIKit notification as a swipe-kill fallback).
+    /// Driven by the app scene when it enters/leaves the foreground.
     ///
-    /// On leaving the foreground we dismiss the Live Activity IMMEDIATELY
-    /// (no grace delay — the old 250ms window was unreliable: swipe-to-kill
-    /// could terminate the process before the delayed task ran, and a
-    /// background state push would recreate the island anyway). A Live
-    /// Activity lives in a system process and is NOT torn down when the app
-    /// is killed — by design — so the app itself must request the end while
-    /// it still can.
-    ///
-    /// `isAppActive = false` also makes `startOrUpdate`/`updateIfRunning`
-    /// no-op, so background state pushes can't rebuild the island after the
-    /// end. Unlike `stopAll()`, this does NOT set the persistent
-    /// `userStopped` flag, so the island is recreated automatically when the
-    /// app returns to the foreground and the Mac session is still active.
+    /// Merely tracks foreground state — it does NOT dismiss the activity.
+    /// A Live Activity is meant to persist after the app leaves the
+    /// foreground (that's its entire purpose: keep showing the Mac's status
+    /// on the Lock Screen / Dynamic Island while you do other things). The
+    /// island is dismissed only by an explicit Stop (`stopAll`, persisted
+    /// `userStopped`) — and `startOrUpdate` gates creation on `isAppActive`
+    /// so a background push can never resurrect a stopped island.
     func setAppActive(_ active: Bool) {
         isAppActive = active
-        guard !active else { return }
-        endAllActivities()
-    }
-
-    /// Ends every activity right now (fire-and-forget). Safe to call from
-    /// scene-phase changes and the background notification — idempotent.
-    private func endAllActivities() {
-        let all = Activity<CodeIslandActivityAttributes>.activities
-        for activity in all {
-            Task {
-                await activity.end(nil, dismissalPolicy: .immediate)
-            }
-        }
-        clearActivity(id: activityID)
-        existingActivityCount = 0
-        lastError = nil
     }
 
     private func recoverExistingActivity() {
