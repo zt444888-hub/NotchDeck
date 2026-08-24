@@ -15,7 +15,6 @@ final class CompanionBluetoothCentral: NSObject, ObservableObject {
 
     var onSummary: ((CompanionBluetoothSummary) -> Void)?
 
-    private var centralManager: CBCentralManager!
     private var peripheral: CBPeripheral?
     private var notifyCharacteristic: CBCharacteristic?
     private var incoming: IncomingSequence?
@@ -28,15 +27,23 @@ final class CompanionBluetoothCentral: NSObject, ObservableObject {
 
     override init() {
         super.init()
-        centralManager = CBCentralManager(
-            delegate: self,
-            queue: nil,
-            options: [
-                CBCentralManagerOptionRestoreIdentifierKey: Self.restoreIdentifier,
-                CBCentralManagerOptionShowPowerAlertKey: true
-            ]
-        )
+        // centralManager is created LAZILY (see `lazy var centralManager`
+        // below) on first `start()`. Creating a CBCentralManager is what
+        // triggers the system Bluetooth permission prompt on first launch —
+        // deferring it until the user has seen the onboarding context (and
+        // actually started discovery) keeps the prompt in-scope and avoids a
+        // bare permission dialog on cold start, which App Review rejects as
+        // "permission without usage context".
     }
+
+    private lazy var centralManager: CBCentralManager = CBCentralManager(
+        delegate: self,
+        queue: nil,
+        options: [
+            CBCentralManagerOptionRestoreIdentifierKey: Self.restoreIdentifier,
+            CBCentralManagerOptionShowPowerAlertKey: true
+        ]
+    )
 
     func start() {
         guard centralManager.state == .poweredOn else { return }

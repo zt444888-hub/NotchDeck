@@ -14,6 +14,7 @@ struct ContentView: View {
     @EnvironmentObject private var liveActivity: LiveActivityController
     @EnvironmentObject private var remoteAI: RemoteConversationViewModel
     @AppStorage(appAppearanceStorageKey) private var appearanceRaw = AppAppearance.system.rawValue
+    @AppStorage("HasSeenBuddyOnboarding") private var hasSeenOnboarding = false
     @State private var showRemoteConversation = false
     @State private var showActivityLog = false
     // Re-renders the main island UI when the in-app language changes.
@@ -24,6 +25,23 @@ struct ContentView: View {
     }
 
     var body: some View {
+        Group {
+            if !hasSeenOnboarding {
+                // First-launch gate: explains what the app does and why the
+                // Bluetooth / local-network permissions are needed BEFORE
+                // discovery starts, so the system permission prompts appear
+                // with context (App Review rejects bare prompts on cold
+                // start). The main content (and `connection.start()`) only
+                // mounts after the user taps Get Started.
+                OnboardingView { hasSeenOnboarding = true }
+            } else {
+                mainContent
+            }
+        }
+        .preferredColorScheme(appearance.colorScheme)
+    }
+
+    private var mainContent: some View {
         GeometryReader { proxy in
             // 内容尊重安全区（不再忽略），元素自动避开状态栏 / 刘海 / Home 指示条；
             // 背景由下方 .background 忽略安全区铺满整屏。
@@ -90,8 +108,107 @@ struct ContentView: View {
                 .ignoresSafeArea()
             }
         }
-        .preferredColorScheme(appearance.colorScheme)
         .accessibilityIdentifier("companion.root")
+    }
+}
+
+private struct OnboardingView: View {
+    let onComplete: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.ciBackground.ignoresSafeArea()
+            RadialGradient(
+                colors: [Color(CITheme.accent).opacity(0.35), .clear],
+                center: .topLeading,
+                startRadius: 0,
+                endRadius: 560
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 22) {
+                Spacer()
+
+                Image(systemName: "macbook.and.iphone")
+                    .font(.system(size: 58, weight: .bold))
+                    .foregroundStyle(.ciAccent)
+                    .accessibilityHidden(true)
+
+                Text("NotchDeck Buddy")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.ciForeground)
+
+                Text("Your Mac's AI sessions, on your phone.")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.ciForegroundSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+
+                VStack(spacing: 14) {
+                    featureRow(
+                        icon: "sparkles",
+                        title: "Live AI task status",
+                        detail: "Watch codex, Claude Code, Gemini and more from your Lock Screen and Dynamic Island."
+                    )
+                    featureRow(
+                        icon: "dot.radiowaves.left.and.right",
+                        title: "Nearby Mac discovery",
+                        detail: "Connects over Bluetooth and local network. Allow the permissions when asked to find your Mac."
+                    )
+                    featureRow(
+                        icon: "icloud",
+                        title: "Cloud sync",
+                        detail: "Sessions stay in sync over iCloud, even when your Mac is far away."
+                    )
+                }
+                .padding(.top, 8)
+
+                Spacer()
+
+                Button(action: onComplete) {
+                    Text("Get Started")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(CITheme.accent), Color(CITheme.accent).opacity(0.72)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            in: RoundedRectangle(cornerRadius: CIRadius.md, style: .continuous)
+                        )
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+                .accessibilityIdentifier("companion.onboarding.getStarted")
+            }
+        }
+    }
+
+    private func featureRow(icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.ciAccent)
+                .frame(width: 36, height: 36)
+                .background(Color.ciAccent.opacity(0.14), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.ciForeground)
+                Text(detail)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.ciForeground.opacity(0.62))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 24)
     }
 }
 
@@ -645,6 +762,23 @@ private struct DiscoveryIsland: View {
                         Spacer()
                     }
                     .frame(minHeight: 48)
+
+                    Text(L10n.t(zh: "确保 Mac 端 NotchDeck 已运行且蓝牙已开启", en: "Make sure NotchDeck is running on your Mac with Bluetooth turned on"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.ciForeground.opacity(0.55))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // App Review can't pair a real Mac. Give reviewers (and
+                    // curious users) a one-tap way to experience the full UI:
+                    // live island, question card, messages — no Mac needed.
+                    IslandButton(
+                        title: L10n.t(zh: "预览演示模式", en: "Preview Demo Mode"),
+                        icon: "play.rectangle.fill",
+                        tint: .ciAccent,
+                        accessibilityIdentifier: "companion.discovery.demo"
+                    ) {
+                        connection.enterDemoMode()
+                    }
                 } else {
                     ForEach(connection.discoveredPeers, id: \.self) { peer in
                         Button {

@@ -47,7 +47,10 @@ final class CompanionConnection: NSObject, ObservableObject {
     private static let activityLogLimit = 300
 
     private let watchBridge = WatchBridge()
-    private let bluetoothBridge = CompanionBluetoothCentral()
+    /// Lazily created: instantiating the BLE central (and its CBCentralManager)
+    /// triggers the Bluetooth permission prompt, so we defer it until
+    /// `start()` — by then the user has seen the onboarding context.
+    private lazy var bluetoothBridge = CompanionBluetoothCentral()
     private let peerID = MCPeerID(displayName: UIDevice.current.name)
     private let mockStatePayload = CompanionConnection.mockStateFromLaunchArguments()
     private lazy var session = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
@@ -78,14 +81,6 @@ final class CompanionConnection: NSObject, ObservableObject {
         watchBridge.commandHandler = { [weak self] command in
             self?.send(command)
         }
-        bluetoothBridge.onSummary = { [weak self] summary in
-            self?.receiveBluetoothSummary(summary)
-        }
-        bluetoothBridge.$connectedPeripheralName
-            .assign(to: &$bluetoothConnectedPeripheralName)
-        bluetoothBridge.$lastError
-            .compactMap { $0 }
-            .assign(to: &$lastError)
 
         if let mockStatePayload {
             connectedPeer = MCPeerID(displayName: "CodeIsland Mock Mac")
@@ -99,7 +94,20 @@ final class CompanionConnection: NSObject, ObservableObject {
 
     func start() {
         guard !isDemoMode else { return }
-        bluetoothBridge.start()
+        // First access creates the BLE bridge (and thus the CBCentralManager,
+        // which is what prompts for Bluetooth permission). Wire up its
+        // publishers here — after onboarding — so the system prompt appears
+        // with context, not on cold start.
+        let bridge = bluetoothBridge
+        bridge.onSummary = { [weak self] summary in
+            self?.receiveBluetoothSummary(summary)
+        }
+        bridge.$connectedPeripheralName
+            .assign(to: &$bluetoothConnectedPeripheralName)
+        bridge.$lastError
+            .compactMap { $0 }
+            .assign(to: &$lastError)
+        bridge.start()
         guard mockStatePayload == nil else { return }
         startStateWatchdog()
         guard !browsing else { return }
