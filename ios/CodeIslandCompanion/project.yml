@@ -9,7 +9,7 @@ settings:
     SWIFT_VERSION: "5.0"
     DEVELOPMENT_TEAM: "2VBHV3VJ8N"
     CODE_SIGN_STYLE: Automatic
-    CURRENT_PROJECT_VERSION: "6"
+    CURRENT_PROJECT_VERSION: "7"
     MARKETING_VERSION: "1.2.0"
 targets:
   CodeIslandCompanion:
