@@ -570,11 +570,11 @@ private struct CompactIslandBar: View {
             .accessibilityLabel(connection.browsing ? L10n.t(zh: "停止搜索 Mac", en: "Stop Searching for Mac") : L10n.t(zh: "搜索 Mac", en: "Search for Mac"))
             .accessibilityIdentifier("companion.search.toggle")
 
-            // Always-visible Live Activity control. The inline Stop button
-            // inside the island card only appears when a Mac state exists —
-            // a lingering activity with no active state had no way to be
-            // dismissed from the UI. This bar button closes it from any
-            // screen (persisted via userStopped, so it stays closed).
+            // Always-visible Live Activity control (two-way): Stop (persisted
+            // via userStopped) while running, and Start again from the last
+            // state once stopped. Without the Start arm, a stopped island
+            // could never be re-entered — automatic drivers are gated by
+            // userStopped by design, so the user needs an explicit button.
             if liveActivity.isRunning {
                 Button {
                     liveActivity.stop()
@@ -588,6 +588,19 @@ private struct CompactIslandBar: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(L10n.t(zh: "停止灵动岛", en: "Stop Live Activity"))
                 .accessibilityIdentifier("companion.liveActivity.stopBarButton")
+            } else if let state = connection.latestState {
+                Button {
+                    liveActivity.userStart(with: state)
+                } label: {
+                    Image(systemName: "bolt.horizontal.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.ciAccent)
+                        .frame(width: 38, height: 38)
+                        .background(Color.ciAccent.opacity(0.14), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L10n.t(zh: "开启灵动岛", en: "Start Live Activity"))
+                .accessibilityIdentifier("companion.liveActivity.startBarButton")
             }
 
             AppearanceMenu()
