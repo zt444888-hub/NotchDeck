@@ -1,49 +1,73 @@
-# NotchDeck Privacy Policy
+# Privacy Policy
 
-Effective date: 2026-08-05
+**Last updated: August 24, 2026**
 
-NotchDeck is a local macOS utility that shows real-time AI coding agent status in the Mac notch. It is developed and distributed directly (Developer ID + notarization) and does **not** operate any backend service.
+This Privacy Policy explains how Shenzhen Yuanbei Technology Co., Ltd. ("we", "our", "us") handles information when you use **NotchDeck** (macOS) and **NotchDeck Buddy** (iOS/watchOS, the "Apps").
 
-## Data Collection
+## Summary
 
-**The developer does not collect any personal data from NotchDeck.** NotchDeck has no accounts, no telemetry, no analytics SDKs, no advertising SDKs, no tracking SDKs, and no remote logging. We verified this in the source: the app contains no network-beaconing code other than local-device discovery.
+- NotchDeck Buddy is a companion app that mirrors AI coding-session activity from your Mac to your iPhone (Lock Screen, Dynamic Island, StandBy, Apple Watch).
+- **We do not collect, store, or see your data.** Everything you create is stored **on your own devices** and in **your own iCloud private database**.
+- **No accounts, no analytics, no ads, no tracking, no third-party sharing.**
 
-## What NotchDeck Reads and Writes Locally
+## Information We Process
 
-All data processed by NotchDeck stays **on your Mac** in your own user directory:
+### 1. On-device settings and preferences
 
-- **~/.notchdeck/** — NotchDeck's own directory for its helper binary, hook scripts, and usage statistics (`sessions.json`).
-- **AI tool configurations** — NotchDeck reads and writes hook entries in the config files of AI tools you use (e.g. Claude Code, Codex, Cursor, Copilot, Gemini CLI, OpenCode, and others). It only touches the hook/extension sections it manages; it does not read or modify your chat history, credentials, or other settings.
-- **Token usage statistics** — the "Usage & Cost" page reads locally stored session logs produced by Claude Code and Codex to compute token usage and estimated cost. This computation happens entirely on your machine.
-- **Diagnostics export** — if you explicitly trigger it, NotchDeck packages local diagnostics into a file you choose. You control the destination; nothing is sent automatically.
+The Apps store only local preferences on your device (e.g. appearance, language, Live Activity toggle, quiet-hours settings, the most recent Mac status used to restore the Live Activity after relaunch). This data never leaves your device.
 
-## Local Communication with Your Own Devices
+### 2. iCloud / CloudKit (remote AI conversations)
 
-NotchDeck can mirror status to the companion iOS app ("NotchDeck Buddy") on devices you own:
+When you use remote AI conversations, the Apps synchronize conversation data through **CloudKit in your own iCloud account**. This data lives in your personal private database:
 
-- **Local network (Bonjour/multipeer)** — discovers your Mac so the iPhone can mirror island state.
-- **Bluetooth** — used as a lightweight signal for Buddy status updates on iPhone/Apple Watch.
+- **We (the developer) cannot access it.** CloudKit private databases are readable only by the signed-in Apple ID and its devices.
+- It is used solely to sync state between your Mac and your iPhone (e.g. so your Mac can execute a message you sent from your phone).
+- Deleting the conversation in the app removes it from your iCloud database.
 
-This communication happens only between your own devices on your own network. No third party is involved, and no data is sent to the developer.
+### 3. Bluetooth and Local Network
 
-## Data Shown in the App
+To discover and connect to a nearby Mac, the iOS app uses Bluetooth and local network discovery:
 
-The app displays local session information such as agent name, status, workspace label, recent message previews, and permission requests. This information never leaves your machine except for the optional mirror to your own iPhone/Watch described above.
+- These are used **only to communicate with your own Mac** running NotchDeck.
+- Status summaries are transmitted directly between your devices over the local connection and are **not transmitted to our servers** (there are no servers).
 
-## No Tracking
+### 4. Apple Watch / StandBy
 
-NotchDeck does not track you across apps, websites, or devices, and it does not sell or share any data.
+Watch and StandBy views display the same locally or iCloud-synced status; no additional data is collected.
 
-## Children
+## What We Do NOT Collect
 
-NotchDeck is a developer productivity tool and is not directed to children.
+- No personal identity information (name, email, phone number)
+- No account registration
+- No analytics or crash-tracking SDKs that report to us
+- No advertising identifiers used for targeting
+- No purchase or usage tracking across apps
 
-## Changes
+## Permissions
 
-This policy may be updated as the app changes. Material changes will be reflected here and in the README before the corresponding release.
+- **Bluetooth** and **Local Network**: required to find and connect to your Mac. The Apps request these with an explanation and only use them for the core connection feature. You can revoke them anytime in iOS Settings.
 
-## Contact
+## Children's Privacy
 
-For questions or concerns, open an issue at:
+The Apps are not directed to children under 13. We do not knowingly collect any personal information from children.
 
-https://github.com/zt444888-hub/NotchDeck/issues
+## Data Retention and Deletion
+
+- Local data: remove by deleting the app (or its data in iOS Settings).
+- iCloud data: delete conversations in the app, or delete the App's iCloud data in iOS Settings → your name → iCloud → Manage Account Storage. You may also delete the CloudKit container data via iCloud settings on any of your devices.
+
+## Third-Party Services
+
+The Apps do not integrate third-party analytics, advertising, or data-sharing SDKs. Apple's App Store, iCloud, and CloudKit are subject to Apple's own privacy practices.
+
+## Changes to This Policy
+
+We may update this policy from time to time. Any changes will be posted on this page with an updated "Last updated" date.
+
+## Contact Us
+
+If you have questions about this Privacy Policy, contact us at:
+
+**Shenzhen Yuanbei Technology Co., Ltd.**  
+Email: support@yuanbei.xyz  
+Website: https://yuanbei.xyz
