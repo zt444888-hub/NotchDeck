@@ -171,7 +171,10 @@ struct SettingsDefaults {
     static let notchHeightMode = NotchHeightMode.matchNotch.rawValue
     static let customNotchHeight = 37.0
 
-    static let soundEnabled = false
+    // The 8-bit sound effects are a signature part of the product — new
+    // users should hear them out of the box. Users who dislike them can
+    // turn the master toggle off; it defaults ON.
+    static let soundEnabled = true
     static let soundVolume = 50
     static let soundSessionStart = true
     static let soundTaskComplete = true
