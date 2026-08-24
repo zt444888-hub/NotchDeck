@@ -122,7 +122,7 @@ struct RemoteConversationView: View {
             }
             .searchable(text: $searchText,
                         prompt: L10n.t(zh: "搜索会话", en: "Search conversations"))
-            .navigationTitle("Mac 会话")
+            .navigationTitle("Mac Session")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -133,19 +133,6 @@ struct RemoteConversationView: View {
                     }
                     .disabled(viewModel.conversations.isEmpty)
                     .accessibilityIdentifier("macSession.clearAll")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button(L10n.t(zh: "跟随系统", en: "Follow System")) {
-                            appLanguage = "system"
-                        }
-                        Button("简体中文") { appLanguage = "zh" }
-                        Button("English") { appLanguage = "en" }
-                    } label: {
-                        Label(L10n.t(zh: "语言", en: "Language"),
-                              systemImage: "globe")
-                    }
-                    .accessibilityIdentifier("macSession.language")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {

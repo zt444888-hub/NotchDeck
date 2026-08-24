@@ -33,12 +33,6 @@
             "state" : "translated",
             "value" : "NotchDeck Buddy uses Bluetooth in the background to receive lightweight status updates from your Mac, used to refresh Live Activities and keep your Apple Watch in sync."
           }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NotchDeck Buddy 使用蓝牙在后台接收 Mac 的轻量状态摘要，用于刷新实时活动和同步手表状态。"
-          }
         }
       }
     },
@@ -49,12 +43,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "NotchDeck Buddy discovers your Mac on the local network to sync the current session status."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NotchDeck Buddy 会在本地网络中发现你的 Mac，用于同步当前会话状态。"
           }
         }
       }

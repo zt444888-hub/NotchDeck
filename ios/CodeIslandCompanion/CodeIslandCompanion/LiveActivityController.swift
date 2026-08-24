@@ -24,6 +24,10 @@ final class LiveActivityController: ObservableObject {
     private var activity: Activity<CodeIslandActivityAttributes>?
     private var lastContentState: CodeIslandActivityAttributes.ContentState?
     private var activityStateTask: Task<Void, Never>?
+    /// Tracks whether the app is in the foreground. Used so the
+    /// "dismiss on exit" logic (see `setAppActive`) doesn't race with a
+    /// quick background→foreground toggle.
+    private var isAppActive = true
 
     var isRunning: Bool {
         activity != nil
@@ -98,6 +102,32 @@ final class LiveActivityController: ObservableObject {
             clearActivity(id: activityID)
             existingActivityCount = 0
             lastError = nil
+        }
+    }
+
+    /// Driven by the app scene when it enters/leaves the foreground.
+    ///
+    /// On leaving the foreground we dismiss the Live Activity so it doesn't
+    /// linger after the user exits the app (a Live Activity lives in a
+    /// system process and is NOT torn down when the app is killed — by
+    /// design). We wait a short grace period and only dismiss if the app is
+    /// still backgrounded, so a quick background→foreground toggle doesn't
+    /// end the activity and then immediately recreate it on return.
+    ///
+    /// Unlike `stopAll()`, this does NOT set the persistent `userStopped`
+    /// flag, so the island is recreated automatically when the app returns
+    /// to the foreground and the Mac session is still active.
+    func setAppActive(_ active: Bool) {
+        isAppActive = active
+        guard !active else { return }
+        Task {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !isAppActive else { return }
+            for activity in Activity<CodeIslandActivityAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+            clearActivity(id: activityID)
+            existingActivityCount = 0
         }
     }
 

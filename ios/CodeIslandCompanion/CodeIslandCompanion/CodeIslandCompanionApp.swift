@@ -44,6 +44,10 @@ struct CodeIslandCompanionApp: App {
         // this, returning to the foreground after minimizing the app or
         // locking the phone left it stuck showing "disconnected" (#261).
         .onChange(of: scenePhase) { oldPhase, newPhase in
+            // Dismiss the Dynamic Island when the app leaves the foreground
+            // so it doesn't linger after the user exits. (Recreated on
+            // return below if the Mac session is still active.)
+            liveActivity.setAppActive(newPhase != .background)
             guard oldPhase == .background, newPhase == .active else { return }
             connection.reconnectIfNeeded()
             // App updates / long background periods can leave the Dynamic

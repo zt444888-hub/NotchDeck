@@ -135,3 +135,61 @@ enum CIMotion {
     static let pop = Animation.spring(response: 0.3, dampingFraction: 0.65)
     static let micro = Animation.easeOut(duration: 0.12)
 }
+
+// MARK: Accent Gradient — signature blue→violet brand fill
+extension CITheme {
+    /// Deeper violet terminus for the brand gradient (dark / light both).
+    static let accentGradientEnd = UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.55, green: 0.28, blue: 0.98, alpha: 1)
+            : UIColor(red: 0.47, green: 0.26, blue: 0.92, alpha: 1)
+    }
+}
+
+extension LinearGradient {
+    /// NotchDeck Buddy signature gradient: blue-violet → deeper violet.
+    static var ciAccent: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: Color(CITheme.accent), location: 0.0),
+                .init(color: Color(CITheme.accentGradientEnd), location: 1.0)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
+// MARK: Elevation — glow (brand-tinted ambient shadow for accent elements)
+extension CIShadow {
+    /// Soft brand-colored glow used on primary CTAs (buttons, key actions).
+    static let glow = CIShadow(color: Color(CITheme.accent).opacity(0.5), radius: 14, x: 0, y: 3)
+}
+
+// MARK: Surface primitives (systematic card / chip)
+extension View {
+    /// Standard elevated card: layered surface + hairline border + soft shadow.
+    /// Replaces the previous near-invisible `ciForeground.opacity(0.0x)` fills
+    /// that collapsed every card into the background and killed all depth.
+    func ciCard(
+        radius: CGFloat = CIRadius.md,
+        fill: Color = .ciSurface,
+        border: Color = Color.ciForeground.opacity(0.08),
+        shadow: CIShadow = .sm
+    ) -> some View {
+        self
+            .background(fill, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(border, lineWidth: 1))
+            .ciShadow(shadow)
+    }
+
+    /// Glassy pill surface for compact labels (status, tool, count badges).
+    func ciChip(
+        fill: Color = .ciSurface,
+        border: Color = Color.ciForeground.opacity(0.08)
+    ) -> some View {
+        self
+            .background(fill, in: Capsule())
+            .overlay(Capsule().stroke(border, lineWidth: 1))
+    }
+}

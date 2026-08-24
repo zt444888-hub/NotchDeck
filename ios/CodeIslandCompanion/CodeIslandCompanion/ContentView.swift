@@ -78,7 +78,18 @@ struct ContentView: View {
         .sheet(isPresented: $showActivityLog) {
             ActivityLogView(connection: connection)
         }
-        .background(Color.ciBackground.ignoresSafeArea())
+        .background {
+            ZStack {
+                Color.ciBackground.ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color(CITheme.accent).opacity(0.32), .clear],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: 540
+                )
+                .ignoresSafeArea()
+            }
+        }
         .preferredColorScheme(appearance.colorScheme)
         .accessibilityIdentifier("companion.root")
     }
@@ -359,12 +370,13 @@ private struct QuestionOptionsView: View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(enabled ? .black : .ciForeground.opacity(0.4))
+                .foregroundStyle(enabled ? .white : .ciForeground.opacity(0.4))
                 .frame(maxWidth: .infinity, minHeight: 40)
-                .background(enabled ? accent : Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+                .background(enabled ? AnyShapeStyle(LinearGradient.ciAccent) : AnyShapeStyle(Color.ciForeground.opacity(0.08)), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+        .ciShadow(enabled ? .glow : CIShadow(color: .clear, radius: 0, x: 0, y: 0))
         .accessibilityIdentifier("companion.question.submit")
     }
 }
@@ -445,8 +457,7 @@ private struct CompactIslandBar: View {
         .padding(.leading, 8)
         .padding(.trailing, 6)
         .frame(height: 46)
-        .background(IslandShellShape().fill(Color.ciSurface))
-        .overlay(IslandShellShape().stroke(Color.ciForeground.opacity(0.08), lineWidth: 1))
+        .ciCard(radius: CIRadius.lg, fill: .ciSurface, border: Color.ciForeground.opacity(0.09), shadow: .md)
     }
 
     private var compactStatus: CompanionStatus {
@@ -529,8 +540,10 @@ private struct LiveIslandCard: View {
             .padding(14)
             .transition(.blurFade.combined(with: .scale(scale: 0.96, anchor: .top)))
         }
-        .background(IslandShellShape().fill(Color.ciSurface))
-        .overlay(IslandShellShape().stroke(pendingTint ?? Color.ciForeground.opacity(0.08), lineWidth: pendingTint == nil ? 1 : 1.5))
+        .ciCard(radius: CIRadius.lg,
+                fill: pendingTint.map { $0.opacity(0.14) } ?? .ciSurface,
+                border: pendingTint?.opacity(0.55) ?? Color.ciForeground.opacity(0.09),
+                shadow: .md)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L10n.t(zh: "CodeIsland 状态", en: "CodeIsland Status"))
         .accessibilityIdentifier("companion.statusCard")
@@ -585,8 +598,7 @@ private struct QuestionPromptCard: View {
                 .id("\(question.index)/\(question.total)·\(question.question)")
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).fill(Color.ciForeground.opacity(0.05)))
-        .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(Color.ciWarning.opacity(0.24)))
+        .ciCard(radius: CIRadius.sm, fill: Color.ciWarning.opacity(0.10), border: Color.ciWarning.opacity(0.30), shadow: .sm)
         .accessibilityIdentifier("companion.questionCard")
     }
 }
@@ -662,8 +674,7 @@ private struct DiscoveryIsland: View {
             }
             .padding(14)
         }
-        .background(IslandShellShape().fill(Color.ciSurface))
-        .overlay(IslandShellShape().stroke(Color.ciForeground.opacity(0.08), lineWidth: 1))
+        .ciCard(radius: CIRadius.lg, fill: .ciSurface, border: Color.ciForeground.opacity(0.09), shadow: .md)
         .accessibilityIdentifier("companion.discoveryCard")
     }
 
@@ -897,8 +908,7 @@ private struct MessageStrip: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).fill(Color.ciForeground.opacity(0.045)))
-        .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(Color.ciForeground.opacity(0.06)))
+        .ciCard(radius: CIRadius.sm, fill: .ciSurface, border: Color.ciForeground.opacity(0.07), shadow: .sm)
         .accessibilityIdentifier("companion.messages")
     }
 }
@@ -1280,8 +1290,10 @@ private struct StandBySessionRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background((highlightTint ?? Color.ciForeground).opacity(highlightTint == nil ? 0.055 : 0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(highlightTint?.opacity(0.55) ?? Color.ciForeground.opacity(0.07), lineWidth: highlightTint == nil ? 1 : 1.5))
+        .ciCard(radius: CIRadius.sm,
+                fill: highlightTint.map { $0.opacity(0.14) } ?? .ciSurface,
+                border: highlightTint?.opacity(0.55) ?? Color.ciForeground.opacity(0.08),
+                shadow: .sm)
         .accessibilityIdentifier("companion.standby.sessionRow")
     }
 
@@ -1389,7 +1401,7 @@ private struct StandByCountBadge: View {
             .foregroundStyle(activeCount > 0 ? .ciSuccess : .ciForeground.opacity(0.64))
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background((activeCount > 0 ? Color.ciSuccess : Color.ciForeground).opacity(0.12), in: Capsule())
+            .ciChip(fill: (activeCount > 0 ? Color.ciSuccess : Color.ciForeground).opacity(0.14), border: (activeCount > 0 ? Color.ciSuccess : Color.ciForeground).opacity(0.30))
     }
 }
 
@@ -1430,9 +1442,9 @@ private struct AppearanceMenu: View {
         } label: {
             Image(systemName: (AppAppearance(rawValue: appearanceRaw) ?? .system).icon)
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(.ciForeground.opacity(0.86))
+                .foregroundStyle(.ciForeground.opacity(0.9))
                 .frame(width: 38, height: 38)
-                .background(Color.ciForeground.opacity(0.08), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+                .ciCard(radius: CIRadius.sm, fill: .ciSurface, border: Color.ciForeground.opacity(0.10), shadow: .sm)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L10n.t(zh: "外观", en: "Appearance"))
@@ -1523,7 +1535,7 @@ private struct StatusPill: View {
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 6)
-        .background(Color.ciForeground.opacity(0.08), in: Capsule())
+        .ciChip(fill: .ciSurface, border: Color.ciForeground.opacity(0.10))
     }
 }
 
@@ -1593,10 +1605,10 @@ private struct TinyChip: View {
             Image(systemName: icon)
         }
         .font(.system(size: 12, weight: .semibold))
-        .foregroundStyle(.ciForeground.opacity(0.64))
+        .foregroundStyle(.ciForeground.opacity(0.72))
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
-        .background(Color.ciForeground.opacity(0.07), in: Capsule())
+        .ciChip(fill: .ciSurface, border: Color.ciForeground.opacity(0.10))
     }
 }
 
@@ -1616,28 +1628,37 @@ private struct IslandButton: View {
                 .minimumScaleFactor(0.82)
                 .foregroundStyle(foregroundColor)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(buttonBackground, in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+                .background(buttonFill, in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(borderColor))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
         .optionalAccessibilityIdentifier(accessibilityIdentifier)
+        .ciShadow(isAccent && enabled ? .glow : CIShadow(color: .clear, radius: 0, x: 0, y: 0))
     }
 
     // Disabled state is drawn explicitly (dimmed, neutral) so a
     // not-connected button reads as intentionally unavailable, not broken.
+    private var isWarning: Bool { tint == .ciWarning }
+    private var isAccent: Bool { tint == .ciAccent }
+
     private var foregroundColor: Color {
         guard enabled else { return Color.secondary.opacity(0.7) }
-        return tint == .ciWarning ? .black : tint
+        if isWarning { return .black }
+        if isAccent { return .white }
+        return tint
     }
 
-    private var buttonBackground: Color {
-        guard enabled else { return Color.ciForeground.opacity(0.05) }
-        return tint == .ciWarning ? .ciWarning : tint.opacity(0.20)
+    private var buttonFill: AnyShapeStyle {
+        guard enabled else { return AnyShapeStyle(Color.ciForeground.opacity(0.05)) }
+        if isWarning { return AnyShapeStyle(Color.ciWarning) }
+        if isAccent { return AnyShapeStyle(LinearGradient.ciAccent) }
+        return AnyShapeStyle(tint.opacity(0.20))
     }
 
     private var borderColor: Color {
         guard enabled else { return Color.ciForeground.opacity(0.10) }
+        if isAccent { return Color.clear }
         return tint.opacity(0.42)
     }
 }
@@ -1659,18 +1680,29 @@ private struct IconIslandButton: View {
     var enabled: Bool = true
     let action: () -> Void
 
+    private var isWarning: Bool { tint == .ciWarning }
+    private var isAccent: Bool { tint == .ciAccent }
+
+    private var iconFill: AnyShapeStyle {
+        guard enabled else { return AnyShapeStyle(Color.ciForeground.opacity(0.05)) }
+        if isWarning { return AnyShapeStyle(Color.ciWarning) }
+        if isAccent { return AnyShapeStyle(LinearGradient.ciAccent) }
+        return AnyShapeStyle(tint.opacity(0.22))
+    }
+
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.title3.weight(.bold))
-                .foregroundStyle(tint == .ciWarning ? .black : tint)
+                .foregroundStyle(isWarning ? .black : (isAccent ? .white : tint))
                 .opacity(enabled ? 1 : 0.4)
                 .frame(width: 52, height: 52)
-                .background(tint == .ciWarning ? .ciWarning : tint.opacity(0.22), in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(tint.opacity(0.45)))
+                .background(iconFill, in: RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).stroke(isAccent ? Color.clear : tint.opacity(0.45)))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+        .ciShadow(isAccent && enabled ? .glow : CIShadow(color: .clear, radius: 0, x: 0, y: 0))
     }
 }
 
@@ -1683,7 +1715,7 @@ private struct DiagnosticStrip: View {
             .foregroundStyle(.ciWarning)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
-            .background(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).fill(Color.ciWarning.opacity(0.12)))
+            .ciCard(radius: CIRadius.sm, fill: Color.ciWarning.opacity(0.12), border: Color.ciWarning.opacity(0.30), shadow: .sm)
     }
 }
 
@@ -1711,7 +1743,7 @@ private struct LiveActivityDiagnosticStrip: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: CIRadius.sm, style: .continuous).fill(.ciSurfaceRaised))
+        .ciCard(radius: CIRadius.sm, fill: .ciSurfaceRaised, border: Color.ciForeground.opacity(0.10), shadow: .sm)
     }
 }
 
